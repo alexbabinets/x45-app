@@ -1,0 +1,19 @@
+workflows:
+  ios-webview-build:
+    name: X45 iOS WebApp
+    max_build_duration: 60
+    environment:
+      xcode: latest
+    scripts:
+      - echo "🚀 Building X45 web app for iOS..."
+      - mkdir -p build
+      - cp -R www build/
+    artifacts:
+      - build/**
+    publishing:
+      email:
+        recipients:
+          - alexbabinets@gmail.com
+        notify:
+          success: true
+          failure: true
