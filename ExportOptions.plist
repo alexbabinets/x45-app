@@ -14,11 +14,11 @@
   <key>stripSwiftSymbols</key>
   <true/>
   <key>teamID</key>
-  <string>YOUR_TEAM_ID</string>
+  <string>Y4A2M3B9T7</string>
   <key>provisioningProfiles</key>
   <dict>
     <key>com.expressfitness.x45</key>
-    <string>YOUR_PROFILE_NAME</string>
+    <string>X45 iOS App Profile</string>
   </dict>
 </dict>
 </plist>
