@@ -1,0 +1,11 @@
+{
+  "name": "x45-app",
+  "version": "1.0.0",
+  "description": "X45 Fitness App — WebView build for iOS",
+  "main": "www/index.html",
+  "scripts": {
+    "start": "echo 'Launching X45 web app...'"
+  },
+  "author": "Alexander Babinets",
+  "license": "MIT"
+}
