@@ -1,0 +1,6 @@
+{
+  "appId": "ca.expressfitness.x45",
+  "appName": "X45",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
