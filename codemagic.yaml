@@ -7,6 +7,7 @@ workflows:
         BUNDLE_ID: com.expressfitness.x45
       groups:
         - apple-connect   # APP_STORE_CONNECT_* + CERTIFICATE_PRIVATE_KEY
+
     triggering:
       events:
         - push
@@ -16,7 +17,7 @@ workflows:
           source: true
 
     scripts:
-      # 1) Prepare Capacitor iOS + create a resilient Podfile first
+      # 1) Prepare Capacitor iOS + write a resilient Podfile
       - |
         set -euo pipefail
         echo "👉 Setting up Capacitor (idempotent)"
@@ -28,13 +29,13 @@ workflows:
           npx cap add ios
         fi
 
-        # Create a resilient Podfile (handles missing pods_helpers gracefully)
-        cat > ios/App/Podfile <<'RUBY'
+        echo "📝 Writing Podfile (resilient to missing pods_helpers)"
+        cat > ios/App/Podfile <<'__PODFILE__'
         helper_path = File.expand_path('../../node_modules/@capacitor/ios/scripts/pods_helpers', __FILE__)
         begin
           require helper_path
         rescue LoadError
-          # Fallback: define minimal helpers so pod install succeeds even if helper isn't found
+          # Fallback definitions if pods_helpers can't be required (CI/paths)
           def capacitor_pods
             pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
             pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
@@ -47,17 +48,20 @@ workflows:
 
         target 'App' do
           capacitor_pods
-          # Add Capacitor plugins here as needed, e.g.:
+          # Add Capacitor plugins here if needed, e.g.:
           # pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
-          # pod 'CapacitorHaptics',    :path => '../../node_modules/@capacitor/haptics'
+          # pod 'CapacitorHaptics',  :path => '../../node_modules/@capacitor/haptics'
         end
 
         post_install do |installer|
           assertDeploymentTarget(installer) if defined?(assertDeploymentTarget)
         end
-        RUBY
+        __PODFILE__
 
-        # Sync native assets (don't rely on sync to manage pods)
+        echo "🔎 Ruby syntax check for Podfile"
+        ruby -c ios/App/Podfile
+
+        echo "🔄 Syncing native assets"
         npx cap copy ios
         npx cap sync ios || true
 
