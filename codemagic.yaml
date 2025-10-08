@@ -4,7 +4,7 @@ workflows:
     environment:
       xcode: latest
       groups:
-        - apple-connect   # APP_STORE_CONNECT_* are read from this group
+        - apple-connect   # APP_STORE_CONNECT_* vars from your 'apple-connect' group
     triggering:
       events:
         - push
@@ -14,7 +14,7 @@ workflows:
           source: true
 
     scripts:
-      # 0) Write a clean Capacitor config at the REPO ROOT (forces correct appId)
+      # 0) Write a clean Capacitor config at repo root (authoritative source of appId/appName)
       - |
         echo "📝 Writing capacitor.config.json at project root"
         cat > capacitor.config.json <<'JSON'
@@ -26,13 +26,11 @@ workflows:
         }
         JSON
 
-      # 1) Prepare Capacitor & (re)create iOS from this config
+      # 1) Prepare Capacitor and fully recreate iOS so bundle id comes from config
       - |
         echo "👉 Setting up Capacitor (fresh iOS)"
         npm install -g @capacitor/cli
         npm install @capacitor/core @capacitor/ios --save --no-fund --no-audit || true
-
-        # Always recreate iOS so bundle id and files are correct
         rm -rf ios
         npx cap add ios
         npx cap copy ios
@@ -45,7 +43,17 @@ workflows:
         pod install --repo-update
         cd ../../
 
-      # 3) Fetch signing files and apply to the Xcode project
+      # 3) HARD-SET the Xcode project's PRODUCT_BUNDLE_IDENTIFIER in project.pbxproj (belt & suspenders)
+      - |
+        echo "🪛 Forcing PRODUCT_BUNDLE_IDENTIFIER in project.pbxproj"
+        BUNDLE_ID="com.expressfitness.x45"
+        PBXPROJ="ios/App/App.xcodeproj/project.pbxproj"
+        # Replace any existing product bundle identifiers to be safe (Debug/Release, etc.)
+        /usr/bin/sed -i '' -E "s/(PRODUCT_BUNDLE_IDENTIFIER = )[A-Za-z0-9\.\-]+;/\1${BUNDLE_ID};/g" "${PBXPROJ}"
+        echo "🔎 Xcode sees:"
+        xcodebuild -workspace ios/App/App.xcworkspace -scheme App -showBuildSettings | grep -m1 PRODUCT_BUNDLE_IDENTIFIER || true
+
+      # 4) Fetch signing files and apply to the Xcode project
       - |
         echo "🔐 Fetching & applying signing profiles"
         keychain initialize
@@ -53,12 +61,6 @@ workflows:
         cd ios/App
         xcode-project use-profiles
         cd ../../
-
-      # 4) Sanity check: print PRODUCT_BUNDLE_IDENTIFIER seen by Xcode
-      - |
-        echo "🔎 PRODUCT_BUNDLE_IDENTIFIER per Xcode:"
-        xcodebuild -workspace ios/App/App.xcworkspace -scheme App -showBuildSettings \
-          | grep -m1 PRODUCT_BUNDLE_IDENTIFIER || true
 
       # 5) Build signed IPA (workspace + export options produced by use-profiles)
       - |
