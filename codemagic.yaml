@@ -1,35 +1,60 @@
-scripts:
-  # 1) Prepare Capacitor iOS (recreate if the project isn't there)
-  - |
-    echo "👉 Setting up Capacitor"
-    npm install -g @capacitor/cli
-    npm install @capacitor/core @capacitor/ios --save --no-fund --no-audit || true
-    npx cap init "X45 Express Fitness" "com.expressfitness.x45" --web-dir=www --npm-client=npm || true
-    if [ ! -f ios/App/App.xcodeproj ]; then
-      echo "🧹 Existing ios/ is not a Capacitor project; recreating"
-      rm -rf ios
-      npx cap add ios
-    fi
-    npx cap copy ios
-    npx cap sync ios
+workflows:
+  ios-capacitor:
+    name: X45 iOS (Capacitor)
+    environment:
+      xcode: latest
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
 
-  # 2) Automatic code signing (uses your connected Apple key)
-  - |
-    echo "🔐 Fetching signing files"
-    keychain initialize
-    app-store-connect fetch-signing-files "com.expressfitness.x45" --type IOS_APP_STORE --create
-    xcode-project use-profiles
+    scripts:
+      # 1) Prepare Capacitor iOS (recreate if needed)
+      - |
+        echo "👉 Setting up Capacitor"
+        npm install -g @capacitor/cli
+        npm install @capacitor/core @capacitor/ios --save --no-fund --no-audit || true
+        npx cap init "X45 Express Fitness" "com.expressfitness.x45" --web-dir=www --npm-client=npm || true
+        if [ ! -f ios/App/App.xcodeproj ]; then
+          echo "🧹 Recreating ios platform"
+          rm -rf ios
+          npx cap add ios
+        fi
+        npx cap copy ios
+        npx cap sync ios
 
-  # 3) Pods + Build signed IPA (use WORKSPACE)
-  - |
-    echo "📦 Installing CocoaPods"
-    cd ios/App
-    pod install --repo-update
-    cd ../../
-  - |
-    echo "🏗️ Building signed IPA"
-    xcode-project build-ipa \
-      --workspace ios/App/App.xcworkspace \
-      --scheme App \
-      --archive-method app-store
+      # 2) Automatic code signing (uses your connected Apple key)
+      - |
+        echo "🔐 Fetching signing files"
+        keychain initialize
+        app-store-connect fetch-signing-files "com.expressfitness.x45" --type IOS_APP_STORE --create
+        xcode-project use-profiles
+
+      # 3) Pods + Build signed IPA (use WORKSPACE)
+      - |
+        echo "📦 Installing CocoaPods"
+        cd ios/App
+        pod install --repo-update
+        cd ../../
+      - |
+        echo "🏗️ Building signed IPA"
+        xcode-project build-ipa \
+          --workspace ios/App/App.xcworkspace \
+          --scheme App \
+          --archive-method app-store
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - ios/App/build/**/*.log
+
+    publishing:
+      email:
+        recipients:
+          - alexbabinets@gmail.com
+        notify:
+          success: true
+          failure: true
 # bump to trigger detection
