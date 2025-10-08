@@ -91,4 +91,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - a
+          - alexbabinets@gmail.com
+        notify:
+          success: true
+          failure: true
