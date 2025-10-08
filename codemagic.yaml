@@ -4,7 +4,7 @@ workflows:
     environment:
       xcode: latest
       groups:
-        - apple-connect   # uses your APP_STORE_CONNECT_* vars
+        - apple-connect   # APP_STORE_CONNECT_ISSUER_ID / KEY_IDENTIFIER / PRIVATE_KEY
     triggering:
       events:
         - push
@@ -14,14 +14,14 @@ workflows:
           source: true
 
     scripts:
-      # 1) Prepare Capacitor iOS (recreate if core files are missing)
+      # 1) Prepare Capacitor iOS (recreate if core files missing)
       - |
         echo "👉 Setting up Capacitor"
         npm install -g @capacitor/cli
         npm install @capacitor/core @capacitor/ios --save --no-fund --no-audit || true
         npx cap init "X45 Express Fitness" "com.expressfitness.x45" --web-dir=www || true
 
-        # If ios/App/App.xcodeproj or ios/App/Podfile is missing, recreate the iOS platform
+        # If ios platform is incomplete, recreate it
         if [ ! -f ios/App/App.xcodeproj ] || [ ! -f ios/App/Podfile ]; then
           echo "🧹 iOS platform incomplete → recreating"
           rm -rf ios
@@ -38,7 +38,15 @@ workflows:
         pod install --repo-update
         cd ../../
 
-      # 3) Fetch signing files and apply to the project
+      # 3) FORCE the bundle identifier to match signing (fixes profile mismatch)
+      - |
+        echo "🪛 Forcing CFBundleIdentifier to com.expressfitness.x45"
+        /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.expressfitness.x45" ios/App/App/Info.plist || \
+        /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string com.expressfitness.x45" ios/App/App/Info.plist
+        echo "🔎 Info.plist CFBundleIdentifier:"
+        /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" ios/App/App/Info.plist
+
+      # 4) Fetch signing files and apply to the Xcode project
       - |
         echo "🔐 Fetching & applying signing profiles"
         keychain initialize
@@ -47,7 +55,7 @@ workflows:
         xcode-project use-profiles
         cd ../../
 
-      # 4) Build signed IPA (workspace + export options)
+      # 5) Build signed IPA (workspace + export options)
       - |
         echo "🏗️ Building signed IPA"
         xcode-project build-ipa \
