@@ -55,12 +55,13 @@ workflows:
         pod install --repo-update || (echo "Pod install failed" && exit 1)
         cd ../../
 
-      # 3) Fetch certs/profiles
+      # 3) Fetch certs/profiles with debug
       - |
         set -euo pipefail
         keychain initialize
         security list-keychains
-        app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create || (echo "Failed to fetch signing files" && exit 1)
+        security find-identity -v -p codesigning
+        app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --platform IOS --team-id "$TEAM_ID" || (echo "Failed to fetch signing files" && exit 1)
         security find-identity -v -p codesigning
         keychain add-certificates
 
@@ -90,6 +91,9 @@ workflows:
           -archivePath build/ios/App.xcarchive \
           -destination "generic/platform=iOS" \
           -allowProvisioningUpdates \
+          -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
+          -authenticationKeyIssuerID "$APP_STORE_CONNECT_API_KEY_ISSUER_ID" \
+          -authenticationKeyPath "$APP_STORE_CONNECT_API_KEY_PRIVATE_KEY" \
           clean archive \
           CODE_SIGN_STYLE=Automatic \
           DEVELOPMENT_TEAM="${TEAM_ID}" \
@@ -99,7 +103,10 @@ workflows:
           -archivePath build/ios/App.xcarchive \
           -exportOptionsPlist build/ios/ExportOptions_auto.plist \
           -exportPath build/ios/ipa \
-          -allowProvisioningUpdates
+          -allowProvisioningUpdates \
+          -authenticationKeyID "$APP_STORE_CONNECT_API_KEY_ID" \
+          -authenticationKeyIssuerID "$APP_STORE_CONNECT_API_KEY_ISSUER_ID" \
+          -authenticationKeyPath "$APP_STORE_CONNECT_API_KEY_PRIVATE_KEY"
 
     artifacts:
       - build/ios/ipa/*.ipa
