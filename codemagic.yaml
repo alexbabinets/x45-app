@@ -7,6 +7,9 @@ workflows:
         BUNDLE_ID: com.expressfitness.x45
         APP_NAME: X45
         TEAM_ID: X42964UG6Q
+        APP_STORE_CONNECT_KEY_ID: $APP_STORE_CONNECT_KEY_ID
+        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
+        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
       groups:
         - apple-connect
 
@@ -61,6 +64,9 @@ workflows:
         keychain initialize
         security list-keychains
         security find-identity -v -p codesigning
+        [ -z "$APP_STORE_CONNECT_KEY_ID" ] && echo "APP_STORE_CONNECT_KEY_ID is not set" && exit 1
+        [ -z "$APP_STORE_CONNECT_ISSUER_ID" ] && echo "APP_STORE_CONNECT_ISSUER_ID is not set" && exit 1
+        [ -z "$APP_STORE_CONNECT_PRIVATE_KEY" ] && echo "APP_STORE_CONNECT_PRIVATE_KEY is not set" && exit 1
         app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --platform IOS \
           --certificate-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
           --certificate-key-id "$APP_STORE_CONNECT_KEY_ID" \
