@@ -4,7 +4,7 @@ workflows:
     environment:
       xcode: latest
       groups:
-        - apple-connect
+        - apple-connect   # uses your APP_STORE_CONNECT_* vars
     triggering:
       events:
         - push
@@ -14,28 +14,42 @@ workflows:
           source: true
 
     scripts:
-      # 1) Prepare Capacitor iOS (recreate if needed)
+      # 1) Prepare Capacitor iOS
       - |
         echo "👉 Setting up Capacitor"
         npm install -g @capacitor/cli
         npm install @capacitor/core @capacitor/ios --save --no-fund --no-audit || true
         npx cap init "X45 Express Fitness" "com.expressfitness.x45" --web-dir=www --npm-client=npm || true
-        if [ ! -f ios/App/App.xcodeproj ]; then
-          echo "🧹 Recreating ios platform"
-          rm -rf ios
+        # Add iOS if missing (first-time)
+        if [ ! -d ios ]; then
           npx cap add ios
         fi
         npx cap copy ios
         npx cap sync ios
 
-      # 2) Install CocoaPods (creates the .xcworkspace)
+      # 2) Install CocoaPods (creates .xcworkspace)
       - |
         echo "📦 Installing CocoaPods"
         cd ios/App
         pod install --repo-update
         cd ../../
 
-      # 3) Fetch signing files and APPLY them to the iOS project
+      # 3) Ensure the Xcode project bundle id matches what we sign for
+      - |
+        echo "🔎 Checking bundle identifier"
+        EXPECTED_BUNDLE_ID="com.expressfitness.x45"
+        CURRENT_BUNDLE_ID=$(xcodebuild -workspace ios/App/App.xcworkspace -scheme App -showBuildSettings 2>/dev/null | grep -m1 PRODUCT_BUNDLE_IDENTIFIER | awk '{print $3}')
+        echo "Current PRODUCT_BUNDLE_IDENTIFIER: ${CURRENT_BUNDLE_ID}"
+        if [ -z "$CURRENT_BUNDLE_ID" ] || [ "$CURRENT_BUNDLE_ID" != "$EXPECTED_BUNDLE_ID" ]; then
+          echo "⚠️ Bundle id mismatch. Recreating iOS platform with ${EXPECTED_BUNDLE_ID}"
+          rm -rf ios
+          npx cap add ios
+          npx cap copy ios
+          npx cap sync ios
+          cd ios/App && pod install --repo-update && cd ../../
+        fi
+
+      # 4) Fetch signing files and apply to the project
       - |
         echo "🔐 Fetching & applying signing profiles"
         keychain initialize
@@ -44,7 +58,7 @@ workflows:
         xcode-project use-profiles
         cd ../../
 
-      # 4) Build signed IPA (use workspace + export options)
+      # 5) Build signed IPA (workspace + export options)
       - |
         echo "🏗️ Building signed IPA"
         xcode-project build-ipa \
