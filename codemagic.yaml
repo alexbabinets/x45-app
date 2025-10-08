@@ -17,39 +17,31 @@ workflows:
           source: true
 
     scripts:
-      # 1) FORCE clean iOS, re-create Capacitor iOS, write Podfile
+      # 1) FORCE clean iOS, recreate Capacitor iOS, write Podfile (iOS 15)
       - |
         set -euo pipefail
 
-        echo "👉 Install Capacitor tooling & deps"
         npm i -g @capacitor/cli
         npm i @capacitor/core @capacitor/ios --save --no-fund --no-audit || true
 
-        # Ensure basics
         [ -f package.json ] || npm init -y
         mkdir -p www
         [ -f www/index.html ] || echo "<!doctype html><title>X45</title><div>X45</div>" > www/index.html
 
-        # Normalize capacitor.config.json
         node -e "const fs=require('fs');const p='capacitor.config.json';let cfg={appId:process.env.BUNDLE_ID||'com.expressfitness.x45',appName:process.env.APP_NAME||'X45',webDir:'www',bundledWebRuntime:false};if(fs.existsSync(p)){try{Object.assign(cfg,JSON.parse(fs.readFileSync(p,'utf8')))}catch{}}fs.writeFileSync(p,JSON.stringify(cfg,null,2));console.log('cap cfg ->',cfg);"
 
-        echo "🧹 Removing any existing ios/ to avoid half-initialized projects"
         rm -rf ios
-
-        echo "➕ cap init / add ios"
         npx cap init "${APP_NAME:-X45}" "${BUNDLE_ID:-com.expressfitness.x45}" --web-dir=www --no-interactive || true
         npx cap add ios
 
-        echo "🔄 cap copy/sync"
         npx cap copy ios
         npx cap sync ios || true
 
-        echo "✅ Check Xcode project exists"
         test -d ios/App/App.xcodeproj || (echo "❌ Missing ios/App/App.xcodeproj" && find ios -maxdepth 3 -name '*.xcodeproj' -print && exit 1)
 
-        echo "📝 Write minimal Podfile"
+        # Podfile with iOS 15 target
         rm -f ios/App/Podfile
-        printf "platform :ios, '13.0'\n"                          >> ios/App/Podfile
+        printf "platform :ios, '15.0'\n"                          >> ios/App/Podfile
         printf "use_frameworks! :linkage => :static\n"            >> ios/App/Podfile
         printf "project 'App.xcodeproj'\n\n"                      >> ios/App/Podfile
         printf "target 'App' do\n"                                >> ios/App/Podfile
@@ -58,10 +50,12 @@ workflows:
         printf "end\n"                                            >> ios/App/Podfile
         nl -ba ios/App/Podfile
 
+        # Also bump the Xcode project deployment target for safety
+        /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 15.0" ios/App/App/Info.plist || true
+
       # 2) Pods
       - |
         set -euo pipefail
-        echo "📦 pod install --repo-update"
         cd ios/App
         rm -f Podfile.lock
         rm -rf Pods
@@ -72,7 +66,6 @@ workflows:
       # 3) Signing
       - |
         set -euo pipefail
-        echo "🔐 Fetching & applying signing profiles"
         keychain initialize
         app-store-connect fetch-signing-files "$BUNDLE_ID" \
           --type IOS_APP_STORE \
@@ -86,7 +79,6 @@ workflows:
       # 4) Build
       - |
         set -euo pipefail
-        echo "🏗️ Build IPA"
         xcode-project build-ipa \
           --workspace ios/App/App.xcworkspace \
           --scheme App \
