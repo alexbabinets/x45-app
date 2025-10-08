@@ -7,7 +7,7 @@ workflows:
         BUNDLE_ID: com.expressfitness.x45
         APP_NAME: X45
       groups:
-        - apple-connect
+        - apple-connect   # must contain: APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_PRIVATE_KEY
 
     triggering:
       events: [push]
@@ -22,7 +22,6 @@ workflows:
         set -euo pipefail
         npm i -g @capacitor/cli
         npm i @capacitor/core @capacitor/ios --save --no-fund --no-audit || true
-
         [ -f package.json ] || npm init -y
         mkdir -p www
         [ -f www/index.html ] || echo "<!doctype html><meta charset='utf-8'><title>X45</title><div>X45</div>" > www/index.html
@@ -36,7 +35,6 @@ workflows:
         npx cap sync ios || true
 
         test -d ios/App/App.xcodeproj || (echo 'Missing ios/App/App.xcodeproj' && exit 1)
-
         /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 15.0" ios/App/App/Info.plist || true
 
         rm -f ios/App/Podfile
@@ -60,25 +58,17 @@ workflows:
         pod install --repo-update
         cd ../../
 
-      # 3) Fetch signing files (no extra flags), apply to project, archive, export
+      # 3) Fetch signing files (no extra flags), apply to project
       - |
         set -euo pipefail
-
         keychain initialize
         app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
         keychain add-certificates
-
-        # Apply profiles to the Xcode project (no --scheme flag)
         xcode-project use-profiles --project ios/App/App.xcodeproj
 
-        # Find fetched App Store profile name & team from the installed profile
-        PROFILE_PATH="$(ls -t /Users/builder/Library/MobileDevice/Provisioning\ Profiles/IOS_APP_STORE_*.mobileprovision | head -n1)"
-        [ -f "$PROFILE_PATH" ] || (echo "No IOS_APP_STORE profile found"; ls -la /Users/builder/Library/MobileDevice/Provisioning\ Profiles/; exit 1)
-        TMP_PLIST="$(mktemp)"; /usr/bin/security cms -D -i "$PROFILE_PATH" > "$TMP_PLIST"
-        PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$TMP_PLIST")"
-        TEAM_ID="$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$TMP_PLIST")"
-
-        # Archive (workspace because of Pods)
+      # 4) Archive & export IPA
+      - |
+        set -euo pipefail
         mkdir -p build/ios
         xcodebuild \
           -workspace ios/App/App.xcworkspace \
@@ -88,7 +78,12 @@ workflows:
           -destination "generic/platform=iOS" \
           clean archive
 
-        # Export using the exact fetched profile name
+        PROFILE_PATH="$(ls -t "$HOME/Library/MobileDevice/Provisioning Profiles"/IOS_APP_STORE_*.mobileprovision | head -n1)"
+        [ -f "$PROFILE_PATH" ] || (echo "No IOS_APP_STORE profile found"; ls -la "$HOME/Library/MobileDevice/Provisioning Profiles/"; exit 1)
+        TMP_PLIST="$(mktemp)"; /usr/bin/security cms -D -i "$PROFILE_PATH" > "$TMP_PLIST"
+        TEAM_ID="$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$TMP_PLIST")"
+        PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$TMP_PLIST")"
+
         cat > build/ios/ExportOptions.plist <<EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -113,21 +108,20 @@ workflows:
           -exportOptionsPlist build/ios/ExportOptions.plist \
           -exportPath build/ios/ipa
 
+      # 5) Upload to TestFlight (CLI, avoids flaky post-processing)
+      - |
+        set -euo pipefail
+        IPA_PATH="$(ls -t build/ios/ipa/*.ipa | head -n1)"
+        echo "🚀 Uploading to TestFlight: $IPA_PATH"
+        app-store-connect publish \
+          --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+          --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+          --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
+          --path "$IPA_PATH" \
+          --testflight
+
     artifacts:
       - build/ios/ipa/*.ipa
       - build/ios/**/*.xcarchive
       - ios/App/build/**/*.log
       - ~/Library/Logs/gym/*.log
-
-    publishing:
-      app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        submit_to_testflight: true
-      email:
-        recipients:
-          - alexbabinets@gmail.com
-        notify:
-          success: true
-          failure: true
