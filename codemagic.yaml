@@ -3,6 +3,16 @@ workflows:
     name: X45 iOS (Capacitor)
     environment:
       xcode: latest
+      vars:
+        BUNDLE_ID: com.expressfitness.x45
+      # This imports the env vars you created in Codemagic:
+      #   APP_STORE_CONNECT_KEY_IDENTIFIER
+      #   APP_STORE_CONNECT_ISSUER_ID
+      #   APP_STORE_CONNECT_PRIVATE_KEY
+      #   CERTIFICATE_PRIVATE_KEY     (your RSA 2048 PEM)
+      groups:
+        - apple-connect
+
     triggering:
       events:
         - push
@@ -12,45 +22,72 @@ workflows:
           source: true
 
     scripts:
-      # 1) Prepare Capacitor + pods
+      # 1) Prepare Capacitor iOS (safe to re-run) + ensure CocoaPods workspace
       - |
-        echo "👉 Setting up Capacitor"
+        echo "👉 Setting up Capacitor (idempotent)"
         npm i -g @capacitor/cli
         npm i @capacitor/core @capacitor/ios --save --no-fund --no-audit || true
-        npx cap init "X45 Express Fitness" "com.expressfitness.x45" --web-dir=www || true
-        npx cap add ios || true
+
+        # Add iOS platform once; keep existing projects intact
+        if [ ! -d ios ]; then
+          npx cap add ios
+        fi
+
+        # Always refresh native assets
         npx cap copy ios
-        cd ios/App && pod install --repo-update && cd ../../
+        npx cap sync ios
 
-      # 2) Fix hard-coded Team ID & wrong signing identity in the project
-      - |
-        echo "🧽 Fixing team id and signing identities"
-        TEAM_ID="Q2F9G3GYF7"   # <-- your real Apple Team ID
-        # Force the correct team id everywhere
-        sed -i '' "s/DEVELOPMENT_TEAM = [A-Z0-9]\{10\}/DEVELOPMENT_TEAM = ${TEAM_ID}/g" ios/App/App.xcodeproj/project.pbxproj || true
-        # Make sure Release signs with Apple Distribution (not iOS Development)
-        sed -i '' 's/CODE_SIGN_IDENTITY = "iOS Development"/CODE_SIGN_IDENTITY = "Apple Distribution"/g' ios/App/App.xcodeproj/project.pbxproj || true
-        sed -i '' 's/CODE_SIGN_IDENTITY\[sdk=iphoneos\*\] = "iOS Development"/CODE_SIGN_IDENTITY\[sdk=iphoneos\*\] = "Apple Distribution"/g' ios/App/App.xcodeproj/project.pbxproj || true
+        # Create a minimal Podfile if it's missing
+        if [ ! -f ios/App/Podfile ]; then
+          echo "📝 Creating Podfile for Capacitor"
+          cat > ios/App/Podfile <<'PODFILE'
+          require_relative "../../node_modules/@capacitor/ios/scripts/pods_helpers"
 
-      # 3) Download certs/profiles & apply them to the workspace + scheme
+          platform :ios, '13.0'
+          use_frameworks!
+
+          target 'App' do
+            capacitor_pods
+            # Add extra pods here if you need them
+          end
+          PODFILE
+        fi
+
+        echo "📦 Running CocoaPods"
+        cd ios/App
+        pod install --repo-update
+        cd ../../
+
+      # 2) Fetch signing files and apply them to the workspace + scheme
       - |
-        echo "🔐 Downloading and applying signing profiles"
+        echo "🔐 Fetching & applying signing profiles"
         keychain initialize
-        app-store-connect fetch-signing-files "com.expressfitness.x45" --type IOS_APP_STORE --create
-        keychain add-certificates
-        xcode-project use-profiles --workspace ios/App/App.xcworkspace --scheme App
 
-      # 4) Build the IPA (Release, generic device)
+        # Uses the RSA private key you stored in CERTIFICATE_PRIVATE_KEY (PEM)
+        app-store-connect fetch-signing-files "$BUNDLE_ID" \
+          --type IOS_APP_STORE \
+          --create \
+          --certificate-private-key "$CERTIFICATE_PRIVATE_KEY"
+
+        keychain add-certificates
+
+        # Attach the fetched provisioning profile(s) to your workspace/scheme
+        xcode-project use-profiles \
+          --workspace ios/App/App.xcworkspace \
+          --scheme App
+
+      # 3) Build a signed IPA (workspace + scheme)
       - |
-        echo "🏗️ Building IPA"
+        echo "🏗️ Archiving & exporting IPA"
         xcode-project build-ipa \
           --workspace ios/App/App.xcworkspace \
           --scheme App \
-          --archive-flags="-destination 'generic/platform=iOS'"
+          --archive-flags="-destination generic/platform=iOS"
 
     artifacts:
       - build/ios/ipa/*.ipa
       - ios/App/build/**/*.log
+      - ~/Library/Logs/gym/*.log
 
     publishing:
       email:
