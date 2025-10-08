@@ -7,7 +7,7 @@ workflows:
         BUNDLE_ID: com.expressfitness.x45
         APP_NAME: X45
       groups:
-        - apple-connect   # must contain: APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_PRIVATE_KEY
+        - apple-connect   # APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_PRIVATE_KEY
 
     triggering:
       events: [push]
@@ -33,8 +33,8 @@ workflows:
         npx cap add ios
         npx cap copy ios
         npx cap sync ios || true
-
         test -d ios/App/App.xcodeproj || (echo 'Missing ios/App/App.xcodeproj' && exit 1)
+
         /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 15.0" ios/App/App/Info.plist || true
 
         rm -f ios/App/Podfile
@@ -66,7 +66,23 @@ workflows:
         keychain add-certificates
         xcode-project use-profiles --project ios/App/App.xcodeproj
 
-      # 4) Archive & export IPA
+      # 4) Bump build number (CFBundleVersion) so TestFlight accepts the upload
+      - |
+        set -euo pipefail
+        # Prefer CI-provided number; otherwise generate a monotonic timestamp-based one
+        BUILD_NUM="${BUILD_NUMBER:-${CM_BUILD_ID:-$(date +%Y%m%d%H%M)}}"
+
+        # Set CFBundleVersion (build). Keep marketing version stable (optional).
+        /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${BUILD_NUM}" ios/App/App/Info.plist || \
+          /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${BUILD_NUM}" ios/App/App/Info.plist
+
+        # (Optional) ensure CFBundleShortVersionString exists; you can change it later if you want a new app version
+        /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" ios/App/App/Info.plist >/dev/null 2>&1 || \
+          /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.0" ios/App/App/Info.plist
+
+        echo "Using build number: ${BUILD_NUM}"
+
+      # 5) Archive & export IPA
       - |
         set -euo pipefail
         mkdir -p build/ios
@@ -76,7 +92,8 @@ workflows:
           -configuration Release \
           -archivePath build/ios/App.xcarchive \
           -destination "generic/platform=iOS" \
-          clean archive
+          clean archive \
+          CURRENT_PROJECT_VERSION="${BUILD_NUM}"
 
         PROFILE_PATH="$(ls -t "$HOME/Library/MobileDevice/Provisioning Profiles"/IOS_APP_STORE_*.mobileprovision | head -n1)"
         [ -f "$PROFILE_PATH" ] || (echo "No IOS_APP_STORE profile found"; ls -la "$HOME/Library/MobileDevice/Provisioning Profiles/"; exit 1)
@@ -108,7 +125,7 @@ workflows:
           -exportOptionsPlist build/ios/ExportOptions.plist \
           -exportPath build/ios/ipa
 
-      # 5) Upload to TestFlight (CLI, avoids flaky post-processing)
+      # 6) Upload to TestFlight (CLI)
       - |
         set -euo pipefail
         IPA_PATH="$(ls -t build/ios/ipa/*.ipa | head -n1)"
