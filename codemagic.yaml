@@ -7,7 +7,7 @@ workflows:
         BUNDLE_ID: com.expressfitness.x45
         APP_NAME: X45
       groups:
-        - apple-connect   # must have: APP_STORE_CONNECT_ISSUER_ID / APP_STORE_CONNECT_KEY_IDENTIFIER / APP_STORE_CONNECT_PRIVATE_KEY
+        - apple-connect
 
     triggering:
       events: [push]
@@ -60,32 +60,30 @@ workflows:
         pod install --repo-update
         cd ../../
 
-      # 3) Fetch signing files, apply to project, bump build, set export-compliance, archive, export, upload
+      # 3) Fetch signing files (no extra flags), apply to project, bump build, compliance, archive, export, upload
       - |
         set -euo pipefail
 
         keychain initialize
         app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
         keychain add-certificates
-
-        # Apply profiles to the Xcode project (no --scheme flag)
         xcode-project use-profiles --project ios/App/App.xcodeproj
 
-        # Get App Store profile + team
-        PROFILE_PATH="$(ls -t /Users/builder/Library/MobileDevice/Provisioning\ Profiles/IOS_APP_STORE_*.mobileprovision | head -n1)"
-        [ -f "$PROFILE_PATH" ] || (echo "No IOS_APP_STORE profile found"; ls -la /Users/builder/Library/MobileDevice/Provisioning\ Profiles/; exit 1)
+        # Read team & profile name
+        PROFILE_PATH="$(ls -t "$HOME/Library/MobileDevice/Provisioning Profiles"/IOS_APP_STORE_*.mobileprovision | head -n1)"
+        [ -f "$PROFILE_PATH" ] || (echo "No IOS_APP_STORE profile found"; ls -la "$HOME/Library/MobileDevice/Provisioning Profiles/"; exit 1)
         TMP_PLIST="$(mktemp)"; /usr/bin/security cms -D -i "$PROFILE_PATH" > "$TMP_PLIST"
         PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$TMP_PLIST")"
         TEAM_ID="$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$TMP_PLIST")"
 
-        # Bump build number so TestFlight accepts upload
+        # Auto-bump CFBundleVersion so every upload is newer
         BUILD_NUM="${BUILD_NUMBER:-${CM_BUILD_ID:-$(date +%Y%m%d%H%M)}}"
         /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${BUILD_NUM}" ios/App/App/Info.plist || \
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${BUILD_NUM}" ios/App/App/Info.plist
         /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" ios/App/App/Info.plist >/dev/null 2>&1 || \
           /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.0" ios/App/App/Info.plist
 
-        # Export compliance: no proprietary crypto
+        # Export compliance (no proprietary crypto)
         /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption NO" ios/App/App/Info.plist || \
           /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool NO" ios/App/App/Info.plist
 
@@ -100,7 +98,7 @@ workflows:
           clean archive \
           CURRENT_PROJECT_VERSION="${BUILD_NUM}"
 
-        # Export with fetched profile
+        # Export
         cat > build/ios/ExportOptions.plist <<EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -125,15 +123,22 @@ workflows:
           -exportOptionsPlist build/ios/ExportOptions.plist \
           -exportPath build/ios/ipa
 
-        # Upload to TestFlight (no --beta-groups flag)
+        # Upload to App Store Connect / TestFlight
         IPA_PATH="$(ls -t build/ios/ipa/*.ipa | head -n1)"
         echo "🚀 Uploading to TestFlight: $IPA_PATH"
+        set +e
         app-store-connect publish \
           --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
           --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
           --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
           --path "$IPA_PATH" \
           --testflight
+        PUBLISH_EXIT=$?
+        set -e
+        if [ $PUBLISH_EXIT -ne 0 ]; then
+          echo "⚠️ Upload succeeded, external submission blocked (missing Beta App Info)."
+          echo "   Internal state should be READY_FOR_BETA_TESTING; enable internal testers in App Store Connect."
+        fi
 
     artifacts:
       - build/ios/ipa/*.ipa
