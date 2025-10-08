@@ -26,20 +26,22 @@ workflows:
         npx cap copy ios
         npx cap sync ios
 
-      # 2) Automatic code signing (uses your connected Apple key)
-      - |
-        echo "🔐 Fetching signing files"
-        keychain initialize
-        app-store-connect fetch-signing-files "com.expressfitness.x45" --type IOS_APP_STORE --create
-        keychain add-certificates
-        xcode-project use-profiles
-
-      # 3) Pods + Build signed IPA (use WORKSPACE)
+      # 2) Install CocoaPods (creates the .xcworkspace)
       - |
         echo "📦 Installing CocoaPods"
         cd ios/App
         pod install --repo-update
         cd ../../
+
+      # 3) Fetch signing files and APPLY them to the workspace + scheme
+      - |
+        echo "🔐 Fetching & applying signing profiles"
+        keychain initialize
+        app-store-connect fetch-signing-files "com.expressfitness.x45" --type IOS_APP_STORE --create
+        keychain add-certificates
+        xcode-project use-profiles --workspace ios/App/App.xcworkspace --scheme App
+
+      # 4) Build signed IPA (use workspace + export options)
       - |
         echo "🏗️ Building signed IPA"
         xcode-project build-ipa \
