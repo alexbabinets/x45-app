@@ -7,7 +7,7 @@ workflows:
         BUNDLE_ID: com.expressfitness.x45
         APP_NAME: X45
       groups:
-        - apple-connect
+        - apple-connect   # must contain APP_STORE_CONNECT_* and CERTIFICATE_PRIVATE_KEY
 
     triggering:
       events: [push]
@@ -17,7 +17,7 @@ workflows:
           source: true
 
     scripts:
-      # 1) FORCE clean iOS, recreate Capacitor iOS, write Podfile (iOS 15)
+      # 1) Clean slate, recreate Capacitor iOS, set iOS 15 target, write Podfile
       - |
         set -euo pipefail
 
@@ -26,9 +26,9 @@ workflows:
 
         [ -f package.json ] || npm init -y
         mkdir -p www
-        [ -f www/index.html ] || echo "<!doctype html><title>X45</title><div>X45</div>" > www/index.html
+        [ -f www/index.html ] || echo "<!doctype html><meta charset='utf-8'><title>X45</title><div>X45</div>" > www/index.html
 
-        node -e "const fs=require('fs');const p='capacitor.config.json';let cfg={appId:process.env.BUNDLE_ID||'com.expressfitness.x45',appName:process.env.APP_NAME||'X45',webDir:'www',bundledWebRuntime:false};if(fs.existsSync(p)){try{Object.assign(cfg,JSON.parse(fs.readFileSync(p,'utf8')))}catch{}}fs.writeFileSync(p,JSON.stringify(cfg,null,2));console.log('cap cfg ->',cfg);"
+        node -e "const fs=require('fs');const p='capacitor.config.json';let cfg={appId:process.env.BUNDLE_ID||'com.expressfitness.x45',appName:process.env.APP_NAME||'X45',webDir:'www',bundledWebRuntime:false};if(fs.existsSync(p)){try{Object.assign(cfg,JSON.parse(fs.readFileSync(p,'utf8')))}catch{}}fs.writeFileSync(p,JSON.stringify(cfg,null,2));"
 
         rm -rf ios
         npx cap init "${APP_NAME:-X45}" "${BUNDLE_ID:-com.expressfitness.x45}" --web-dir=www --no-interactive || true
@@ -37,23 +37,24 @@ workflows:
         npx cap copy ios
         npx cap sync ios || true
 
-        test -d ios/App/App.xcodeproj || (echo "❌ Missing ios/App/App.xcodeproj" && find ios -maxdepth 3 -name '*.xcodeproj' -print && exit 1)
+        # Ensure the Xcode project exists
+        test -d ios/App/App.xcodeproj || (echo "Missing ios/App/App.xcodeproj" && find ios -maxdepth 3 -name '*.xcodeproj' -print && exit 1)
 
-        # Podfile with iOS 15 target
-        rm -f ios/App/Podfile
-        printf "platform :ios, '15.0'\n"                          >> ios/App/Podfile
-        printf "use_frameworks! :linkage => :static\n"            >> ios/App/Podfile
-        printf "project 'App.xcodeproj'\n\n"                      >> ios/App/Podfile
-        printf "target 'App' do\n"                                >> ios/App/Podfile
-        printf "  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'\n"   >> ios/App/Podfile
-        printf "  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'\n" >> ios/App/Podfile
-        printf "end\n"                                            >> ios/App/Podfile
-        nl -ba ios/App/Podfile
-
-        # Also bump the Xcode project deployment target for safety
+        # Bump deployment target to iOS 15
         /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 15.0" ios/App/App/Info.plist || true
 
-      # 2) Pods
+        # Minimal Podfile targeting the project
+        rm -f ios/App/Podfile
+        printf "platform :ios, '15.0'\n"                                   >> ios/App/Podfile
+        printf "use_frameworks! :linkage => :static\n"                     >> ios/App/Podfile
+        printf "project 'App.xcodeproj'\n\n"                               >> ios/App/Podfile
+        printf "target 'App' do\n"                                         >> ios/App/Podfile
+        printf "  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'\n" >> ios/App/Podfile
+        printf "  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'\n" >> ios/App/Podfile
+        printf "end\n"                                                     >> ios/App/Podfile
+        nl -ba ios/App/Podfile
+
+      # 2) CocoaPods
       - |
         set -euo pipefail
         cd ios/App
@@ -63,20 +64,17 @@ workflows:
         pod install --repo-update
         cd ../../
 
-      # 3) Signing
+      # 3) Signing (no --certificate-private-key flag)
       - |
         set -euo pipefail
         keychain initialize
-        app-store-connect fetch-signing-files "$BUNDLE_ID" \
-          --type IOS_APP_STORE \
-          --create \
-          --certificate-private-key "$CERTIFICATE_PRIVATE_KEY"
+        app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
         keychain add-certificates
         xcode-project use-profiles \
           --workspace ios/App/App.xcworkspace \
           --scheme App
 
-      # 4) Build
+      # 4) Build IPA
       - |
         set -euo pipefail
         xcode-project build-ipa \
