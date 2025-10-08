@@ -8,7 +8,7 @@ workflows:
         APP_NAME: X45
         TEAM_ID: Y4A2M3B9T7
       groups:
-        - apple-connect   # APP_STORE_CONNECT_* and CERTIFICATE_PRIVATE_KEY
+        - apple-connect
 
     triggering:
       events: [push]
@@ -18,7 +18,7 @@ workflows:
           source: true
 
     scripts:
-      # 1) Create clean Capacitor iOS app, iOS 15 target, minimal Podfile
+      # 1) Clean, recreate Capacitor iOS (iOS 15), write Podfile
       - |
         set -euo pipefail
 
@@ -34,7 +34,6 @@ workflows:
         rm -rf ios
         npx cap init "${APP_NAME}" "${BUNDLE_ID}" --web-dir=www --no-interactive || true
         npx cap add ios
-
         npx cap copy ios
         npx cap sync ios || true
 
@@ -64,33 +63,25 @@ workflows:
         pod install --repo-update
         cd ../../
 
-      # 3) Fetch certs/profiles
+      # 3) Fetch certs/profiles into keychain
       - |
         set -euo pipefail
         keychain initialize
         app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
         keychain add-certificates
 
-      # 4) Build & export with AUTOMATIC signing (+allowProvisioningUpdates)
+      # 4) Build (manual signing with fetched App Store profile) + Export
       - |
         set -euo pipefail
         mkdir -p build/ios
 
-        # Generate export options (automatic signing)
-        cat > build/ios/ExportOptions_auto.plist <<EOF
-        <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0">
-        <dict>
-          <key>method</key><string>app-store</string>
-          <key>signingStyle</key><string>automatic</string>
-          <key>teamID</key><string>${TEAM_ID}</string>
-          <key>stripSwiftSymbols</key><true/>
-          <key>compileBitcode</key><false/>
-          <key>uploadBitcode</key><false/>
-        </dict>
-        </plist>
-        EOF
+        PROFILE_PATH="$(ls -t /Users/builder/Library/MobileDevice/Provisioning\ Profiles/IOS_APP_STORE_*.mobileprovision | head -n1)"
+        [ -f "$PROFILE_PATH" ] || (echo "No IOS_APP_STORE profile found"; ls -la /Users/builder/Library/MobileDevice/Provisioning\ Profiles/; exit 1)
+
+        TMP_PLIST="$(mktemp)"
+        /usr/bin/security cms -D -i "$PROFILE_PATH" > "$TMP_PLIST"
+        PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$TMP_PLIST")"
+        PROFILE_UUID="$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$TMP_PLIST")"
 
         xcodebuild \
           -workspace ios/App/App.xcworkspace \
@@ -98,18 +89,37 @@ workflows:
           -configuration Release \
           -archivePath build/ios/App.xcarchive \
           -destination "generic/platform=iOS" \
-          -allowProvisioningUpdates \
           clean archive \
-          CODE_SIGN_STYLE=Automatic \
+          CODE_SIGN_STYLE=Manual \
           DEVELOPMENT_TEAM="${TEAM_ID}" \
           PRODUCT_BUNDLE_IDENTIFIER="${BUNDLE_ID}" \
-          CODE_SIGNING_ALLOWED=YES
+          CODE_SIGN_IDENTITY="Apple Distribution" \
+          PROVISIONING_PROFILE_SPECIFIER="${PROFILE_NAME}" \
+          PROVISIONING_PROFILE="${PROFILE_UUID}"
+
+        cat > build/ios/ExportOptions.plist <<EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+          <key>method</key><string>app-store</string>
+          <key>signingStyle</key><string>manual</string>
+          <key>teamID</key><string>${TEAM_ID}</string>
+          <key>provisioningProfiles</key>
+          <dict>
+            <key>${BUNDLE_ID}</key><string>${PROFILE_NAME}</string>
+          </dict>
+          <key>stripSwiftSymbols</key><true/>
+          <key>compileBitcode</key><false/>
+          <key>uploadBitcode</key><false/>
+        </dict>
+        </plist>
+        EOF
 
         xcodebuild -exportArchive \
           -archivePath build/ios/App.xcarchive \
-          -exportOptionsPlist build/ios/ExportOptions_auto.plist \
-          -exportPath build/ios/ipa \
-          -allowProvisioningUpdates
+          -exportOptionsPlist build/ios/ExportOptions.plist \
+          -exportPath build/ios/ipa
 
     artifacts:
       - build/ios/ipa/*.ipa
