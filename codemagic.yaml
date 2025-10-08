@@ -67,10 +67,12 @@ workflows:
         [ -z "$APP_STORE_CONNECT_KEY_ID" ] && echo "APP_STORE_CONNECT_KEY_ID is not set" && exit 1
         [ -z "$APP_STORE_CONNECT_ISSUER_ID" ] && echo "APP_STORE_CONNECT_ISSUER_ID is not set" && exit 1
         [ -z "$APP_STORE_CONNECT_PRIVATE_KEY" ] && echo "APP_STORE_CONNECT_PRIVATE_KEY is not set" && exit 1
+        echo "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/private_key.p8
         app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --platform IOS \
-          --certificate-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
+          --private-key-file /tmp/private_key.p8 \
           --certificate-key-id "$APP_STORE_CONNECT_KEY_ID" \
-          --certificate-key-issuer-id "$APP_STORE_CONNECT_ISSUER_ID" || (echo "Failed to fetch signing files" && exit 1)
+          --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" || (echo "Failed to fetch signing files" && exit 1)
+        rm -f /tmp/private_key.p8
         security find-identity -v -p codesigning
         keychain add-certificates
 
@@ -102,7 +104,7 @@ workflows:
           -allowProvisioningUpdates \
           -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
           -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
-          -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY" \
+          -authenticationKeyPath /tmp/private_key.p8 \
           clean archive \
           CODE_SIGN_STYLE=Automatic \
           DEVELOPMENT_TEAM="${TEAM_ID}" \
@@ -115,7 +117,7 @@ workflows:
           -allowProvisioningUpdates \
           -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
           -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
-          -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY"
+          -authenticationKeyPath /tmp/private_key.p8
 
     artifacts:
       - build/ios/ipa/*.ipa
