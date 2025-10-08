@@ -3,6 +3,8 @@ workflows:
     name: X45 iOS (Capacitor)
     environment:
       xcode: latest
+      groups:
+        - apple-connect     # <-- pulls ISSUER_ID, KEY_IDENTIFIER, PRIVATE_KEY
     triggering:
       events:
         - push
