@@ -5,13 +5,8 @@ workflows:
       xcode: latest
       vars:
         BUNDLE_ID: com.expressfitness.x45
-      # This imports the env vars you created in Codemagic:
-      #   APP_STORE_CONNECT_KEY_IDENTIFIER
-      #   APP_STORE_CONNECT_ISSUER_ID
-      #   APP_STORE_CONNECT_PRIVATE_KEY
-      #   CERTIFICATE_PRIVATE_KEY     (your RSA 2048 PEM)
       groups:
-        - apple-connect
+        - apple-connect   # has: APP_STORE_CONNECT_* + CERTIFICATE_PRIVATE_KEY
 
     triggering:
       events:
@@ -22,48 +17,52 @@ workflows:
           source: true
 
     scripts:
-      # 1) Prepare Capacitor iOS (safe to re-run) + ensure CocoaPods workspace
+      # 1) Prepare Capacitor iOS (safe to re-run) + ensure Podfile exists FIRST
       - |
+        set -euo pipefail
         echo "👉 Setting up Capacitor (idempotent)"
         npm i -g @capacitor/cli
         npm i @capacitor/core @capacitor/ios --save --no-fund --no-audit || true
 
-        # Add iOS platform once; keep existing projects intact
         if [ ! -d ios ]; then
+          echo "➕ Adding iOS platform"
           npx cap add ios
         fi
 
-        # Always refresh native assets
-        npx cap copy ios
-        npx cap sync ios
-
-        # Create a minimal Podfile if it's missing
+        # Guarantee we have a Podfile BEFORE anything tries to call pod install
         if [ ! -f ios/App/Podfile ]; then
-          echo "📝 Creating Podfile for Capacitor"
-          cat > ios/App/Podfile <<'PODFILE'
-          require_relative "../../node_modules/@capacitor/ios/scripts/pods_helpers"
-
-          platform :ios, '13.0'
-          use_frameworks!
-
-          target 'App' do
-            capacitor_pods
-            # Add extra pods here if you need them
-          end
-          PODFILE
+          echo "📝 Creating Podfile (Capacitor)"
+          printf '%s\n' \
+            'require_relative "../../node_modules/@capacitor/ios/scripts/pods_helpers"' \
+            '' \
+            'platform :ios, "13.0"' \
+            'use_frameworks!' \
+            '' \
+            'target "App" do' \
+            '  capacitor_pods' \
+            'end' > ios/App/Podfile
         fi
 
-        echo "📦 Running CocoaPods"
+        # Update native assets
+        npx cap copy ios
+        npx cap sync ios || true  # sync sometimes tries pod install; we handle pods below explicitly
+
+      # 2) CocoaPods (creates workspace if missing)
+      - |
+        set -euo pipefail
+        echo "📦 Installing CocoaPods"
         cd ios/App
         pod install --repo-update
         cd ../../
+        ls -la ios/App
 
-      # 2) Fetch signing files and apply them to the workspace + scheme
+      # 3) Fetch signing files and apply them to workspace/scheme
       - |
+        set -euo pipefail
         echo "🔐 Fetching & applying signing profiles"
         keychain initialize
 
-        # Uses the RSA private key you stored in CERTIFICATE_PRIVATE_KEY (PEM)
+        # Uses your RSA private key (CERTIFICATE_PRIVATE_KEY) to create/renew the distribution cert if needed
         app-store-connect fetch-signing-files "$BUNDLE_ID" \
           --type IOS_APP_STORE \
           --create \
@@ -71,13 +70,13 @@ workflows:
 
         keychain add-certificates
 
-        # Attach the fetched provisioning profile(s) to your workspace/scheme
         xcode-project use-profiles \
           --workspace ios/App/App.xcworkspace \
           --scheme App
 
-      # 3) Build a signed IPA (workspace + scheme)
+      # 4) Build signed IPA (Release)
       - |
+        set -euo pipefail
         echo "🏗️ Archiving & exporting IPA"
         xcode-project build-ipa \
           --workspace ios/App/App.xcworkspace \
@@ -92,7 +91,4 @@ workflows:
     publishing:
       email:
         recipients:
-          - alexbabinets@gmail.com
-        notify:
-          success: true
-          failure: true
+          - a
