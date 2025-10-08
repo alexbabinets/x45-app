@@ -1,15 +1,47 @@
 workflows:
-  ios-webview-build:
-    name: X45 iOS WebApp
-    max_build_duration: 60
+  ios-capacitor:
+    name: X45 iOS (Capacitor)
     environment:
       xcode: latest
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
     scripts:
-      - echo "🚀 Building X45 web app for iOS..."
-      - mkdir -p build
-      - cp -R www build/
+      # 1) Prepare Capacitor iOS project from your web app in /www
+      - |
+        echo "👉 Setting up Capacitor"
+        npm install -g @capacitor/cli
+        # Initialize Capacitor (safe if re-run)
+        npx cap init "X45 Express Fitness" "com.expressfitness.x45" --web-dir=www --npm-client=npm || true
+        # Add iOS platform (safe if re-run)
+        npx cap add ios || true
+        # Copy current web files into native project
+        npx cap copy ios
+
+      # 2) Automatic code signing using your App Store Connect key (already added in Integrations)
+      - |
+        echo "🔐 Fetching signing files from App Store Connect"
+        keychain initialize
+        app-store-connect fetch-signing-files "com.expressfitness.x45" \
+          --type IOS_APP_STORE --create
+        xcode-project use-profiles
+
+      # 3) Build signed IPA
+      - |
+        echo "🏗️ Building signed IPA"
+        xcode-project build-ipa \
+          --project ios/App/App.xcodeproj \
+          --scheme App \
+          --archive-method app-store
+
     artifacts:
-      - build/**
+      - build/ios/ipa/*.ipa
+      - ios/App/build/**/*.log
+
     publishing:
       email:
         recipients:
