@@ -6,8 +6,7 @@ workflows:
       vars:
         BUNDLE_ID: com.expressfitness.x45
       groups:
-        - apple-connect   # has: APP_STORE_CONNECT_* + CERTIFICATE_PRIVATE_KEY
-
+        - apple-connect   # APP_STORE_CONNECT_* + CERTIFICATE_PRIVATE_KEY
     triggering:
       events:
         - push
@@ -17,7 +16,7 @@ workflows:
           source: true
 
     scripts:
-      # 1) Prepare Capacitor iOS (safe to re-run) + ensure Podfile exists FIRST
+      # 1) Prepare Capacitor iOS + create a resilient Podfile first
       - |
         set -euo pipefail
         echo "👉 Setting up Capacitor (idempotent)"
@@ -29,23 +28,38 @@ workflows:
           npx cap add ios
         fi
 
-        # Guarantee we have a Podfile BEFORE anything tries to call pod install
-        if [ ! -f ios/App/Podfile ]; then
-          echo "📝 Creating Podfile (Capacitor)"
-          printf '%s\n' \
-            'require_relative "../../node_modules/@capacitor/ios/scripts/pods_helpers"' \
-            '' \
-            'platform :ios, "13.0"' \
-            'use_frameworks!' \
-            '' \
-            'target "App" do' \
-            '  capacitor_pods' \
-            'end' > ios/App/Podfile
-        fi
+        # Create a resilient Podfile (handles missing pods_helpers gracefully)
+        cat > ios/App/Podfile <<'RUBY'
+        helper_path = File.expand_path('../../node_modules/@capacitor/ios/scripts/pods_helpers', __FILE__)
+        begin
+          require helper_path
+        rescue LoadError
+          # Fallback: define minimal helpers so pod install succeeds even if helper isn't found
+          def capacitor_pods
+            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+          end
+          def assertDeploymentTarget(installer); end
+        end
 
-        # Update native assets
+        platform :ios, '13.0'
+        use_frameworks! :linkage => :static
+
+        target 'App' do
+          capacitor_pods
+          # Add Capacitor plugins here as needed, e.g.:
+          # pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
+          # pod 'CapacitorHaptics',    :path => '../../node_modules/@capacitor/haptics'
+        end
+
+        post_install do |installer|
+          assertDeploymentTarget(installer) if defined?(assertDeploymentTarget)
+        end
+        RUBY
+
+        # Sync native assets (don't rely on sync to manage pods)
         npx cap copy ios
-        npx cap sync ios || true  # sync sometimes tries pod install; we handle pods below explicitly
+        npx cap sync ios || true
 
       # 2) CocoaPods (creates workspace if missing)
       - |
@@ -62,7 +76,6 @@ workflows:
         echo "🔐 Fetching & applying signing profiles"
         keychain initialize
 
-        # Uses your RSA private key (CERTIFICATE_PRIVATE_KEY) to create/renew the distribution cert if needed
         app-store-connect fetch-signing-files "$BUNDLE_ID" \
           --type IOS_APP_STORE \
           --create \
