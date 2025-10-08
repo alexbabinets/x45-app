@@ -7,7 +7,7 @@ workflows:
         BUNDLE_ID: com.expressfitness.x45
         APP_NAME: X45
       groups:
-        - apple-connect   # must contain: APP_STORE_CONNECT_ISSUER_ID / APP_STORE_CONNECT_KEY_IDENTIFIER / APP_STORE_CONNECT_PRIVATE_KEY
+        - apple-connect
 
     triggering:
       events: [push]
@@ -17,10 +17,9 @@ workflows:
           source: true
 
     scripts:
-      # 1) Create clean Capacitor iOS project (iOS 15) + deterministic Podfile
+      # 1) Clean + recreate Capacitor iOS (iOS 15) and Podfile
       - |
         set -euo pipefail
-
         npm i -g @capacitor/cli
         npm i @capacitor/core @capacitor/ios --save --no-fund --no-audit || true
 
@@ -38,32 +37,18 @@ workflows:
 
         test -d ios/App/App.xcodeproj || (echo 'Missing ios/App/App.xcodeproj' && exit 1)
 
-        # iOS 15 minimum for the app
         /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 15.0" ios/App/App/Info.plist || true
 
-        # Full Podfile (forces all pods to iOS 15 + Swift 5.9 to avoid mismatches)
         rm -f ios/App/Podfile
-        cat > ios/App/Podfile <<'PODFILE'
-        platform :ios, '15.0'
-        use_frameworks! :linkage => :static
-        project 'App.xcodeproj'
-
-        target 'App' do
-          pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-          pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
-        end
-
-        post_install do |installer|
-          installer.generated_projects.each do |project|
-            project.targets.each do |target|
-              target.build_configurations.each do |config|
-                config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
-                config.build_settings['SWIFT_VERSION'] = '5.9'
-              end
-            end
-          end
-        end
-        PODFILE
+        {
+          printf "platform :ios, '15.0'\n"
+          printf "use_frameworks! :linkage => :static\n"
+          printf "project 'App.xcodeproj'\n\n"
+          printf "target 'App' do\n"
+          printf "  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'\n"
+          printf "  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'\n"
+          printf "end\n"
+        } >> ios/App/Podfile
 
       # 2) CocoaPods
       - |
@@ -75,29 +60,33 @@ workflows:
         pod install --repo-update
         cd ../../
 
-      # 3) Fetch signing files, import, and apply to the Xcode project
+      # 3) Fetch signing files (no extra flags), apply to project, bump build, archive, export, upload
       - |
         set -euo pipefail
+
         keychain initialize
         app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
         keychain add-certificates
+
+        # Apply profiles to the Xcode project (no --scheme flag)
         xcode-project use-profiles --project ios/App/App.xcodeproj
 
-      # 4) Bump build number and persist it for following steps
-      - |
-        set -euo pipefail
+        # Find fetched App Store profile name & team from the installed profile
+        PROFILE_PATH="$(ls -t /Users/builder/Library/MobileDevice/Provisioning\ Profiles/IOS_APP_STORE_*.mobileprovision | head -n1)"
+        [ -f "$PROFILE_PATH" ] || (echo "No IOS_APP_STORE profile found"; ls -la /Users/builder/Library/MobileDevice/Provisioning\ Profiles/; exit 1)
+        TMP_PLIST="$(mktemp)"; /usr/bin/security cms -D -i "$PROFILE_PATH" > "$TMP_PLIST"
+        PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$TMP_PLIST")"
+        TEAM_ID="$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$TMP_PLIST")"
+
+        # Bump build number so TestFlight accepts upload
         BUILD_NUM="${BUILD_NUMBER:-${CM_BUILD_ID:-$(date +%Y%m%d%H%M)}}"
         /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${BUILD_NUM}" ios/App/App/Info.plist || \
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${BUILD_NUM}" ios/App/App/Info.plist
         /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" ios/App/App/Info.plist >/dev/null 2>&1 || \
           /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.0" ios/App/App/Info.plist
-        echo "export BUILD_NUM=${BUILD_NUM}" >> "$CM_ENV"
+        echo "Using build number: ${BUILD_NUM}"
 
-      # 5) Archive & export IPA
-      - |
-        set -euo pipefail
-        : "${BUILD_NUM:=${CM_BUILD_ID:-$(date +%Y%m%d%H%M)}}"
-
+        # Archive (workspace because of Pods)
         mkdir -p build/ios
         xcodebuild \
           -workspace ios/App/App.xcworkspace \
@@ -108,12 +97,7 @@ workflows:
           clean archive \
           CURRENT_PROJECT_VERSION="${BUILD_NUM}"
 
-        PROFILE_PATH="$(ls -t "$HOME/Library/MobileDevice/Provisioning Profiles"/IOS_APP_STORE_*.mobileprovision | head -n1)"
-        [ -f "$PROFILE_PATH" ] || (echo "No IOS_APP_STORE profile found"; ls -la "$HOME/Library/MobileDevice/Provisioning Profiles/"; exit 1)
-        TMP_PLIST="$(mktemp)"; /usr/bin/security cms -D -i "$PROFILE_PATH" > "$TMP_PLIST"
-        TEAM_ID="$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$TMP_PLIST")"
-        PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$TMP_PLIST")"
-
+        # Export using the exact fetched profile name
         cat > build/ios/ExportOptions.plist <<EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -138,9 +122,7 @@ workflows:
           -exportOptionsPlist build/ios/ExportOptions.plist \
           -exportPath build/ios/ipa
 
-      # 6) Upload to TestFlight (no post-processing dependency)
-      - |
-        set -euo pipefail
+        # Upload to TestFlight (CLI)
         IPA_PATH="$(ls -t build/ios/ipa/*.ipa | head -n1)"
         echo "🚀 Uploading to TestFlight: $IPA_PATH"
         app-store-connect publish \
@@ -155,3 +137,11 @@ workflows:
       - build/ios/**/*.xcarchive
       - ios/App/build/**/*.log
       - ~/Library/Logs/gym/*.log
+
+    publishing:
+      email:
+        recipients:
+          - alexbabinets@gmail.com
+        notify:
+          success: true
+          failure: true
