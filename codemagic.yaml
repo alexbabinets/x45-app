@@ -6,7 +6,7 @@ workflows:
       vars:
         BUNDLE_ID: com.expressfitness.x45
       groups:
-        - apple-connect  # APP_STORE_CONNECT_* + CERTIFICATE_PRIVATE_KEY
+        - apple-connect   # APP_STORE_CONNECT_* + CERTIFICATE_PRIVATE_KEY must be in this env group
 
     triggering:
       events: [push]
@@ -16,7 +16,7 @@ workflows:
           source: true
 
     scripts:
-      # 1) Prepare Capacitor iOS, then write a *minimal* Podfile (no helper, no post_install)
+      # 1) Prepare Capacitor iOS, then write a *minimal* Podfile that targets App.xcodeproj (no helpers, no post_install)
       - |
         set -euo pipefail
         echo "👉 Setting up Capacitor"
@@ -29,32 +29,38 @@ workflows:
         fi
 
         echo "📝 Writing minimal Podfile"
-        # Nuke any previous Podfile that might be half-written
         rm -f ios/App/Podfile
 
-        # Use printf to avoid heredoc/indent pitfalls
-        printf "platform :ios, '13.0'\n"                                   >> ios/App/Podfile
-        printf "use_frameworks! :linkage => :static\n\n"                   >> ios/App/Podfile
-        printf "target 'App' do\n"                                         >> ios/App/Podfile
+        # Verify the Xcode project exists; print what we find if not
+        if [ ! -d ios/App/App.xcodeproj ]; then
+          echo "❌ ios/App/App.xcodeproj not found. Available projects under ios/:"
+          find ios -maxdepth 2 -name "*.xcodeproj" -print || true
+        fi
+
+        # Write a tiny Podfile line-by-line to avoid heredoc corruption on CI
+        printf "platform :ios, '13.0'\n" >> ios/App/Podfile
+        printf "use_frameworks! :linkage => :static\n" >> ios/App/Podfile
+        printf "project 'App.xcodeproj'\n\n" >> ios/App/Podfile
+        printf "target 'App' do\n" >> ios/App/Podfile
         printf "  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'\n" >> ios/App/Podfile
         printf "  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'\n" >> ios/App/Podfile
-        # Add plugin pods explicitly if you use them (uncomment/extend as needed):
+        # --- If you use Capacitor plugins, add them explicitly here, e.g.: ---
         # printf \"  pod 'CapacitorSplashScreen', :path => '../../node_modules/@capacitor/splash-screen'\\n\" >> ios/App/Podfile
-        # printf \"  pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'\\n\" >> ios/App/Podfile
-        printf "end\n"                                                     >> ios/App/Podfile
+        # printf \"  pod 'CapacitorStatusBar',   :path => '../../node_modules/@capacitor/status-bar'\\n\"      >> ios/App/Podfile
+        # ---------------------------------------------------------------------
+        printf "end\n" >> ios/App/Podfile
 
-        echo "🔎 Show Podfile contents:"
+        echo "🔎 Podfile:"
         nl -ba ios/App/Podfile
 
         echo "🔄 Sync native"
         npx cap copy ios
-        # Don't let sync run pods—our next step handles pods
         npx cap sync ios || true
 
-      # 2) Clean CocoaPods cache (defensive), then install
+      # 2) Clean Pods defensively and install
       - |
         set -euo pipefail
-        echo "🧹 CocoaPods cleanup (defensive)"
+        echo "🧹 CocoaPods cleanup"
         cd ios/App
         rm -f Podfile.lock
         rm -rf Pods
@@ -64,16 +70,19 @@ workflows:
         cd ../../
         ls -la ios/App
 
-      # 3) Signing
+      # 3) Fetch signing files and apply them
       - |
         set -euo pipefail
         echo "🔐 Fetching & applying signing profiles"
         keychain initialize
+
         app-store-connect fetch-signing-files "$BUNDLE_ID" \
           --type IOS_APP_STORE \
           --create \
           --certificate-private-key "$CERTIFICATE_PRIVATE_KEY"
+
         keychain add-certificates
+
         xcode-project use-profiles \
           --workspace ios/App/App.xcworkspace \
           --scheme App
