@@ -2,13 +2,14 @@ workflows:
   ios-capacitor:
     name: X45 iOS (Capacitor)
     environment:
-      xcode: latest
+      xcode: 16.4
       vars:
         BUNDLE_ID: com.expressfitness.x45
         APP_NAME: X45
-        TEAM_ID: X42964UG6Q     # use THIS team id (matches your cert)
+        TEAM_ID: X42964UG6Q
+        PROVISIONING_PROFILE_NAME: YOUR_PROVISIONING_PROFILE_NAME
       groups:
-        - apple-connect         # your App Store Connect API key envs
+        - apple-connect
 
     triggering:
       events: [push]
@@ -18,7 +19,7 @@ workflows:
           source: true
 
     scripts:
-      # 1) Clean + recreate Capacitor iOS (iOS 15) and Podfile
+      # 1) Clean + recreate Capacitor iOS and Podfile
       - |
         set -euo pipefail
         npm i -g @capacitor/cli
@@ -52,50 +53,57 @@ workflows:
         rm -f Podfile.lock
         rm -rf Pods
         pod repo update
-        pod install --repo-update
+        pod install --repo-update || (echo "Pod install failed" && exit 1)
         cd ../../
 
-      # 3) Fetch certs/profiles via your connected Apple key
+      # 3) Fetch certs/profiles
       - |
         set -euo pipefail
         keychain initialize
-        app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+        security list-keychains
+        app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create || (echo "Failed to fetch signing files" && exit 1)
+        security find-identity -v -p codesigning
         keychain add-certificates
 
-      # 4) Archive & export with AUTOMATIC signing
+      # 4) Archive & export with manual signing
       - |
         set -euo pipefail
         mkdir -p build/ios
-        cat > build/ios/ExportOptions_auto.plist <<EOF
+        cat > build/ios/ExportOptions_manual.plist <<EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
         <plist version="1.0"><dict>
           <key>method</key><string>app-store</string>
-          <key>signingStyle</key><string>automatic</string>
+          <key>signingStyle</key><string>manual</string>
           <key>teamID</key><string>${TEAM_ID}</string>
+          <key>provisioningProfiles</key><dict>
+            <key>${BUNDLE_ID}</key><string>${PROVISIONING_PROFILE_NAME}</string>
+          </dict>
+          <key>signingCertificate</key><string>iOS Distribution</string>
           <key>stripSwiftSymbols</key><true/>
           <key>compileBitcode</key><false/>
           <key>uploadBitcode</key><false/>
         </dict></plist>
         EOF
 
+        echo "TEAM_ID: $TEAM_ID"
+        echo "BUNDLE_ID: $BUNDLE_ID"
         xcodebuild \
           -workspace ios/App/App.xcworkspace \
           -scheme App \
           -configuration Release \
           -archivePath build/ios/App.xcarchive \
           -destination "generic/platform=iOS" \
-          -allowProvisioningUpdates \
           clean archive \
-          CODE_SIGN_STYLE=Automatic \
+          CODE_SIGN_STYLE=Manual \
           DEVELOPMENT_TEAM="${TEAM_ID}" \
-          PRODUCT_BUNDLE_IDENTIFIER="${BUNDLE_ID}"
+          PRODUCT_BUNDLE_IDENTIFIER="${BUNDLE_ID}" \
+          PROVISIONING_PROFILE_SPECIFIER="${PROVISIONING_PROFILE_NAME}"
 
         xcodebuild -exportArchive \
           -archivePath build/ios/App.xcarchive \
-          -exportOptionsPlist build/ios/ExportOptions_auto.plist \
-          -exportPath build/ios/ipa \
-          -allowProvisioningUpdates
+          -exportOptionsPlist build/ios/ExportOptions_manual.plist \
+          -exportPath build/ios/ipa
 
     artifacts:
       - build/ios/ipa/*.ipa
