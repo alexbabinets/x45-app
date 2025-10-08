@@ -2,10 +2,14 @@ workflows:
   ios-capacitor:
     name: X45 iOS (Capacitor)
     environment:
-      xcode: latest
+      xcode: 16.4
       vars:
         BUNDLE_ID: com.expressfitness.x45
         APP_NAME: X45
+        TEAM_ID: X42964UG6Q
+        APP_STORE_CONNECT_KEY_ID: $APP_STORE_CONNECT_KEY_ID
+        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
+        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
       groups:
         - apple-connect
 
@@ -17,28 +21,22 @@ workflows:
           source: true
 
     scripts:
-      # 1) Clean + recreate Capacitor iOS (iOS 15) and Podfile
+      # 1) Clean + recreate Capacitor iOS and Podfile
       - |
         set -euo pipefail
-
         npm i -g @capacitor/cli
         npm i @capacitor/core @capacitor/ios --save --no-fund --no-audit || true
-
         [ -f package.json ] || npm init -y
         mkdir -p www
         [ -f www/index.html ] || echo "<!doctype html><meta charset='utf-8'><title>X45</title><div>X45</div>" > www/index.html
         node -e "const fs=require('fs');fs.writeFileSync('capacitor.config.json',JSON.stringify({appId:'${BUNDLE_ID}',appName:'${APP_NAME}',webDir:'www',bundledWebRuntime:false},null,2))"
-
         rm -rf ios
         npx cap init "${APP_NAME}" "${BUNDLE_ID}" --web-dir=www --no-interactive || true
         npx cap add ios
         npx cap copy ios
         npx cap sync ios || true
-
-        test -d ios/App/App.xcodeproj || (echo 'Missing ios/App/App.xcodeproj' && exit 1)
-
+        test -d ios/App/App.xcodeproj || (echo "Missing ios/App/App.xcodeproj" && exit 1)
         /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 15.0" ios/App/App/Info.plist || true
-
         rm -f ios/App/Podfile
         {
           printf "platform :ios, '15.0'\n"
@@ -57,42 +55,67 @@ workflows:
         rm -f Podfile.lock
         rm -rf Pods
         pod repo update
-        pod install --repo-update
+        pod install --repo-update || (echo "Pod install failed" && exit 1)
         cd ../../
 
-      # 3) Fetch signing files (no certificate-key flag) and apply to the App target
+      # 3) Fetch certs/profiles with debug
       - |
         set -euo pipefail
         keychain initialize
-
-        app-store-connect fetch-signing-files "$BUNDLE_ID" \
-          --type IOS_APP_STORE \
-          --create
-
+        security list-keychains
+        security find-identity -v -p codesigning
+        [ -z "$APP_STORE_CONNECT_KEY_ID" ] && echo "APP_STORE_CONNECT_KEY_ID is not set" && exit 1
+        [ -z "$APP_STORE_CONNECT_ISSUER_ID" ] && echo "APP_STORE_CONNECT_ISSUER_ID is not set" && exit 1
+        [ -z "$APP_STORE_CONNECT_PRIVATE_KEY" ] && echo "APP_STORE_CONNECT_PRIVATE_KEY is not set" && exit 1
+        app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --platform IOS \
+          --key-id "$APP_STORE_CONNECT_KEY_ID" \
+          --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+          --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" || (echo "Failed to fetch signing files" && exit 1)
+        security find-identity -v -p codesigning
         keychain add-certificates
 
-        # Apply profiles to the PROJECT (App target only). Do NOT pass --workspace here.
-        xcode-project use-profiles \
-          --project ios/App/App.xcodeproj \
-          --scheme App
-
-      # 4) Archive & export (workspace) after profiles are set in the project
+      # 4) Archive & export with automatic signing
       - |
         set -euo pipefail
         mkdir -p build/ios
+        cat > build/ios/ExportOptions_auto.plist <<EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0"><dict>
+          <key>method</key><string>app-store</string>
+          <key>signingStyle</key><string>automatic</string>
+          <key>teamID</key><string>${TEAM_ID}</string>
+          <key>stripSwiftSymbols</key><true/>
+          <key>compileBitcode</key><false/>
+          <key>uploadBitcode</key><false/>
+        </dict></plist>
+        EOF
 
+        echo "TEAM_ID: $TEAM_ID"
+        echo "BUNDLE_ID: $BUNDLE_ID"
         xcodebuild \
           -workspace ios/App/App.xcworkspace \
           -scheme App \
           -configuration Release \
           -archivePath build/ios/App.xcarchive \
           -destination "generic/platform=iOS" \
-          clean archive
+          -allowProvisioningUpdates \
+          -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
+          -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
+          -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY" \
+          clean archive \
+          CODE_SIGN_STYLE=Automatic \
+          DEVELOPMENT_TEAM="${TEAM_ID}" \
+          PRODUCT_BUNDLE_IDENTIFIER="${BUNDLE_ID}"
 
         xcodebuild -exportArchive \
           -archivePath build/ios/App.xcarchive \
-          -exportOptionsPlist ExportOptions.plist \
-          -exportPath build/ios/ipa
+          -exportOptionsPlist build/ios/ExportOptions_auto.plist \
+          -exportPath build/ios/ipa \
+          -allowProvisioningUpdates \
+          -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID" \
+          -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID" \
+          -authenticationKeyPath "$APP_STORE_CONNECT_PRIVATE_KEY"
 
     artifacts:
       - build/ios/ipa/*.ipa
