@@ -4,7 +4,7 @@ workflows:
     environment:
       xcode: latest
       groups:
-        - apple-connect   # uses APP_STORE_CONNECT_* you added
+        - apple-connect   # uses APP_STORE_CONNECT_* from your 'apple-connect' group
     triggering:
       events:
         - push
@@ -14,7 +14,7 @@ workflows:
           source: true
 
     scripts:
-      # 0) Authoritative Capacitor config at repo root
+      # 0) Authoritative Capacitor config with the correct bundle id
       - |
         echo "📝 Writing capacitor.config.json at project root"
         cat > capacitor.config.json <<'JSON'
@@ -26,7 +26,7 @@ workflows:
         }
         JSON
 
-      # 1) Fresh iOS from Capacitor config (guarantees correct bundle id)
+      # 1) Fresh iOS from that config (guarantees bundle id)
       - |
         echo "👉 Setting up Capacitor (fresh iOS)"
         npm install -g @capacitor/cli
@@ -43,39 +43,69 @@ workflows:
         pod install --repo-update
         cd ../../
 
-      # 3) Belt & suspenders: force PRODUCT_BUNDLE_IDENTIFIER in pbxproj
+      # 3) Fetch signing files (certs + profiles + export options)
       - |
-        echo "🪛 Forcing PRODUCT_BUNDLE_IDENTIFIER in project.pbxproj"
-        BUNDLE_ID="com.expressfitness.x45"
-        PBXPROJ="ios/App/App.xcodeproj/project.pbxproj"
-        /usr/bin/sed -i '' -E "s/(PRODUCT_BUNDLE_IDENTIFIER = )[A-Za-z0-9._-]+;/\1${BUNDLE_ID};/g" "${PBXPROJ}"
-
-      # 4) Fetch signing files and APPLY them to the specific Xcode project
-      - |
-        echo "🔐 Fetching & applying signing profiles"
+        echo "🔐 Fetching signing files from App Store Connect"
         keychain initialize
         app-store-connect fetch-signing-files "com.expressfitness.x45" --type IOS_APP_STORE --create
-        # Patch THIS project explicitly so the App target gets a profile
-        xcode-project use-profiles --project ios/App/App.xcodeproj
 
-      # 5) Show what Xcode will use (debug prints help if something fails)
+      # 4) Resolve the EXACT provisioning profile name + Team ID for our bundle id
       - |
-        echo "🔎 Build settings (key signing vars):"
+        echo "🔎 Resolving Team ID & Provisioning Profile"
+        PROFILE_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+        TARGET_BUNDLE="com.expressfitness.x45"
+        TEAM_ID=""
+        PROFILE_NAME=""
+        for f in "$PROFILE_DIR"/*.mobileprovision; do
+          /usr/bin/security cms -D -i "$f" > /tmp/profile.plist || true
+          APPID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" /tmp/profile.plist 2>/dev/null || true)
+          NAME=$(/usr/libexec/PlistBuddy -c "Print :Name" /tmp/profile.plist 2>/dev/null || true)
+          if [[ "$APPID" == *".$TARGET_BUNDLE" ]]; then
+            TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print :TeamIdentifier:0" /tmp/profile.plist 2>/dev/null || true)
+            PROFILE_NAME="$NAME"
+            echo "✅ Using profile: \"$PROFILE_NAME\"  (Team: $TEAM_ID  AppID: $APPID)"
+            break
+          fi
+        done
+        if [ -z "$PROFILE_NAME" ] || [ -z "$TEAM_ID" ]; then
+          echo "❌ No matching provisioning profile found for $TARGET_BUNDLE"
+          ls -la "$PROFILE_DIR" || true
+          exit 1
+        fi
+        # Export for later steps
+        echo "CM_TEAM_ID=$TEAM_ID" >> $CM_ENV
+        echo "CM_PROFILE_NAME=$PROFILE_NAME" >> $CM_ENV
+
+      # 5) (Optional) show what Xcode thinks before we build
+      - |
+        echo "🔎 Xcode build settings (bundle/team/profile)…"
         xcodebuild -workspace ios/App/App.xcworkspace -scheme App -showBuildSettings | \
           grep -E 'PRODUCT_BUNDLE_IDENTIFIER|DEVELOPMENT_TEAM|PROVISIONING_PROFILE_SPECIFIER|CODE_SIGN_STYLE' || true
-        echo "🔎 Profiles on disk:"
+        echo "🔎 Installed profiles:"
         ls -la "$HOME/Library/MobileDevice/Provisioning Profiles" || true
-        echo "🔎 pbxproj signing snippets:"
-        grep -E 'PRODUCT_BUNDLE_IDENTIFIER|PROVISIONING_PROFILE_SPECIFIER|DEVELOPMENT_TEAM' -n ios/App/App.xcodeproj/project.pbxproj || true
 
-      # 6) Build signed IPA (workspace + export options from use-profiles)
+      # 6) Archive with EXPLICIT signing (overrides any project gaps)
       - |
-        echo "🏗️ Building signed IPA"
-        xcode-project build-ipa \
-          --workspace ios/App/App.xcworkspace \
-          --scheme App \
-          --archive-flags="-destination 'generic/platform=iOS'" \
-          --export-options-plist=$HOME/export_options.plist
+        echo "🏗️ Archiving with explicit signing"
+        ARCHIVE_PATH="$CM_BUILD_DIR/build/ios/xcarchive/App.xcarchive"
+        xcodebuild -workspace ios/App/App.xcworkspace \
+          -scheme App \
+          -destination 'generic/platform=iOS' \
+          -archivePath "$ARCHIVE_PATH" archive \
+          DEVELOPMENT_TEAM="$CM_TEAM_ID" \
+          PROVISIONING_PROFILE_SPECIFIER="$CM_PROFILE_NAME" \
+          PRODUCT_BUNDLE_IDENTIFIER="com.expressfitness.x45" \
+          CODE_SIGN_STYLE=Manual \
+          COMPILER_INDEX_STORE_ENABLE=NO
+
+      # 7) Export IPA using export options created by fetch-signing-files
+      - |
+        echo "📦 Exporting IPA"
+        mkdir -p build/ios/ipa
+        xcodebuild -exportArchive \
+          -archivePath "$CM_BUILD_DIR/build/ios/xcarchive/App.xcarchive" \
+          -exportOptionsPlist "$HOME/export_options.plist" \
+          -exportPath build/ios/ipa
 
     artifacts:
       - build/ios/ipa/*.ipa
