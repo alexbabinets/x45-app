@@ -32,3 +32,4 @@ scripts:
       --workspace ios/App/App.xcworkspace \
       --scheme App \
       --archive-method app-store
+# bump to trigger detection
