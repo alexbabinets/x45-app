@@ -6,8 +6,9 @@ workflows:
       vars:
         BUNDLE_ID: com.expressfitness.x45
         APP_NAME: X45
+        TEAM_ID: Y4A2M3B9T7              # your Apple Team ID
       groups:
-        - apple-connect   # must contain APP_STORE_CONNECT_* and CERTIFICATE_PRIVATE_KEY
+        - apple-connect                  # must contain APP_STORE_CONNECT_* and CERTIFICATE_PRIVATE_KEY
 
     triggering:
       events: [push]
@@ -17,7 +18,7 @@ workflows:
           source: true
 
     scripts:
-      # 1) Clean slate, recreate Capacitor iOS, set iOS 15 target, write Podfile
+      # 1) Clean slate, recreate Capacitor iOS, set iOS 15, write Podfile
       - |
         set -euo pipefail
 
@@ -28,22 +29,20 @@ workflows:
         mkdir -p www
         [ -f www/index.html ] || echo "<!doctype html><meta charset='utf-8'><title>X45</title><div>X45</div>" > www/index.html
 
-        node -e "const fs=require('fs');const p='capacitor.config.json';let cfg={appId:process.env.BUNDLE_ID||'com.expressfitness.x45',appName:process.env.APP_NAME||'X45',webDir:'www',bundledWebRuntime:false};if(fs.existsSync(p)){try{Object.assign(cfg,JSON.parse(fs.readFileSync(p,'utf8')))}catch{}}fs.writeFileSync(p,JSON.stringify(cfg,null,2));"
+        node -e "const fs=require('fs');const p='capacitor.config.json';let cfg={appId:'${BUNDLE_ID}',appName:'${APP_NAME}',webDir:'www',bundledWebRuntime:false};if(fs.existsSync(p)){try{Object.assign(cfg,JSON.parse(fs.readFileSync(p,'utf8')))}catch{}}fs.writeFileSync(p,JSON.stringify(cfg,null,2));"
 
         rm -rf ios
-        npx cap init "${APP_NAME:-X45}" "${BUNDLE_ID:-com.expressfitness.x45}" --web-dir=www --no-interactive || true
+        npx cap init "${APP_NAME}" "${BUNDLE_ID}" --web-dir=www --no-interactive || true
         npx cap add ios
 
         npx cap copy ios
         npx cap sync ios || true
 
-        # Ensure the Xcode project exists
         test -d ios/App/App.xcodeproj || (echo "Missing ios/App/App.xcodeproj" && find ios -maxdepth 3 -name '*.xcodeproj' -print && exit 1)
 
-        # Bump deployment target to iOS 15
+        # Bump deployment target to iOS 15 (Podfile + Info.plist)
         /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 15.0" ios/App/App/Info.plist || true
 
-        # Minimal Podfile targeting the project
         rm -f ios/App/Podfile
         printf "platform :ios, '15.0'\n"                                   >> ios/App/Podfile
         printf "use_frameworks! :linkage => :static\n"                     >> ios/App/Podfile
@@ -54,7 +53,7 @@ workflows:
         printf "end\n"                                                     >> ios/App/Podfile
         nl -ba ios/App/Podfile
 
-      # 2) CocoaPods
+      # 2) CocoaPods (fresh install)
       - |
         set -euo pipefail
         cd ios/App
@@ -64,27 +63,38 @@ workflows:
         pod install --repo-update
         cd ../../
 
-      # 3) Signing (no --certificate-private-key flag)
+      # 3) Fetch signing (profiles & certs) and import to keychain
       - |
         set -euo pipefail
         keychain initialize
         app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
         keychain add-certificates
-        xcode-project use-profiles \
-          --workspace ios/App/App.xcworkspace \
-          --scheme App
 
-      # 4) Build IPA
+      # 4) Build with xcodebuild (no codemagic helper), automatic signing with TEAM_ID
       - |
         set -euo pipefail
-        xcode-project build-ipa \
-          --workspace ios/App/App.xcworkspace \
-          --scheme App \
-          --archive-flags="-destination generic/platform=iOS"
+        mkdir -p build/ios
+        xcodebuild \
+          -workspace ios/App/App.xcworkspace \
+          -scheme App \
+          -configuration Release \
+          -archivePath build/ios/App.xcarchive \
+          -destination "generic/platform=iOS" \
+          clean archive \
+          CODE_SIGN_STYLE=Automatic \
+          DEVELOPMENT_TEAM="${TEAM_ID}" \
+          PRODUCT_BUNDLE_IDENTIFIER="${BUNDLE_ID}"
+
+        # Use your ExportOptions.plist from repo root
+        xcodebuild -exportArchive \
+          -archivePath build/ios/App.xcarchive \
+          -exportOptionsPlist ExportOptions.plist \
+          -exportPath build/ios/ipa
 
     artifacts:
       - build/ios/ipa/*.ipa
       - ios/App/build/**/*.log
+      - build/ios/**/*.xcarchive
       - ~/Library/Logs/gym/*.log
 
     publishing:
