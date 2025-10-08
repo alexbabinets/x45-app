@@ -6,9 +6,9 @@ workflows:
       vars:
         BUNDLE_ID: com.expressfitness.x45
         APP_NAME: X45
-        TEAM_ID: X42964UG6Q         # <- use this Team ID (matches your cert)
+        TEAM_ID: X42964UG6Q     # use THIS team id (matches your cert)
       groups:
-        - apple-connect              # must contain APP_STORE_CONNECT_* and CERTIFICATE_PRIVATE_KEY
+        - apple-connect         # your App Store Connect API key envs
 
     triggering:
       events: [push]
@@ -18,29 +18,22 @@ workflows:
           source: true
 
     scripts:
-      # 1) Clean slate, recreate Capacitor iOS (iOS 15), minimal Podfile
+      # 1) Clean + recreate Capacitor iOS (iOS 15) and Podfile
       - |
         set -euo pipefail
-
         npm i -g @capacitor/cli
         npm i @capacitor/core @capacitor/ios --save --no-fund --no-audit || true
-
         [ -f package.json ] || npm init -y
         mkdir -p www
         [ -f www/index.html ] || echo "<!doctype html><meta charset='utf-8'><title>X45</title><div>X45</div>" > www/index.html
-
-        node -e "const fs=require('fs');const p='capacitor.config.json';let cfg={appId:'${BUNDLE_ID}',appName:'${APP_NAME}',webDir:'www',bundledWebRuntime:false};if(fs.existsSync(p)){try{Object.assign(cfg,JSON.parse(fs.readFileSync(p,'utf8')))}catch{}}fs.writeFileSync(p,JSON.stringify(cfg,null,2));"
-
+        node -e "const fs=require('fs');fs.writeFileSync('capacitor.config.json',JSON.stringify({appId:'${BUNDLE_ID}',appName:'${APP_NAME}',webDir:'www',bundledWebRuntime:false},null,2))"
         rm -rf ios
         npx cap init "${APP_NAME}" "${BUNDLE_ID}" --web-dir=www --no-interactive || true
         npx cap add ios
         npx cap copy ios
         npx cap sync ios || true
-
         test -d ios/App/App.xcodeproj || (echo "Missing ios/App/App.xcodeproj" && exit 1)
-
         /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 15.0" ios/App/App/Info.plist || true
-
         rm -f ios/App/Podfile
         {
           printf "platform :ios, '15.0'\n"
@@ -51,7 +44,6 @@ workflows:
           printf "  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'\n"
           printf "end\n"
         } >> ios/App/Podfile
-        nl -ba ios/App/Podfile
 
       # 2) CocoaPods
       - |
@@ -63,32 +55,28 @@ workflows:
         pod install --repo-update
         cd ../../
 
-      # 3) Fetch certs/profiles into keychain
+      # 3) Fetch certs/profiles via your connected Apple key
       - |
         set -euo pipefail
         keychain initialize
         app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
         keychain add-certificates
 
-      # 4) Build & Export with AUTOMATIC signing (avoids applying profiles to Pods)
+      # 4) Archive & export with AUTOMATIC signing
       - |
         set -euo pipefail
         mkdir -p build/ios
-
-        # Export options for automatic signing
         cat > build/ios/ExportOptions_auto.plist <<EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-        <plist version="1.0">
-        <dict>
+        <plist version="1.0"><dict>
           <key>method</key><string>app-store</string>
           <key>signingStyle</key><string>automatic</string>
           <key>teamID</key><string>${TEAM_ID}</string>
           <key>stripSwiftSymbols</key><true/>
           <key>compileBitcode</key><false/>
           <key>uploadBitcode</key><false/>
-        </dict>
-        </plist>
+        </dict></plist>
         EOF
 
         xcodebuild \
@@ -101,9 +89,7 @@ workflows:
           clean archive \
           CODE_SIGN_STYLE=Automatic \
           DEVELOPMENT_TEAM="${TEAM_ID}" \
-          PRODUCT_BUNDLE_IDENTIFIER="${BUNDLE_ID}" \
-          CODE_SIGNING_ALLOWED=YES \
-          CODE_SIGNING_REQUIRED=YES
+          PRODUCT_BUNDLE_IDENTIFIER="${BUNDLE_ID}"
 
         xcodebuild -exportArchive \
           -archivePath build/ios/App.xcarchive \
