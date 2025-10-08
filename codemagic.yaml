@@ -7,7 +7,7 @@ workflows:
         BUNDLE_ID: com.expressfitness.x45
         APP_NAME: X45
       groups:
-        - apple-connect
+        - apple-connect   # APP_STORE_CONNECT_ISSUER_ID / APP_STORE_CONNECT_KEY_IDENTIFIER / APP_STORE_CONNECT_PRIVATE_KEY
 
     triggering:
       events: [push]
@@ -60,7 +60,7 @@ workflows:
         pod install --repo-update
         cd ../../
 
-      # 3) Fetch signing files (no extra flags), apply to project, bump build, archive, export, upload
+      # 3) Fetch signing files, apply to project, bump build, archive, export, upload
       - |
         set -euo pipefail
 
@@ -71,20 +71,23 @@ workflows:
         # Apply profiles to the Xcode project (no --scheme flag)
         xcode-project use-profiles --project ios/App/App.xcodeproj
 
-        # Find fetched App Store profile name & team from the installed profile
+        # Get App Store profile + team
         PROFILE_PATH="$(ls -t /Users/builder/Library/MobileDevice/Provisioning\ Profiles/IOS_APP_STORE_*.mobileprovision | head -n1)"
         [ -f "$PROFILE_PATH" ] || (echo "No IOS_APP_STORE profile found"; ls -la /Users/builder/Library/MobileDevice/Provisioning\ Profiles/; exit 1)
         TMP_PLIST="$(mktemp)"; /usr/bin/security cms -D -i "$PROFILE_PATH" > "$TMP_PLIST"
         PROFILE_NAME="$(/usr/libexec/PlistBuddy -c 'Print :Name' "$TMP_PLIST")"
         TEAM_ID="$(/usr/libexec/PlistBuddy -c 'Print :TeamIdentifier:0' "$TMP_PLIST")"
 
-        # Bump build number so TestFlight accepts upload
+        # ===== CHANGE #1: bump build number (CFBundleVersion)
         BUILD_NUM="${BUILD_NUMBER:-${CM_BUILD_ID:-$(date +%Y%m%d%H%M)}}"
         /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${BUILD_NUM}" ios/App/App/Info.plist || \
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${BUILD_NUM}" ios/App/App/Info.plist
         /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" ios/App/App/Info.plist >/dev/null 2>&1 || \
           /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.0" ios/App/App/Info.plist
-        echo "Using build number: ${BUILD_NUM}"
+
+        # ===== CHANGE #2: clear export-compliance prompt (HTTPS-only apps)
+        /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption NO" ios/App/App/Info.plist || \
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool NO" ios/App/App/Info.plist
 
         # Archive (workspace because of Pods)
         mkdir -p build/ios
@@ -97,7 +100,7 @@ workflows:
           clean archive \
           CURRENT_PROJECT_VERSION="${BUILD_NUM}"
 
-        # Export using the exact fetched profile name
+        # Export using the fetched profile name
         cat > build/ios/ExportOptions.plist <<EOF
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -122,7 +125,7 @@ workflows:
           -exportOptionsPlist build/ios/ExportOptions.plist \
           -exportPath build/ios/ipa
 
-        # Upload to TestFlight (CLI)
+        # ===== CHANGE #3: upload to TestFlight (Internal Testing group)
         IPA_PATH="$(ls -t build/ios/ipa/*.ipa | head -n1)"
         echo "🚀 Uploading to TestFlight: $IPA_PATH"
         app-store-connect publish \
@@ -130,7 +133,8 @@ workflows:
           --key-id "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
           --private-key "$APP_STORE_CONNECT_PRIVATE_KEY" \
           --path "$IPA_PATH" \
-          --testflight
+          --testflight \
+          --beta-groups "Internal Testing"
 
     artifacts:
       - build/ios/ipa/*.ipa
