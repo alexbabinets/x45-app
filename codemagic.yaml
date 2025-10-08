@@ -5,8 +5,9 @@ workflows:
       xcode: latest
       vars:
         BUNDLE_ID: com.expressfitness.x45
+        APP_NAME: X45
       groups:
-        - apple-connect   # APP_STORE_CONNECT_* + CERTIFICATE_PRIVATE_KEY must be in this env group
+        - apple-connect   # must include: APP_STORE_CONNECT_* and CERTIFICATE_PRIVATE_KEY
 
     triggering:
       events: [push]
@@ -16,56 +17,113 @@ workflows:
           source: true
 
     scripts:
-      # 1) Prepare Capacitor iOS, then write a *minimal* Podfile that targets App.xcodeproj (no helpers, no post_install)
+      # 1) Ensure Node deps + FORCE a valid Capacitor iOS project exists
       - |
         set -euo pipefail
-        echo "👉 Setting up Capacitor"
+
+        echo "👉 Install Capacitor tooling & deps"
         npm i -g @capacitor/cli
         npm i @capacitor/core @capacitor/ios --save --no-fund --no-audit || true
 
-        if [ ! -d ios ]; then
-          echo "➕ Adding iOS platform"
-          npx cap add ios
+        echo "🧭 Repo contents (top level):"
+        ls -la
+
+        # Ensure a minimal capacitor.config.json exists (if user forgot to commit it)
+        if [ ! -f capacitor.config.json ] && [ ! -f capacitor.config.ts ] && [ ! -f capacitor.config.js ]; then
+          echo "📝 Creating minimal capacitor.config.json"
+          cat > capacitor.config.json <<'JSON'
+          {
+            "appId": "com.expressfitness.x45",
+            "appName": "X45",
+            "webDir": "www",
+            "bundledWebRuntime": false
+          }
+          JSON
         fi
 
-        echo "📝 Writing minimal Podfile"
-        rm -f ios/App/Podfile
+        # If the BUNDLE_ID/APP_NAME envs are present, normalize the config to match them
+        if [ -n "${BUNDLE_ID:-}" ] || [ -n "${APP_NAME:-}" ]; then
+          echo "🔧 Normalizing capacitor.config.json with env vars"
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = 'capacitor.config.json';
+          if (fs.existsSync(path)) {
+            const cfg = JSON.parse(fs.readFileSync(path,'utf8'));
+            if (process.env.BUNDLE_ID) cfg.appId = process.env.BUNDLE_ID;
+            if (process.env.APP_NAME) cfg.appName = process.env.APP_NAME;
+            fs.writeFileSync(path, JSON.stringify(cfg, null, 2));
+          }
+          NODE
+        fi
 
-        # Verify the Xcode project exists; print what we find if not
+        echo "🔎 capacitor.config.json (if present):"
+        [ -f capacitor.config.json ] && cat capacitor.config.json || echo "(no json config file)"
+
+        # If iOS project is missing, INIT and ADD iOS
+        NEED_ADD_IOS=false
         if [ ! -d ios/App/App.xcodeproj ]; then
-          echo "❌ ios/App/App.xcodeproj not found. Available projects under ios/:"
-          find ios -maxdepth 2 -name "*.xcodeproj" -print || true
+          NEED_ADD_IOS=true
         fi
 
-        # Write a tiny Podfile line-by-line to avoid heredoc corruption on CI
+        if $NEED_ADD_IOS; then
+          echo "➕ iOS project not found — running Capacitor init + add ios"
+          # If project was never inited (rare), ensure package.json exists so CLI won't choke
+          if [ ! -f package.json ]; then
+            echo "📦 No package.json found — initializing minimal package.json"
+            npm init -y
+          fi
+
+          # cap init is idempotent if config already exists
+          npx cap init "${APP_NAME:-X45}" "${BUNDLE_ID:-com.expressfitness.x45}" --web-dir=www --no-interactive || true
+
+          # Ensure web dir exists so cap add ios doesn't fail
+          mkdir -p www
+          echo "<!doctype html><meta charset='utf-8'><title>X45</title><div>X45</div>" > www/index.html
+
+          # Add iOS (safe to re-run)
+          npx cap add ios || true
+        else
+          echo "✅ Found existing Xcode project at ios/App/App.xcodeproj"
+        fi
+
+        # Double-check presence now; fail loudly if still missing
+        if [ ! -d ios/App/App.xcodeproj ]; then
+          echo "❌ Still no ios/App/App.xcodeproj. Listing iOS tree for debugging:"
+          find ios -maxdepth 3 -type d -name "*.xcodeproj" -print || true
+          echo "⛔ Cannot proceed without an Xcode project. Exiting."
+          exit 1
+        fi
+
+        echo "🔄 Copy & sync native (non-fatal if pods run later)"
+        npx cap copy ios
+        npx cap sync ios || true
+
+        echo "📝 Writing minimal Podfile targeting App.xcodeproj"
+        rm -f ios/App/Podfile
         printf "platform :ios, '13.0'\n" >> ios/App/Podfile
         printf "use_frameworks! :linkage => :static\n" >> ios/App/Podfile
         printf "project 'App.xcodeproj'\n\n" >> ios/App/Podfile
         printf "target 'App' do\n" >> ios/App/Podfile
         printf "  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'\n" >> ios/App/Podfile
         printf "  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'\n" >> ios/App/Podfile
-        # --- If you use Capacitor plugins, add them explicitly here, e.g.: ---
+        # ---- Add plugin pods explicitly here IF you use them (examples): ----
         # printf \"  pod 'CapacitorSplashScreen', :path => '../../node_modules/@capacitor/splash-screen'\\n\" >> ios/App/Podfile
         # printf \"  pod 'CapacitorStatusBar',   :path => '../../node_modules/@capacitor/status-bar'\\n\"      >> ios/App/Podfile
         # ---------------------------------------------------------------------
         printf "end\n" >> ios/App/Podfile
 
-        echo "🔎 Podfile:"
+        echo "📄 Podfile contents:"
         nl -ba ios/App/Podfile
 
-        echo "🔄 Sync native"
-        npx cap copy ios
-        npx cap sync ios || true
-
-      # 2) Clean Pods defensively and install
+      # 2) Fresh CocoaPods install
       - |
         set -euo pipefail
-        echo "🧹 CocoaPods cleanup"
+        echo "🧹 Reset Pods"
         cd ios/App
         rm -f Podfile.lock
         rm -rf Pods
         pod repo update
-        echo "📦 Installing CocoaPods"
+        echo "📦 pod install --repo-update"
         pod install --repo-update
         cd ../../
         ls -la ios/App
@@ -75,12 +133,10 @@ workflows:
         set -euo pipefail
         echo "🔐 Fetching & applying signing profiles"
         keychain initialize
-
         app-store-connect fetch-signing-files "$BUNDLE_ID" \
           --type IOS_APP_STORE \
           --create \
           --certificate-private-key "$CERTIFICATE_PRIVATE_KEY"
-
         keychain add-certificates
 
         xcode-project use-profiles \
