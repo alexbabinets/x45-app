@@ -7,7 +7,7 @@ workflows:
         BUNDLE_ID: com.expressfitness.x45
         APP_NAME: X45
       groups:
-        - apple-connect   # APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_PRIVATE_KEY
+        - apple-connect   # APP_STORE_CONNECT_ISSUER_ID / KEY_IDENTIFIER / PRIVATE_KEY
 
     triggering:
       events: [push]
@@ -25,18 +25,14 @@ workflows:
         [ -f package.json ] || npm init -y
         mkdir -p www
         [ -f www/index.html ] || echo "<!doctype html><meta charset='utf-8'><title>X45</title><div>X45</div>" > www/index.html
-
         node -e "const fs=require('fs');fs.writeFileSync('capacitor.config.json',JSON.stringify({appId:'${BUNDLE_ID}',appName:'${APP_NAME}',webDir:'www',bundledWebRuntime:false},null,2))"
-
         rm -rf ios
         npx cap init "${APP_NAME}" "${BUNDLE_ID}" --web-dir=www --no-interactive || true
         npx cap add ios
         npx cap copy ios
         npx cap sync ios || true
         test -d ios/App/App.xcodeproj || (echo 'Missing ios/App/App.xcodeproj' && exit 1)
-
         /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 15.0" ios/App/App/Info.plist || true
-
         rm -f ios/App/Podfile
         {
           printf "platform :ios, '15.0'\n"
@@ -66,25 +62,25 @@ workflows:
         keychain add-certificates
         xcode-project use-profiles --project ios/App/App.xcodeproj
 
-      # 4) Bump build number (CFBundleVersion) so TestFlight accepts the upload
+      # 4) Bump build number (and PERSIST it for next steps)
       - |
         set -euo pipefail
-        # Prefer CI-provided number; otherwise generate a monotonic timestamp-based one
+        # If CI gives a number use it, else generate timestamp-based
         BUILD_NUM="${BUILD_NUMBER:-${CM_BUILD_ID:-$(date +%Y%m%d%H%M)}}"
-
-        # Set CFBundleVersion (build). Keep marketing version stable (optional).
         /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${BUILD_NUM}" ios/App/App/Info.plist || \
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${BUILD_NUM}" ios/App/App/Info.plist
-
-        # (Optional) ensure CFBundleShortVersionString exists; you can change it later if you want a new app version
         /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" ios/App/App/Info.plist >/dev/null 2>&1 || \
           /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.0" ios/App/App/Info.plist
-
         echo "Using build number: ${BUILD_NUM}"
+        # ➜ make it available to the next script blocks
+        echo "export BUILD_NUM=${BUILD_NUM}" >> "$CM_ENV"
 
       # 5) Archive & export IPA
       - |
         set -euo pipefail
+        # Re-hydrate persisted env var (with safe fallback to avoid -u crash)
+        : "${BUILD_NUM:=${CM_BUILD_ID:-$(date +%Y%m%d%H%M)}}"
+
         mkdir -p build/ios
         xcodebuild \
           -workspace ios/App/App.xcworkspace \
@@ -125,7 +121,7 @@ workflows:
           -exportOptionsPlist build/ios/ExportOptions.plist \
           -exportPath build/ios/ipa
 
-      # 6) Upload to TestFlight (CLI)
+      # 6) Upload to TestFlight
       - |
         set -euo pipefail
         IPA_PATH="$(ls -t build/ios/ipa/*.ipa | head -n1)"
