@@ -7,7 +7,7 @@ workflows:
         BUNDLE_ID: com.expressfitness.x45
         APP_NAME: X45
       groups:
-        - apple-connect   # APP_STORE_CONNECT_ISSUER_ID / KEY_IDENTIFIER / PRIVATE_KEY
+        - apple-connect   # must contain: APP_STORE_CONNECT_ISSUER_ID / APP_STORE_CONNECT_KEY_IDENTIFIER / APP_STORE_CONNECT_PRIVATE_KEY
 
     triggering:
       events: [push]
@@ -17,32 +17,53 @@ workflows:
           source: true
 
     scripts:
-      # 1) Clean + recreate Capacitor iOS (iOS 15) and Podfile
+      # 1) Create clean Capacitor iOS project (iOS 15) + deterministic Podfile
       - |
         set -euo pipefail
+
         npm i -g @capacitor/cli
         npm i @capacitor/core @capacitor/ios --save --no-fund --no-audit || true
+
         [ -f package.json ] || npm init -y
         mkdir -p www
         [ -f www/index.html ] || echo "<!doctype html><meta charset='utf-8'><title>X45</title><div>X45</div>" > www/index.html
+
         node -e "const fs=require('fs');fs.writeFileSync('capacitor.config.json',JSON.stringify({appId:'${BUNDLE_ID}',appName:'${APP_NAME}',webDir:'www',bundledWebRuntime:false},null,2))"
+
         rm -rf ios
         npx cap init "${APP_NAME}" "${BUNDLE_ID}" --web-dir=www --no-interactive || true
         npx cap add ios
         npx cap copy ios
         npx cap sync ios || true
+
         test -d ios/App/App.xcodeproj || (echo 'Missing ios/App/App.xcodeproj' && exit 1)
+
+        # iOS 15 minimum for the app
         /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 15.0" ios/App/App/Info.plist || true
+
+        # Full Podfile (forces all pods to iOS 15 + Swift 5.9 to avoid mismatches)
         rm -f ios/App/Podfile
-        {
-          printf "platform :ios, '15.0'\n"
-          printf "use_frameworks! :linkage => :static\n"
-          printf "project 'App.xcodeproj'\n\n"
-          printf "target 'App' do\n"
-          printf "  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'\n"
-          printf "  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'\n"
-          printf "end\n"
-        } >> ios/App/Podfile
+        cat > ios/App/Podfile <<'PODFILE'
+        platform :ios, '15.0'
+        use_frameworks! :linkage => :static
+        project 'App.xcodeproj'
+
+        target 'App' do
+          pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+          pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+        end
+
+        post_install do |installer|
+          installer.generated_projects.each do |project|
+            project.targets.each do |target|
+              target.build_configurations.each do |config|
+                config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+                config.build_settings['SWIFT_VERSION'] = '5.9'
+              end
+            end
+          end
+        end
+        PODFILE
 
       # 2) CocoaPods
       - |
@@ -54,7 +75,7 @@ workflows:
         pod install --repo-update
         cd ../../
 
-      # 3) Fetch signing files (no extra flags), apply to project
+      # 3) Fetch signing files, import, and apply to the Xcode project
       - |
         set -euo pipefail
         keychain initialize
@@ -62,23 +83,19 @@ workflows:
         keychain add-certificates
         xcode-project use-profiles --project ios/App/App.xcodeproj
 
-      # 4) Bump build number (and PERSIST it for next steps)
+      # 4) Bump build number and persist it for following steps
       - |
         set -euo pipefail
-        # If CI gives a number use it, else generate timestamp-based
         BUILD_NUM="${BUILD_NUMBER:-${CM_BUILD_ID:-$(date +%Y%m%d%H%M)}}"
         /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${BUILD_NUM}" ios/App/App/Info.plist || \
           /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string ${BUILD_NUM}" ios/App/App/Info.plist
         /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" ios/App/App/Info.plist >/dev/null 2>&1 || \
           /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string 1.0.0" ios/App/App/Info.plist
-        echo "Using build number: ${BUILD_NUM}"
-        # ➜ make it available to the next script blocks
         echo "export BUILD_NUM=${BUILD_NUM}" >> "$CM_ENV"
 
       # 5) Archive & export IPA
       - |
         set -euo pipefail
-        # Re-hydrate persisted env var (with safe fallback to avoid -u crash)
         : "${BUILD_NUM:=${CM_BUILD_ID:-$(date +%Y%m%d%H%M)}}"
 
         mkdir -p build/ios
@@ -121,7 +138,7 @@ workflows:
           -exportOptionsPlist build/ios/ExportOptions.plist \
           -exportPath build/ios/ipa
 
-      # 6) Upload to TestFlight
+      # 6) Upload to TestFlight (no post-processing dependency)
       - |
         set -euo pipefail
         IPA_PATH="$(ls -t build/ios/ipa/*.ipa | head -n1)"
