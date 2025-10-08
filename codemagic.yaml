@@ -6,21 +6,20 @@ workflows:
       vars:
         BUNDLE_ID: com.expressfitness.x45
       groups:
-        - apple-connect   # APP_STORE_CONNECT_* + CERTIFICATE_PRIVATE_KEY
+        - apple-connect  # APP_STORE_CONNECT_* + CERTIFICATE_PRIVATE_KEY
 
     triggering:
-      events:
-        - push
+      events: [push]
       branch_patterns:
         - pattern: main
           include: true
           source: true
 
     scripts:
-      # 1) Prepare Capacitor iOS + write a resilient Podfile
+      # 1) Prepare Capacitor iOS, then write a *minimal* Podfile (no helper, no post_install)
       - |
         set -euo pipefail
-        echo "👉 Setting up Capacitor (idempotent)"
+        echo "👉 Setting up Capacitor"
         npm i -g @capacitor/cli
         npm i @capacitor/core @capacitor/ios --save --no-fund --no-audit || true
 
@@ -29,64 +28,52 @@ workflows:
           npx cap add ios
         fi
 
-        echo "📝 Writing Podfile (resilient to missing pods_helpers)"
-        cat > ios/App/Podfile <<'__PODFILE__'
-        helper_path = File.expand_path('../../node_modules/@capacitor/ios/scripts/pods_helpers', __FILE__)
-        begin
-          require helper_path
-        rescue LoadError
-          # Fallback definitions if pods_helpers can't be required (CI/paths)
-          def capacitor_pods
-            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
-          end
-          def assertDeploymentTarget(installer); end
-        end
+        echo "📝 Writing minimal Podfile"
+        # Nuke any previous Podfile that might be half-written
+        rm -f ios/App/Podfile
 
-        platform :ios, '13.0'
-        use_frameworks! :linkage => :static
+        # Use printf to avoid heredoc/indent pitfalls
+        printf "platform :ios, '13.0'\n"                                   >> ios/App/Podfile
+        printf "use_frameworks! :linkage => :static\n\n"                   >> ios/App/Podfile
+        printf "target 'App' do\n"                                         >> ios/App/Podfile
+        printf "  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'\n" >> ios/App/Podfile
+        printf "  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'\n" >> ios/App/Podfile
+        # Add plugin pods explicitly if you use them (uncomment/extend as needed):
+        # printf \"  pod 'CapacitorSplashScreen', :path => '../../node_modules/@capacitor/splash-screen'\\n\" >> ios/App/Podfile
+        # printf \"  pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'\\n\" >> ios/App/Podfile
+        printf "end\n"                                                     >> ios/App/Podfile
 
-        target 'App' do
-          capacitor_pods
-          # Add Capacitor plugins here if needed, e.g.:
-          # pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
-          # pod 'CapacitorHaptics',  :path => '../../node_modules/@capacitor/haptics'
-        end
+        echo "🔎 Show Podfile contents:"
+        nl -ba ios/App/Podfile
 
-        post_install do |installer|
-          assertDeploymentTarget(installer) if defined?(assertDeploymentTarget)
-        end
-        __PODFILE__
-
-        echo "🔎 Ruby syntax check for Podfile"
-        ruby -c ios/App/Podfile
-
-        echo "🔄 Syncing native assets"
+        echo "🔄 Sync native"
         npx cap copy ios
+        # Don't let sync run pods—our next step handles pods
         npx cap sync ios || true
 
-      # 2) CocoaPods (creates workspace if missing)
+      # 2) Clean CocoaPods cache (defensive), then install
       - |
         set -euo pipefail
-        echo "📦 Installing CocoaPods"
+        echo "🧹 CocoaPods cleanup (defensive)"
         cd ios/App
+        rm -f Podfile.lock
+        rm -rf Pods
+        pod repo update
+        echo "📦 Installing CocoaPods"
         pod install --repo-update
         cd ../../
         ls -la ios/App
 
-      # 3) Fetch signing files and apply them to workspace/scheme
+      # 3) Signing
       - |
         set -euo pipefail
         echo "🔐 Fetching & applying signing profiles"
         keychain initialize
-
         app-store-connect fetch-signing-files "$BUNDLE_ID" \
           --type IOS_APP_STORE \
           --create \
           --certificate-private-key "$CERTIFICATE_PRIVATE_KEY"
-
         keychain add-certificates
-
         xcode-project use-profiles \
           --workspace ios/App/App.xcworkspace \
           --scheme App
