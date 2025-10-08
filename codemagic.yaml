@@ -35,12 +35,14 @@ workflows:
         pod install --repo-update
         cd ../../
 
-      # 3) Fetch signing files and apply profiles
+      # 3) Fetch signing files and APPLY them to the iOS project
       - |
         echo "🔐 Fetching & applying signing profiles"
         keychain initialize
         app-store-connect fetch-signing-files "com.expressfitness.x45" --type IOS_APP_STORE --create
+        cd ios/App
         xcode-project use-profiles
+        cd ../../
 
       # 4) Build signed IPA (use workspace + export options)
       - |
