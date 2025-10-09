@@ -4,6 +4,17 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>X45 — Welcome</title>
+
+  <!-- Allow remote images over HTTPS + local/data. Keep JS/CSS self only. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self';
+                 img-src 'self' https: data: blob:;
+                 script-src 'self';
+                 style-src 'self' 'unsafe-inline';
+                 connect-src 'self';
+                 media-src 'self';
+                 font-src 'self';" />
+
   <style>
     :root { color-scheme: dark; }
     html,body{ height:100%; }
@@ -16,20 +27,16 @@
     }
     .wrap{ text-align:center; max-width:900px; padding:24px; }
 
-    /* Your logo (local file) */
     .brand{
       display:block; margin:0 auto clamp(16px, 4.5vmin, 28px);
-      height: clamp(72px, 16vmin, 140px);  /* tuned size */
-      width:auto;
-      user-select:none; -webkit-user-drag:none;
+      height: clamp(72px, 16vmin, 140px);
+      width:auto; user-select:none; -webkit-user-drag:none;
       image-rendering:-webkit-optimize-contrast;
     }
-
     h1{
       margin: 0 0 clamp(10px, 3.6vmin, 20px) 0;
       font-size: clamp(26px, 6.4vmin, 56px);
       font-weight: 800;
-      letter-spacing:.2px;
     }
     .tag{
       opacity:.9;
@@ -37,28 +44,22 @@
       margin-bottom: clamp(24px, 6.5vmin, 40px);
     }
     .cta{
-      display:inline-block;
-      background:#e50914; color:#fff; text-decoration:none;
+      display:inline-block; background:#e50914; color:#fff; text-decoration:none;
       border:0; border-radius:18px;
       padding: clamp(14px, 4.8vmin, 22px) clamp(24px, 8vmin, 34px);
       font-size: clamp(18px, 5.6vmin, 30px);
       font-weight:800; letter-spacing:.2px;
       box-shadow: 0 10px 24px rgba(229,9,20,.35);
     }
-
-    /* Portrait fine-tune */
     @media (orientation: portrait) {
       .brand { height: clamp(80px, 16vmin, 140px); }
-      h1    { font-size: clamp(28px, 7.2vmin, 58px); }
-      .tag  { font-size: clamp(18px, 4.8vmin, 28px); margin-bottom: clamp(26px, 7.8vmin, 44px); }
-      .cta  { font-size: clamp(18px, 5.6vmin, 30px); padding: clamp(14px, 4.8vmin, 22px) clamp(24px, 8vmin, 34px); border-radius:20px; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <!-- MOST RELIABLE: local asset bundled in the app -->
-    <img class="brand" src="logo.png" alt="X45 Express Fitness" draggable="false" />
+    <!-- Start with local asset so you always see something -->
+    <img id="logo" class="brand" src="logo.png" alt="X45 Express Fitness" draggable="false" />
 
     <h1>Welcome to X45</h1>
     <div class="tag">Fitness that knows you.</div>
@@ -66,16 +67,17 @@
   </div>
 
   <script>
-    // Optional extra safety: if logo fails for any reason, show simple text fallback.
-    document.addEventListener('error', e => {
-      const img = e.target;
-      if (img && img.classList.contains('brand')) {
-        img.remove();
-        const h = document.createElement('h1');
-        h.textContent = 'X45';
-        document.querySelector('.wrap').prepend(h);
-      }
-    }, true);
+    // Try using your remote URL first; if it fails, keep local logo.png
+    (function(){
+      const remoteURL = "https://expressfitness.ca/wp-content/uploads/2025/10/X45-LOGO-CUT-TM.png";
+      const img = document.getElementById('logo');
+
+      const test = new Image();
+      test.onload = () => { img.src = remoteURL; };      // remote OK → swap in
+      test.onerror = () => {/* keep local */};           // remote blocked → stay local
+      test.referrerPolicy = 'no-referrer';                // avoid referrer issues
+      test.src = remoteURL;
+    })();
   </script>
 </body>
 </html>
