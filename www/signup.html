@@ -2,98 +2,85 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign Up – X45</title>
-  <script>const BASE_URL = 'https://expressfitness.ca/x45';</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { background:#000; font-family:Arial,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,sans-serif; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; padding:20px; }
-    .logo { max-width:160px; margin:6px 0 10px; }
-    h1 { font-size:38px; margin:6px 0 6px; text-align:center; }
-    .subtitle { font-size:18px; color:#ccc; margin:6px 0 18px; text-align:center; }
-    .label { width:min(420px,92vw); font-size:14px; color:#bbb; margin:4px 0 6px }
-    .field { width:min(420px,92vw); position:relative; margin:8px 0; }
-    input[type="text"], input[type="email"], input[type="password"], input[type="date"] { padding:14px; width:100%; border-radius:8px; border:none; font-size:16px; background:#222; color:#fff; box-sizing:border-box; outline:none; }
-    input::placeholder { color:#aaa; }
-    input:focus { box-shadow:0 0 0 3px rgba(59,130,246,.25) }
-    .date-wrapper { position:relative; width:min(420px,92vw); }
-    .date-wrapper input[type="date"] { width:100%; padding-right:40px; appearance:none; background:#222; color-scheme:dark; color:#fff; }
-    .date-wrapper input[type="date"]::-webkit-calendar-picker-indicator { display:none; -webkit-appearance:none; }
-    .calendar-icon { position:absolute; right:12px; top:12px; font-size:20px; color:#fff; pointer-events:none; }
-    .gender { display:flex; justify-content:center; gap:40px; background:#222; border-radius:8px; padding:12px 0; width:min(420px,92vw); margin:8px 0; }
-    .gender label { display:flex; align-items:center; gap:8px; font-size:14px; }
-    .eye-icon { position:absolute; top:18px; right:12px; cursor:pointer; font-size:16px; color:#aaa; transition:color .2s; }
-    .eye-icon:hover { color:#fff; }
-    .btn { background:#cc0000; color:#fff; border:none; padding:14px 30px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; margin-top:14px; transition:background .3s; width:min(420px,92vw); }
-    .btn:hover { background:#ff1a1a; }
-    .btn[disabled] { opacity:.7; cursor:not-allowed; }
-    .error { color:#ff4d4d; font-size:14px; margin-top:6px; width:min(420px,92vw); text-align:left; min-height:18px; }
-    .form-error { color:#ff6b6b; font-size:15px; margin:8px 0; text-align:center; min-height:20px; }
-    .hint { font-size:14px; color:#aaa; margin-top:12px; text-align:center; }
-    a { color:#7db3ff; text-decoration:none; }
+    :root { --bg:#000; --card:#111; --field:#222; --muted:#bbb; --error:#ff4d4d; --red:#e30000; }
+    html,body{height:100%}
+    body{margin:0; background:var(--bg); color:#fff; font-family:Arial,Helvetica,sans-serif;
+         display:flex; align-items:center; justify-content:center}
+    .wrap{width:min(92%,420px); text-align:center}
+    .logo{max-width:160px; display:block; margin:0 auto 18px}
+    h1{font-size:36px; margin:0 0 6px}
+    .subtitle{font-size:16px; color:#cfcfcf; margin-bottom:18px}
+    .label{ text-align:left; color:var(--muted); font-size:14px; margin:8px 0 4px}
+    .field{position:relative; margin:6px 0}
+    input[type="text"],input[type="email"],input[type="password"],input[type="date"]{
+      width:100%; box-sizing:border-box; background:#222; color:#fff;
+      border:0; border-radius:10px; padding:14px 44px 14px 14px; font-size:16px;
+    }
+    input::placeholder{color:#9a9a9a}
+    .eye{position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; color:#aaa}
+    .dob-row{display:flex; gap:10px}
+    .gender{display:flex; justify-content:center; gap:34px; background:#1b1b1b; padding:12px; border-radius:10px}
+    .error{color:var(--error); text-align:left; min-height:18px; font-size:14px}
+    .btn{margin-top:16px; width:100%; border:0; border-radius:12px; padding:16px 18px; background:var(--red);
+         color:#fff; font-weight:700; font-size:18px; cursor:pointer; box-shadow:0 14px 34px rgba(227,0,0,.35)}
+    .row-link{margin-top:10px; font-size:14px; color:#cfcfcf}
+    .row-link a{color:#e6e6e6}
   </style>
 </head>
 <body>
-  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
-  <h1>Create Your Account</h1>
-  <div class="subtitle">Let’s get you started</div>
+  <div class="wrap">
+    <img class="logo" alt="X45" src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png">
+    <h1>Create Your Account</h1>
+    <div class="subtitle">Let’s get you started</div>
 
-  <!-- No <form> tag to avoid any native submit/reset behavior -->
-  <div class="form-error" id="formError"></div>
+    <form id="signupForm" onsubmit="event.preventDefault(); register();">
+      <div class="field"><input id="firstName" type="text" placeholder="First name" autocomplete="given-name"></div>
+      <div class="field"><input id="lastName" type="text" placeholder="Last name (Optional)" autocomplete="family-name"></div>
 
-  <div class="field"><input type="text" id="firstName" placeholder="First name" autocomplete="given-name" /></div>
-  <div class="field"><input type="text" id="lastName" placeholder="Last name (Optional)" autocomplete="family-name" /></div>
+      <div class="label">Date of Birth</div>
+      <div class="field"><input id="dob" type="date"></div>
+      <div id="dobError" class="error"></div>
 
-  <div class="label">Date of Birth</div>
-  <div class="date-wrapper">
-    <input type="date" id="dob" />
-    <span class="calendar-icon">📅</span>
+      <div class="label">Gender</div>
+      <div class="gender">
+        <label><input type="radio" name="gender" value="male"> Male</label>
+        <label><input type="radio" name="gender" value="female"> Female</label>
+      </div>
+      <div id="genderError" class="error"></div>
+
+      <div class="field"><input id="email" type="email" placeholder="Email address" autocomplete="email"></div>
+      <div class="field"><input id="confirmEmail" type="email" placeholder="Confirm email address" autocomplete="off"></div>
+      <div id="emailError" class="error"></div>
+
+      <div class="field">
+        <input id="password" type="password" placeholder="Create password" autocomplete="new-password">
+        <span class="eye" onclick="toggle('password',this)">👁️</span>
+      </div>
+
+      <div class="field">
+        <input id="confirmPassword" type="password" placeholder="Confirm password" autocomplete="new-password">
+        <span class="eye" onclick="toggle('confirmPassword',this)">👁️</span>
+      </div>
+      <div id="passwordError" class="error"></div>
+
+      <button class="btn" type="submit">Start My Free Trial</button>
+    </form>
+
+    <div class="row-link">Already have an account? <a href="signin.html">Sign in</a></div>
   </div>
-  <div class="error" id="dobError"></div>
-
-  <div class="label">Gender</div>
-  <div class="gender">
-    <label><input type="radio" name="gender" value="male"> Male</label>
-    <label><input type="radio" name="gender" value="female"> Female</label>
-  </div>
-  <div class="error" id="genderError"></div>
-
-  <div class="field"><input type="email" id="email" placeholder="Email address" autocomplete="email" autocapitalize="none" /></div>
-  <div class="field"><input type="email" id="confirmEmail" placeholder="Confirm email address" autocomplete="off" autocapitalize="none" /></div>
-  <div class="error" id="emailError"></div>
-
-  <div class="field">
-    <input type="password" id="password" placeholder="Create password" autocomplete="new-password" minlength="6" />
-    <span class="eye-icon" onclick="togglePassword('password', this)">👁️</span>
-  </div>
-  <div class="field">
-    <input type="password" id="confirmPassword" placeholder="Confirm password" minlength="6" />
-    <span class="eye-icon" onclick="togglePassword('confirmPassword', this)">👁️</span>
-  </div>
-  <div class="error" id="passwordError"></div>
-
-  <button class="btn" id="submitBtn" type="button">Start My Free Trial</button>
-  <div class="hint">Already have an account? <a href="signin.html">Sign in</a></div>
 
   <script>
-    const client = supabase.createClient(
-      'https://ajoimwcrmszhmcjrpxjv.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM'
-    );
+    const BASE_URL = 'https://expressfitness.ca/x45';
+    const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const formError = document.getElementById('formError');
-    const emailError = document.getElementById('emailError');
-    const passwordError = document.getElementById('passwordError');
-    const dobError = document.getElementById('dobError');
-    const genderError = document.getElementById('genderError');
-    const submitBtn = document.getElementById('submitBtn');
-
-    // Avoid accidental refreshes on mobile keyboards/go buttons
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') e.preventDefault();
-    }, true);
-
-    (function setDobLimits(){
+    // DOB limits
+    (function () {
       const dob = document.getElementById('dob');
       const now = new Date();
       const yyyy = now.getFullYear();
@@ -103,41 +90,22 @@
       dob.min = '1900-01-01';
     })();
 
-    function togglePassword(id, icon){
-      const input = document.getElementById(id);
-      const show = input.type === 'password';
-      input.type = show ? 'text' : 'password';
-      icon.style.color = show ? '#fff' : '#aaa';
+    function toggle(id, el){
+      const i = document.getElementById(id);
+      i.type = (i.type === 'password') ? 'text' : 'password';
+      el.style.color = (i.type === 'text') ? '#fff' : '#aaa';
     }
-
-    function getGender(){
-      const sel = document.querySelector('input[name="gender"]:checked');
-      return sel ? sel.value : '';
-    }
-
-    function validateDob(dateStr){
-      if (!dateStr) return "Please select your date of birth.";
-      const d = new Date(dateStr), now = new Date();
-      if (d > now) return "DOB cannot be in the future.";
-      const age = now.getFullYear() - d.getFullYear() - ((now.getMonth()<d.getMonth() || (now.getMonth()==d.getMonth() && now.getDate()<d.getDate()))?1:0);
-      if (age < 13) return "You must be at least 13 years old.";
+    function g(){ const r=document.querySelector('input[name="gender"]:checked'); return r?r.value:'';}
+    function dobErr(v){
+      if(!v) return "Please select your date of birth.";
+      const d=new Date(v), n=new Date();
+      if(d>n) return "DOB cannot be in the future.";
+      const age=n.getFullYear()-d.getFullYear() - ((n.getMonth()<d.getMonth() || (n.getMonth()==d.getMonth() && n.getDate()<d.getDate()))?1:0);
+      if(age<13) return "You must be at least 13 years old.";
       return "";
     }
 
-    function clearErrors(){
-      formError.textContent = '';
-      emailError.textContent = '';
-      passwordError.textContent = '';
-      dobError.textContent = '';
-      genderError.textContent = '';
-    }
-
-    let submitting = false;
-
-    async function handleSignup(){
-      if (submitting) return;
-      clearErrors();
-
+    async function register(){
       const firstName = document.getElementById('firstName').value.trim();
       const lastName  = document.getElementById('lastName').value.trim();
       const email     = document.getElementById('email').value.trim();
@@ -145,50 +113,34 @@
       const password  = document.getElementById('password').value;
       const confirmPassword = document.getElementById('confirmPassword').value;
       const dob       = document.getElementById('dob').value;
-      const gender    = getGender();
+      const gender    = g();
 
-      if (!firstName) { formError.textContent = "Please enter your first name."; return; }
-      if (email !== confirmEmail) { emailError.textContent = "Emails do not match."; return; }
-      if (password !== confirmPassword) { passwordError.textContent = "Passwords do not match."; return; }
+      document.getElementById('emailError').textContent='';
+      document.getElementById('passwordError').textContent='';
+      document.getElementById('dobError').textContent='';
+      document.getElementById('genderError').textContent='';
 
-      const dobErr = validateDob(dob);
-      if (dobErr) { dobError.textContent = dobErr; return; }
-      if (!gender) { genderError.textContent = "Please select gender."; return; }
+      if(!firstName){ alert("Please enter your first name."); return; }
+      if(email !== confirmEmail){ document.getElementById('emailError').textContent="Emails do not match."; return; }
+      if(password !== confirmPassword){ document.getElementById('passwordError').textContent="Passwords do not match."; return; }
 
-      // lock
-      submitting = true;
-      submitBtn.disabled = true;
-      const oldText = submitBtn.textContent;
-      submitBtn.textContent = 'Sending…';
+      const dErr = dobErr(dob); if(dErr){ document.getElementById('dobError').textContent=dErr; return; }
+      if(!gender){ document.getElementById('genderError').textContent="Please select gender."; return; }
 
-      try {
-        const { data, error } = await client.auth.signUp({
+      try{
+        const { error } = await client.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: `${BASE_URL}/signin.html`,
-            data: { first_name: firstName, last_name: lastName, dob, gender }
+            data: { first_name:firstName, last_name:lastName, dob, gender }
           }
         });
-
-        if (error) {
-          formError.textContent = error.message || 'Sign up failed.';
-          return;
-        }
-
-        // keep the inputs intact; just navigate
-        location.href = 'accountcreated.html?email=' + encodeURIComponent(email);
-
-      } catch (err) {
-        formError.textContent = (err && err.message) ? err.message : 'Unexpected error.';
-      } finally {
-        submitting = false;
-        submitBtn.disabled = false;
-        submitBtn.textContent = oldText;
-      }
+        if(error){ alert('Supabase Error: '+error.message); return; }
+        // Success – show “Account Created” message
+        location.href = `accountcreated.html?email=${encodeURIComponent(email)}`;
+      }catch(e){ alert('Unexpected error: '+e.message); }
     }
-
-    submitBtn.addEventListener('click', handleSignup);
   </script>
 </body>
 </html>
