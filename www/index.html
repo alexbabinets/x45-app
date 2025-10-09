@@ -4,17 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>X45 — Welcome</title>
-
-  <!-- Allow remote images over HTTPS + local/data. Keep JS/CSS self only. -->
-  <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self';
-                 img-src 'self' https: data: blob:;
-                 script-src 'self';
-                 style-src 'self' 'unsafe-inline';
-                 connect-src 'self';
-                 media-src 'self';
-                 font-src 'self';" />
-
   <style>
     :root { color-scheme: dark; }
     html,body{ height:100%; }
@@ -24,18 +13,21 @@
       min-height:100svh; display:grid; place-items:center;
       padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+      text-align:center;
     }
-    .wrap{ text-align:center; max-width:900px; padding:24px; }
+    .wrap{ max-width:900px; padding:24px; }
 
+    /* Your working hosted logo */
     .brand{
       display:block; margin:0 auto clamp(16px, 4.5vmin, 28px);
-      height: clamp(72px, 16vmin, 140px);
-      width:auto; user-select:none; -webkit-user-drag:none;
+      width: clamp(200px, 45vmin, 360px); /* scales nicely in portrait */
+      height:auto; user-select:none; -webkit-user-drag:none;
       image-rendering:-webkit-optimize-contrast;
     }
+
     h1{
       margin: 0 0 clamp(10px, 3.6vmin, 20px) 0;
-      font-size: clamp(26px, 6.4vmin, 56px);
+      font-size: clamp(26px, 6.2vmin, 52px);
       font-weight: 800;
     }
     .tag{
@@ -51,33 +43,22 @@
       font-weight:800; letter-spacing:.2px;
       box-shadow: 0 10px 24px rgba(229,9,20,.35);
     }
-    @media (orientation: portrait) {
-      .brand { height: clamp(80px, 16vmin, 140px); }
-    }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <!-- Start with local asset so you always see something -->
-    <img id="logo" class="brand" src="logo.png" alt="X45 Express Fitness" draggable="false" />
+    <!-- Use the URL that works on your server -->
+    <img
+      class="brand"
+      src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
+      alt="X45 Express Fitness"
+    />
 
     <h1>Welcome to X45</h1>
     <div class="tag">Fitness that knows you.</div>
-    <a class="cta" href="connect.html">Get Started</a>
+
+    <!-- points to your renamed signup page -->
+    <a class="cta" href="signup.html">Get Started</a>
   </div>
-
-  <script>
-    // Try using your remote URL first; if it fails, keep local logo.png
-    (function(){
-      const remoteURL = "https://expressfitness.ca/wp-content/uploads/2025/10/X45-LOGO-CUT-TM.png";
-      const img = document.getElementById('logo');
-
-      const test = new Image();
-      test.onload = () => { img.src = remoteURL; };      // remote OK → swap in
-      test.onerror = () => {/* keep local */};           // remote blocked → stay local
-      test.referrerPolicy = 'no-referrer';                // avoid referrer issues
-      test.src = remoteURL;
-    })();
-  </script>
 </body>
 </html>
