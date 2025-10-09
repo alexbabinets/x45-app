@@ -2,67 +2,87 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign In – X45</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { background:#000; font-family:Arial,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,sans-serif; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; padding:20px; }
-    .logo { max-width:160px; margin:6px 0 12px; }
-    h1 { font-size:26px; margin:8px 0 16px; text-align:center; color:#00ffcc; }
-    .form-input { padding:14px; margin:6px 0; width:min(420px,92vw); border-radius:8px; border:none; font-size:16px; background:#222; color:#fff; box-sizing:border-box; }
-    .btn { background:#cc0000; color:#fff; border:none; padding:14px 30px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; margin-top:14px; width:min(420px,92vw); }
-    .btn:hover { background:#ff1a1a; }
-    .row { display:flex; justify-content:center; align-items:center; gap:12px; margin-top:8px; font-size:14px; }
-    a { color:#7db3ff; text-decoration:underline; }
-    .error { color:#ff6b6b; font-size:15px; margin:8px 0; min-height:20px; text-align:center; }
-    #forgot-box { display:none; margin-top:10px; }
-    #forgot-msg { margin-top:10px; font-size:15px; text-align:center; }
+    :root{--field:#222;--muted:#bbb;--red:#e30000}
+    html,body{height:100%}
+    body{margin:0;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif;display:flex;align-items:center;justify-content:center}
+    .wrap{width:min(92%,420px);text-align:center}
+    .logo{max-width:160px;display:block;margin:0 auto 24px}
+    h1{font-size:24px;margin:0 0 16px;color:#00ffcc}
+    .form-input{padding:14px;margin:6px 0;width:100%;border:0;border-radius:10px;background:var(--field);color:#fff;font-size:16px;box-sizing:border-box}
+    .form-input::placeholder{color:#9a9a9a}
+    .btn{background:var(--red);color:#fff;border:0;padding:14px 30px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-top:14px;width:100%}
+    .row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:14px;color:#cfcfcf}
+    a{color:#e6e6e6;text-decoration:underline;cursor:pointer}
+    .error{color:#ff4d4d;font-size:14px;margin-top:10px;min-height:18px}
+    #forgot{display:none;margin-top:12px}
+    #forgot .msg{margin-top:10px}
   </style>
 </head>
 <body>
-  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
-  <h1>✅ Email Confirmed — Sign in to X45</h1>
+  <div class="wrap">
+    <img class="logo" alt="X45" src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png">
+    <h1>✅ Your Email Is Confirmed.<br>You can now sign in to X45</h1>
 
-  <input type="email" class="form-input" id="email" placeholder="Email address" autocomplete="email" autocapitalize="none" />
-  <input type="password" class="form-input" id="password" placeholder="Password" autocomplete="current-password" />
+    <input id="email" class="form-input" type="email" placeholder="Email address">
+    <input id="password" class="form-input" type="password" placeholder="Password">
 
-  <div class="row">
-    <label><input type="checkbox" id="showPass"> Show Password</label>
-    <a id="toggleForgot">Forgot password?</a>
+    <div class="row">
+      <label><input type="checkbox" onchange="togglePass()"> Show password</label>
+      <a onclick="toggleForgot()">Forgot password?</a>
+    </div>
+
+    <div id="forgot">
+      <input id="forgot-email" class="form-input" type="email" placeholder="Enter your email">
+      <button class="btn" style="margin-top:10px;background:#007bff" onclick="sendReset()">Email me the link</button>
+      <div class="msg" id="forgot-msg"></div>
+    </div>
+
+    <div id="error" class="error"></div>
+    <button class="btn" onclick="login()">Sign In</button>
   </div>
-
-  <div id="forgot-box">
-    <input type="email" class="form-input" id="forgot-email" placeholder="Enter your email" />
-    <button class="btn" id="sendResetBtn" type="button">Email me the link</button>
-    <div id="forgot-msg"></div>
-  </div>
-
-  <div class="error" id="errorBox"></div>
-  <button class="btn" id="loginBtn" type="button">Sign In</button>
 
   <script>
-    const client = supabase.createClient(
-      'https://ajoimwcrmszhmcjrpxjv.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM'
-    );
+    const BASE_URL = 'https://expressfitness.ca/x45';
+    const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
+    const client = supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-    const emailEl = document.getElementById('email');
-    const passEl  = document.getElementById('password');
-    const errorBox = document.getElementById('errorBox');
+    function togglePass(){
+      const x=document.getElementById('password');
+      x.type = (x.type==='password')?'text':'password';
+    }
+    function toggleForgot(){
+      const f=document.getElementById('forgot');
+      f.style.display = (f.style.display==='block')?'none':'block';
+    }
 
-    const params = new URLSearchParams(location.search);
-    const preEmail = params.get('email');
-    if (preEmail) emailEl.value = preEmail;
+    async function login(){
+      const email=document.getElementById('email').value.trim();
+      const password=document.getElementById('password').value;
+      const errorBox=document.getElementById('error'); errorBox.textContent='';
+      try{
+        const { data, error } = await client.auth.signInWithPassword({ email, password });
+        if(error){ errorBox.textContent=error.message; return; }
+        if(!data.user.email_confirmed_at){
+          errorBox.textContent="Please confirm your email before signing in."; return;
+        }
+        // go to next step (placeholder)
+        location.href='index.html';
+      }catch(e){ errorBox.textContent='Unexpected error: '+e.message; }
+    }
 
-    document.getElementById('showPass').addEventListener('change', (e)=>{
-      passEl.type = e.target.checked ? 'text' : 'password';
-    });
-
-    document.getElementById('toggleForgot').addEventListener('click', ()=>{
-      const box = document.getElementById('forgot-box');
-      box.style.display = box.style.display === 'block' ? 'none' : 'block';
-    });
-
-    document.getElementById('sendResetBtn').addEventListener('click', async ()=>{
-      const forgotEmail = document.getElementById('forgot-email').value.trim();
-      const msg = document.getElemen
+    async function sendReset(){
+      const email=document.getElementById('forgot-email').value.trim();
+      const msg=document.getElementById('forgot-msg');
+      msg.textContent='Sending...'; msg.style.color='#fff';
+      const { error } = await client.auth.resetPasswordForEmail(email,{ redirectTo:`${BASE_URL}/reset-password.html` });
+      if(error){ msg.textContent='❌ '+error.message; msg.style.color='red'; }
+      else{ msg.textContent='✅ Reset link sent. Check your inbox.'; msg.style.color='lightgreen'; }
+    }
+  </script>
+</body>
+</html>
