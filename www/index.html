@@ -6,27 +6,30 @@
   <title>X45 — Welcome</title>
   <style>
     :root { color-scheme: dark; }
+    html,body{ height:100%; }
     body{
       margin:0; background:#000; color:#fff;
       font-family:-apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
       min-height:100svh; display:grid; place-items:center;
       padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
     }
-    .wrap{ text-align:center; max-width: 900px; padding: 24px; }
+    .wrap{ text-align:center; max-width:900px; padding:24px; }
 
-    /* Use your logo image */
+    /* Your logo (local file) */
     .brand{
-      display:block; margin: 0 auto clamp(16px, 4.5vmin, 28px);
-      height: clamp(72px, 16vmin, 140px);   /* smaller than previous */
+      display:block; margin:0 auto clamp(16px, 4.5vmin, 28px);
+      height: clamp(72px, 16vmin, 140px);  /* tuned size */
       width:auto;
+      user-select:none; -webkit-user-drag:none;
+      image-rendering:-webkit-optimize-contrast;
     }
 
-    /* Typography (slightly smaller than the previous build) */
     h1{
       margin: 0 0 clamp(10px, 3.6vmin, 20px) 0;
       font-size: clamp(26px, 6.4vmin, 56px);
       font-weight: 800;
-      letter-spacing: .2px;
+      letter-spacing:.2px;
     }
     .tag{
       opacity:.9;
@@ -43,22 +46,36 @@
       box-shadow: 0 10px 24px rgba(229,9,20,.35);
     }
 
-    /* Portrait-specific tweaks (still smaller than before) */
+    /* Portrait fine-tune */
     @media (orientation: portrait) {
       .brand { height: clamp(80px, 16vmin, 140px); }
       h1    { font-size: clamp(28px, 7.2vmin, 58px); }
       .tag  { font-size: clamp(18px, 4.8vmin, 28px); margin-bottom: clamp(26px, 7.8vmin, 44px); }
-      .cta  { font-size: clamp(18px, 5.6vmin, 30px); padding: clamp(14px, 4.8vmin, 22px) clamp(24px, 8vmin, 34px); border-radius: 20px; }
+      .cta  { font-size: clamp(18px, 5.6vmin, 30px); padding: clamp(14px, 4.8vmin, 22px) clamp(24px, 8vmin, 34px); border-radius:20px; }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <!-- If your file name isn’t logo.png, change the src here -->
-    <img class="brand" src="logo.png" alt="X45 Express Fitness" />
+    <!-- MOST RELIABLE: local asset bundled in the app -->
+    <img class="brand" src="logo.png" alt="X45 Express Fitness" draggable="false" />
+
     <h1>Welcome to X45</h1>
     <div class="tag">Fitness that knows you.</div>
     <a class="cta" href="connect.html">Get Started</a>
   </div>
+
+  <script>
+    // Optional extra safety: if logo fails for any reason, show simple text fallback.
+    document.addEventListener('error', e => {
+      const img = e.target;
+      if (img && img.classList.contains('brand')) {
+        img.remove();
+        const h = document.createElement('h1');
+        h.textContent = 'X45';
+        document.querySelector('.wrap').prepend(h);
+      }
+    }, true);
+  </script>
 </body>
 </html>
