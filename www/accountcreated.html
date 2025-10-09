@@ -5,30 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Account Created – X45</title>
   <style>
-    html,body{height:100%}
-    body{
-      margin:0; background:#000; color:#fff; font-family:Arial,Helvetica,sans-serif;
-      display:flex; align-items:center; justify-content:center; text-align:center;
-    }
-    .wrap{max-width:560px; padding:28px}
-    .logo{width:150px; margin:0 auto 24px; display:block}
-    h1{font-size:34px; margin:0 0 12px}
-    p{font-size:18px; color:#d9d9d9; margin:0 0 6px}
-    .important{color:#ff3b3b; margin-top:12px}
+    body { background:#000; font-family:Arial,sans-serif; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; text-align:center; }
+    .logo { width:150px; margin-bottom:22px; }
+    h1 { font-size:36px; margin-bottom:16px; }
+    p { font-size:18px; margin-bottom:12px; max-width:600px; }
+    .important { color:red; font-size:18px; margin-top:18px; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <img class="logo" src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" alt="X45 Logo" />
-    <h1>Your Account Has Been Created</h1>
-    <p id="confirmation-message">
-      We sent you a link at <strong>[your email]</strong>. Please confirm your email to activate your account.
-    </p>
-    <p class="important">Check your spam or junk folder.</p>
-  </div>
+  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" alt="X45 Logo" class="logo" />
+  <h1>Your Account Has Been Created</h1>
+  <p id="confirmation-message">We sent you a link at <strong>[your email]</strong>. Please confirm your email to activate your account.</p>
+  <p class="important">Check your spam or junk folder.</p>
 
   <script>
-    const params = new URLSearchParams(location.search);
+    const params = new URLSearchParams(window.location.search);
     const email = params.get("email");
     if (email) {
       document.getElementById("confirmation-message").innerHTML =
