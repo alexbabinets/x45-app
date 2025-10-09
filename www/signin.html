@@ -2,107 +2,105 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Sign In – X45</title>
-  <script>const BASE_URL = 'https://expressfitness.ca/x45';</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { background:#000; font-family:Arial, sans-serif; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; }
-    .logo { max-width:160px; margin-bottom:30px; }
-    h1 { font-size:24px; margin-bottom:20px; text-align:center; color:#00ffcc; }
-    .form-input { padding:14px; margin:6px 0; width:300px; border-radius:8px; border:none; font-size:16px; background:#222; color:#fff; }
+    body { background:#000; font-family:Arial,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,sans-serif; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; padding:20px; }
+    .logo { max-width:160px; margin:6px 0 12px; }
+    h1 { font-size:26px; margin:8px 0 16px; text-align:center; color:#00ffcc; }
+    .form-input { padding:14px; margin:6px 0; width:min(420px,92vw); border-radius:8px; border:none; font-size:16px; background:#222; color:#fff; box-sizing:border-box; }
     .form-input::placeholder { color:#aaa; }
-    .btn { background:#cc0000; color:#fff; border:none; padding:14px 30px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; margin-top:20px; transition:background .3s; }
+    .btn { background:#cc0000; color:#fff; border:none; padding:14px 30px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; margin-top:14px; transition:background .3s; width:min(420px,92vw); }
     .btn:hover { background:#ff1a1a; }
-    .error { color:#ff4d4d; font-size:14px; margin-top:8px; }
-    .row-line { display:flex; justify-content:center; align-items:center; gap:12px; margin-top:6px; font-size:14px; }
-    a { color:#ccc; cursor:pointer; text-decoration:underline; }
-    #forgot-container { margin-top:16px; }
-    #forgot-message { margin-top:12px; font-size:15px; }
+    .muted { color:#aaa; font-size:14px; text-align:center; margin-top:12px; }
+    .row { display:flex; justify-content:center; align-items:center; gap:12px; margin-top:8px; font-size:14px; }
+    a { color:#7db3ff; cursor:pointer; text-decoration:underline; }
+    .error { color:#ff6b6b; font-size:15px; margin:8px 0; min-height:20px; text-align:center; }
+    #forgot-box { display:none; margin-top:10px; }
+    #forgot-msg { margin-top:10px; font-size:15px; text-align:center; }
   </style>
 </head>
 <body>
   <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
-  <h1>✅ Your Email Is Confirmed.<br>You can now sign in to X45</h1>
+  <h1>✅ Email Confirmed — Sign in to X45</h1>
 
-  <input type="email" class="form-input" id="email" placeholder="Email address" />
-  <input type="password" class="form-input" id="password" placeholder="Password" />
+  <input type="email" class="form-input" id="email" placeholder="Email address" autocomplete="email" autocapitalize="none" />
+  <input type="password" class="form-input" id="password" placeholder="Password" autocomplete="current-password" />
 
-  <div class="row-line">
-    <label><input type="checkbox" onchange="togglePassword()"> Show Password</label>
-    <a onclick="toggleForgot()">Forgot password?</a>
+  <div class="row">
+    <label><input type="checkbox" id="showPass"> Show Password</label>
+    <a id="toggleForgot">Forgot password?</a>
   </div>
 
-  <div id="forgot-container" style="display:none;">
-    <input type="email" class="form-input" id="forgot-email" placeholder="Enter your email" /><br />
-    <button class="btn" style="margin-top:10px; background-color:#007bff;" onclick="sendReset()">Email me the link</button>
-    <p id="forgot-message"></p>
+  <div id="forgot-box">
+    <input type="email" class="form-input" id="forgot-email" placeholder="Enter your email" />
+    <button class="btn" id="sendResetBtn" type="button">Email me the link</button>
+    <div id="forgot-msg"></div>
   </div>
 
   <div class="error" id="errorBox"></div>
-
-  <button class="btn" onclick="signin()">Sign In</button>
+  <button class="btn" id="loginBtn" type="button">Sign In</button>
+  <div class="muted">If you installed the TestFlight app, you can return to it after signing in.</div>
 
   <script>
+    // Supabase client
     const client = supabase.createClient(
       'https://ajoimwcrmszhmcjrpxjv.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM'
     );
 
-    function togglePassword() {
-      const passInput = document.getElementById('password');
-      passInput.type = passInput.type === 'password' ? 'text' : 'password';
-    }
+    const emailEl = document.getElementById('email');
+    const passEl  = document.getElementById('password');
+    const errorBox = document.getElementById('errorBox');
+    const loginBtn = document.getElementById('loginBtn');
 
-    function toggleForgot() {
-      const forgotDiv = document.getElementById('forgot-container');
-      forgotDiv.style.display = (forgotDiv.style.display === 'block') ? 'none' : 'block';
-    }
+    // Support pre-filling email via ?email=
+    const params = new URLSearchParams(location.search);
+    const preEmail = params.get('email');
+    if (preEmail) emailEl.value = preEmail;
 
-    async function signin() {
-      const email = document.getElementById('email').value.trim();
-      const password = document.getElementById('password').value;
-      const errorBox = document.getElementById('errorBox');
-      errorBox.innerText = '';
+    document.getElementById('showPass').addEventListener('change', (e)=>{
+      passEl.type = e.target.checked ? 'text' : 'password';
+    });
 
+    document.getElementById('toggleForgot').addEventListener('click', ()=>{
+      const box = document.getElementById('forgot-box');
+      box.style.display = box.style.display === 'block' ? 'none' : 'block';
+    });
+
+    document.getElementById('sendResetBtn').addEventListener('click', async ()=>{
+      const forgotEmail = document.getElementById('forgot-email').value.trim();
+      const msg = document.getElementById('forgot-msg');
+      msg.textContent = 'Sending...'; msg.style.color = 'white';
+      try {
+        const { error } = await client.auth.resetPasswordForEmail(forgotEmail, {
+          redirectTo: 'https://expressfitness.ca/x45/reset-password.html'
+        });
+        if (error) { msg.textContent = '❌ ' + error.message; msg.style.color = 'orange'; }
+        else { msg.textContent = '✅ Reset link sent. Check your inbox.'; msg.style.color = 'lightgreen'; }
+      } catch (err) { msg.textContent = '❌ ' + (err.message || 'Unexpected error'); msg.style.color = 'red'; }
+    });
+
+    loginBtn.addEventListener('click', async ()=>{
+      errorBox.textContent = '';
+      const email = emailEl.value.trim();
+      const password = passEl.value;
+      if (!email || !password) { errorBox.textContent = 'Please enter email and password.'; return; }
+
+      loginBtn.disabled = true; const old = loginBtn.textContent; loginBtn.textContent = 'Signing in…';
       try {
         const { data, error } = await client.auth.signInWithPassword({ email, password });
-        if (error) {
-          errorBox.innerText = error.message;
-        } else if (!data.user.email_confirmed_at) {
-          errorBox.innerText = "⚠️ Please confirm your email before signing in.";
-        } else {
-          // next app page:
-          window.location.href = 'device-connect.html';
+        if (error) { errorBox.textContent = error.message; }
+        else if (!data.user.email_confirmed_at) { errorBox.textContent = 'Please confirm your email first.'; }
+        else {
+          // Success on the hosted page. You can show a message or redirect.
+          errorBox.style.color = 'lightgreen';
+          errorBox.textContent = 'Signed in. You can now return to the app.';
         }
-      } catch (err) {
-        errorBox.innerText = 'Unexpected error: ' + (err?.message || err);
-      }
-    }
-
-    async function sendReset() {
-      const email = document.getElementById('forgot-email').value;
-      const message = document.getElementById('forgot-message');
-      message.textContent = 'Sending...';
-      message.style.color = 'white';
-
-      try {
-        const { error: resetError } = await client.auth.resetPasswordForEmail(email, {
-          redirectTo: `${BASE_URL}/reset-password.html`
-        });
-
-        if (resetError) {
-          message.textContent = '❌ ' + resetError.message;
-          message.style.color = 'red';
-        } else {
-          message.textContent = '✅ Reset link sent. Check your inbox.';
-          message.style.color = 'lightgreen';
-        }
-      } catch (err) {
-        message.textContent = '❌ ' + (err?.message || err);
-        message.style.color = 'red';
-      }
-    }
+      } catch (err) { errorBox.textContent = err.message || 'Unexpected error.'; }
+      finally { loginBtn.disabled = false; loginBtn.textContent = old; }
+    });
   </script>
 </body>
 </html>
