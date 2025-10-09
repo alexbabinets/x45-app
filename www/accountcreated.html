@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Account Created – X45</title>
+  <style>
+    body {
+      background-color: #000;
+      font-family: Arial, sans-serif;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+
+    .logo {
+      width: 150px;
+      margin-bottom: 30px;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 20px;
+    }
+
+    p {
+      font-size: 18px;
+      margin-bottom: 12px;
+      max-width: 600px;
+    }
+
+    .important {
+      color: red;
+      font-size: 18px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" alt="X45 Logo" class="logo" />
+  <h1>Your Account Has Been Created</h1>
+  <p id="confirmation-message">
+    We sent you a link at <strong>[your email]</strong>. Please confirm your email to activate your account.
+  </p>
+  <p class="important">Check your spam or junk folder.</p>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get("email");
+    if (email) {
+      document.getElementById("confirmation-message").innerHTML =
+        `We sent you a link at <strong>${email}</strong>. Please confirm your email to activate your account.`;
+    }
+  </script>
+</body>
+</html>
