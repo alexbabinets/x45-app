@@ -8,8 +8,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { background:#000; font-family:Arial,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,sans-serif; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; padding:20px; }
-    .logo { max-width:160px; margin:6px 0 10px; }        /* tighter spacing */
-    h1 { font-size:38px; margin:6px 0 6px; text-align:center; }  /* slightly smaller + tighter */
+    .logo { max-width:160px; margin:6px 0 10px; }
+    h1 { font-size:38px; margin:6px 0 6px; text-align:center; }
     .subtitle { font-size:18px; color:#ccc; margin:6px 0 18px; text-align:center; }
     .label { width:min(420px,92vw); font-size:14px; color:#bbb; margin:4px 0 6px }
     .field { width:min(420px,92vw); position:relative; margin:8px 0; }
@@ -88,104 +88,4 @@
     const passwordError = document.getElementById('passwordError');
     const dobError = document.getElementById('dobError');
     const genderError = document.getElementById('genderError');
-    const submitBtn = document.getElementById('submitBtn');
-
-    // Tighten DOB limits
-    (function setDobLimits(){
-      const dob = document.getElementById('dob');
-      const now = new Date();
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth()+1).padStart(2,'0');
-      const dd = String(now.getDate()).padStart(2,'0');
-      dob.max = `${yyyy}-${mm}-${dd}`;
-      dob.min = '1900-01-01';
-    })();
-
-    function togglePassword(id, icon){
-      const input = document.getElementById(id);
-      const show = input.type === 'password';
-      input.type = show ? 'text' : 'password';
-      icon.style.color = show ? '#fff' : '#aaa';
-    }
-
-    function getGender(){
-      const sel = document.querySelector('input[name="gender"]:checked');
-      return sel ? sel.value : '';
-    }
-
-    function validateDob(dateStr){
-      if (!dateStr) return "Please select your date of birth.";
-      const d = new Date(dateStr), now = new Date();
-      if (d > now) return "DOB cannot be in the future.";
-      const age = now.getFullYear() - d.getFullYear() - ((now.getMonth()<d.getMonth() || (now.getMonth()==d.getMonth() && now.getDate()<d.getDate()))?1:0);
-      if (age < 13) return "You must be at least 13 years old.";
-      return "";
-    }
-
-    function clearErrors(){
-      formError.textContent = '';
-      emailError.textContent = '';
-      passwordError.textContent = '';
-      dobError.textContent = '';
-      genderError.textContent = '';
-    }
-
-    async function doSignup(payload){
-      // disable to prevent double submit
-      submitBtn.disabled = true;
-      const originalText = submitBtn.textContent;
-      submitBtn.textContent = 'Sending…';
-
-      try {
-        const { data, error } = await client.auth.signUp(payload);
-        if (error) {
-          // show inline; don't alert
-          formError.textContent = error.message || 'Sign up failed.';
-          submitBtn.disabled = false;
-          submitBtn.textContent = originalText;
-          return;
-        }
-        // success → move on immediately
-        window.location.href = 'accountcreated.html?email=' + encodeURIComponent(payload.email);
-      } catch (err) {
-        formError.textContent = (err && err.message) ? err.message : 'Unexpected error.';
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-      }
-    }
-
-    form.addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      clearErrors();
-
-      const firstName = document.getElementById('firstName').value.trim();
-      const lastName  = document.getElementById('lastName').value.trim();
-      const email     = document.getElementById('email').value.trim();
-      const confirmEmail = document.getElementById('confirmEmail').value.trim();
-      const password  = document.getElementById('password').value;
-      const confirmPassword = document.getElementById('confirmPassword').value;
-      const dob       = document.getElementById('dob').value;
-      const gender    = getGender();
-
-      // validations (inline only, no alerts)
-      if (!firstName) { formError.textContent = "Please enter your first name."; return; }
-      if (email !== confirmEmail) { emailError.textContent = "Emails do not match."; return; }
-      if (password !== confirmPassword) { passwordError.textContent = "Passwords do not match."; return; }
-
-      const dobErr = validateDob(dob);
-      if (dobErr) { dobError.textContent = dobErr; return; }
-      if (!gender) { genderError.textContent = "Please select gender."; return; }
-
-      // all good → call Supabase
-      await doSignup({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${BASE_URL}/signin.html`,
-          data: { first_name: firstName, last_name: lastName, dob, gender }
-        }
-      });
-    });
-  </script>
-</body>
-</html>
+    const submitBtn = document.getElementById('
