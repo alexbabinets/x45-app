@@ -10,12 +10,10 @@
     .logo { max-width:160px; margin:6px 0 12px; }
     h1 { font-size:26px; margin:8px 0 16px; text-align:center; color:#00ffcc; }
     .form-input { padding:14px; margin:6px 0; width:min(420px,92vw); border-radius:8px; border:none; font-size:16px; background:#222; color:#fff; box-sizing:border-box; }
-    .form-input::placeholder { color:#aaa; }
-    .btn { background:#cc0000; color:#fff; border:none; padding:14px 30px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; margin-top:14px; transition:background .3s; width:min(420px,92vw); }
+    .btn { background:#cc0000; color:#fff; border:none; padding:14px 30px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; margin-top:14px; width:min(420px,92vw); }
     .btn:hover { background:#ff1a1a; }
-    .muted { color:#aaa; font-size:14px; text-align:center; margin-top:12px; }
     .row { display:flex; justify-content:center; align-items:center; gap:12px; margin-top:8px; font-size:14px; }
-    a { color:#7db3ff; cursor:pointer; text-decoration:underline; }
+    a { color:#7db3ff; text-decoration:underline; }
     .error { color:#ff6b6b; font-size:15px; margin:8px 0; min-height:20px; text-align:center; }
     #forgot-box { display:none; margin-top:10px; }
     #forgot-msg { margin-top:10px; font-size:15px; text-align:center; }
@@ -41,10 +39,8 @@
 
   <div class="error" id="errorBox"></div>
   <button class="btn" id="loginBtn" type="button">Sign In</button>
-  <div class="muted">If you installed the TestFlight app, you can return to it after signing in.</div>
 
   <script>
-    // Supabase client
     const client = supabase.createClient(
       'https://ajoimwcrmszhmcjrpxjv.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM'
@@ -53,9 +49,7 @@
     const emailEl = document.getElementById('email');
     const passEl  = document.getElementById('password');
     const errorBox = document.getElementById('errorBox');
-    const loginBtn = document.getElementById('loginBtn');
 
-    // Support pre-filling email via ?email=
     const params = new URLSearchParams(location.search);
     const preEmail = params.get('email');
     if (preEmail) emailEl.value = preEmail;
@@ -71,36 +65,4 @@
 
     document.getElementById('sendResetBtn').addEventListener('click', async ()=>{
       const forgotEmail = document.getElementById('forgot-email').value.trim();
-      const msg = document.getElementById('forgot-msg');
-      msg.textContent = 'Sending...'; msg.style.color = 'white';
-      try {
-        const { error } = await client.auth.resetPasswordForEmail(forgotEmail, {
-          redirectTo: 'https://expressfitness.ca/x45/reset-password.html'
-        });
-        if (error) { msg.textContent = '❌ ' + error.message; msg.style.color = 'orange'; }
-        else { msg.textContent = '✅ Reset link sent. Check your inbox.'; msg.style.color = 'lightgreen'; }
-      } catch (err) { msg.textContent = '❌ ' + (err.message || 'Unexpected error'); msg.style.color = 'red'; }
-    });
-
-    loginBtn.addEventListener('click', async ()=>{
-      errorBox.textContent = '';
-      const email = emailEl.value.trim();
-      const password = passEl.value;
-      if (!email || !password) { errorBox.textContent = 'Please enter email and password.'; return; }
-
-      loginBtn.disabled = true; const old = loginBtn.textContent; loginBtn.textContent = 'Signing in…';
-      try {
-        const { data, error } = await client.auth.signInWithPassword({ email, password });
-        if (error) { errorBox.textContent = error.message; }
-        else if (!data.user.email_confirmed_at) { errorBox.textContent = 'Please confirm your email first.'; }
-        else {
-          // Success on the hosted page. You can show a message or redirect.
-          errorBox.style.color = 'lightgreen';
-          errorBox.textContent = 'Signed in. You can now return to the app.';
-        }
-      } catch (err) { errorBox.textContent = err.message || 'Unexpected error.'; }
-      finally { loginBtn.disabled = false; loginBtn.textContent = old; }
-    });
-  </script>
-</body>
-</html>
+      const msg = document.getElemen
