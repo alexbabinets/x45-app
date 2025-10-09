@@ -5,18 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Account Created – X45</title>
   <style>
-    body{
-      background:#000;
-      color:#fff;
-      font-family:Arial,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,sans-serif;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      min-height:100vh;
-      margin:0;
-      padding:20px;
-      text-align:center;
-    }
+    body{ background:#000; color:#fff; font-family:Arial,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,sans-serif;
+      display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0; padding:20px; text-align:center;}
     .wrap{max-width:640px; width:92vw;}
     .logo{max-width:160px; margin:6px 0 12px;}
     h1{font-size:38px; margin:8px 0 12px;}
@@ -26,11 +16,7 @@
 </head>
 <body>
   <div class="wrap">
-    <img
-      src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
-      alt="X45 Logo"
-      class="logo"
-    />
+    <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" alt="X45 Logo" class="logo" />
     <h1>Your Account Has Been Created</h1>
     <p id="confirmation-message">
       We sent you a link at <strong>[your email]</strong>. Please confirm your email to activate your account.
@@ -39,7 +25,7 @@
   </div>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(location.search);
     const email = params.get("email");
     if (email) {
       document.getElementById("confirmation-message").innerHTML =
