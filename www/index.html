@@ -1,64 +1,22 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>X45 — Welcome</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>X45 – Welcome</title>
   <style>
-    :root { color-scheme: dark; }
-    html,body{ height:100%; }
-    body{
-      margin:0; background:#000; color:#fff;
-      font-family:-apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-      min-height:100svh; display:grid; place-items:center;
-      padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-      -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
-      text-align:center;
-    }
-    .wrap{ max-width:900px; padding:24px; }
-
-    /* Your working hosted logo */
-    .brand{
-      display:block; margin:0 auto clamp(16px, 4.5vmin, 28px);
-      width: clamp(200px, 45vmin, 360px); /* scales nicely in portrait */
-      height:auto; user-select:none; -webkit-user-drag:none;
-      image-rendering:-webkit-optimize-contrast;
-    }
-
-    h1{
-      margin: 0 0 clamp(10px, 3.6vmin, 20px) 0;
-      font-size: clamp(26px, 6.2vmin, 52px);
-      font-weight: 800;
-    }
-    .tag{
-      opacity:.9;
-      font-size: clamp(18px, 4.6vmin, 28px);
-      margin-bottom: clamp(24px, 6.5vmin, 40px);
-    }
-    .cta{
-      display:inline-block; background:#e50914; color:#fff; text-decoration:none;
-      border:0; border-radius:18px;
-      padding: clamp(14px, 4.8vmin, 22px) clamp(24px, 8vmin, 34px);
-      font-size: clamp(18px, 5.6vmin, 30px);
-      font-weight:800; letter-spacing:.2px;
-      box-shadow: 0 10px 24px rgba(229,9,20,.35);
-    }
+    body { background:#000; color:#fff; font-family:Arial,sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; text-align:center; padding:20px;}
+    .logo { width:240px; margin-bottom:16px; }
+    h1 { font-size:36px; margin:8px 0; }
+    p { font-size:18px; margin:6px 0 18px; }
+    .btn { padding:12px 24px; border:none; border-radius:8px; background:#ff0000; color:#fff; font-size:16px; cursor:pointer; }
+    .btn:hover { background:#cc0000; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <!-- Use the URL that works on your server -->
-    <img
-      class="brand"
-      src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
-      alt="X45 Express Fitness"
-    />
-
-    <h1>Welcome to X45</h1>
-    <div class="tag">Fitness that knows you.</div>
-
-    <!-- points to your renamed signup page -->
-    <a class="cta" href="signup.html">Get Started</a>
-  </div>
+  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
+  <h1>Welcome to X45</h1>
+  <p>Fitness that knows you.</p>
+  <button class="btn" onclick="location.href='signup.html'">Get Started</button>
 </body>
 </html>
