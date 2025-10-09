@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Sign In – X45</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body{background:#000;color:#fff;font-family:Arial,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px}
+    .logo{max-width:160px;margin-bottom:30px}
+    h1{font-size:24px;margin-bottom:20px;text-align:center;color:#00ffcc}
+    .form-input{padding:14px;margin:6px 0;width:min(420px,92vw);border-radius:8px;border:none;font-size:16px;background:#222;color:#fff}
+    .form-input::placeholder{color:#aaa}
+    .btn{background:#cc0000;color:#fff;border:none;padding:14px 30px;border-radius:8px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:20px;transition:background .3s;width:min(420px,92vw)}
+    .btn:hover{background:#ff1a1a}
+    .row-line{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:6px;font-size:14px}
+    a{color:#ccc;cursor:pointer;text-decoration:underline}
+    #forgot-container{margin-top:16px;display:none}
+    .msg{margin-top:12px;font-size:15px}
+    .error{color:#ff4d4d;font-size:14px;margin-top:8px}
+  </style>
+</head>
+<body>
+  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
+  <h1>✅ Your email is confirmed. You can now sign in.</h1>
+
+  <input type="email" class="form-input" id="email" placeholder="Email address" />
+  <input type="password" class="form-input" id="password" placeholder="Password" />
+
+  <div class="row-line">
+    <label><input type="checkbox" id="showPass"> Show Password</label>
+    <a id="forgotToggle">Forgot password?</a>
+  </div>
+
+  <div id="forgot-container">
+    <input type="email" class="form-input" id="forgot-email" placeholder="Enter your email" />
+    <button class="btn" style="margin-top:10px;background:#007bff" id="resetBtn">Email me the link</button>
+    <p class="msg" id="forgot-message"></p>
+  </div>
+
+  <div class="error" id="errorBox"></div>
+  <button class="btn" id="loginBtn">Sign In</button>
+
+  <script>
+    const SUPABASE_URL='https://ajoimwcrmszhmcjrpxjv.supabase.co';
+    const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const emailEl = document.getElementById('email');
+    const passEl  = document.getElementById('password');
+    const errBox  = document.getElementById('errorBox');
+    const showPass= document.getElementById('showPass');
+    const forgotToggle=document.getElementById('forgotToggle');
+    const forgotWrap=document.getElementById('forgot-container');
+    const forgotEmail=document.getElementById('forgot-email');
+    const forgotMsg = document.getElementById('forgot-message');
+
+    showPass.addEventListener('change', ()=>{ passEl.type = showPass.checked ? 'text' : 'password'; });
+    forgotToggle.addEventListener('click', ()=>{ forgotWrap.style.display = (forgotWrap.style.display==='block'?'none':'block'); });
+
+    document.getElementById('loginBtn').addEventListener('click', async ()=>{
+      errBox.textContent='';
+      const email = (emailEl.value||'').trim();
+      const password = passEl.value;
+
+      try{
+        const { data, error } = await client.auth.signInWithPassword({ email, password });
+        if(error) { errBox.textContent = error.message; return; }
+        if(!data.user?.email_confirmed_at){ errBox.textContent = "⚠️ Please confirm your email before signing in."; return; }
+
+        // next screen after login
+        window.location.href = 'device-connect.html';
+      }catch(err){ errBox.textContent = 'Unexpected error: ' + (err?.message||err); }
+    });
+
+    // Password reset email (NOTE: uses your Supabase Project "Site URL" if redirectTo omitted)
+    document.getElementById('resetBtn').addEventListener('click', async ()=>{
+      forgotMsg.textContent = 'Sending...'; forgotMsg.style.color = 'white';
+      try{
+        const { error } = await client.auth.resetPasswordForEmail((forgotEmail.value||'').trim()
+          // , { redirectTo: 'https://expressfitness.ca/x45/reset-password.html' } // <- if you host it
+        );
+        if(error){ forgotMsg.textContent = '❌ ' + error.message; forgotMsg.style.color = 'red'; }
+        else { forgotMsg.textContent = '✅ Reset link sent. Check your inbox.'; forgotMsg.style.color = 'lightgreen'; }
+      }catch(err){ forgotMsg.textContent = '❌ ' + (err?.message||err); forgotMsg.style.color='red'; }
+    });
+  </script>
+</body>
+</html>
