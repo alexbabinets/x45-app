@@ -20,13 +20,11 @@
       padding-top:40px;
     }
 
-    /* ⬇ Logo moved closer to heading */
     .logo {
       max-width:160px;
       margin-bottom:6px;
     }
 
-    /* ⬇ Title centered + 10% smaller */
     h1 {
       font-size:38px;
       margin:0 0 8px 0;
@@ -161,7 +159,8 @@
 
 <script>
   const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
+  const SUPABASE_KEY =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
   const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   (function setDobLimits() {
@@ -243,7 +242,8 @@
         email,
         password,
         options: {
-          emailRedirectTo: 'https://expressfitness.ca/x45/signin.html',
+          // 👇 redirect used in confirmation email
+          emailRedirectTo: 'https://expressfitness.ca/x45/',
           data: { first_name: firstName, last_name: lastName, dob, gender }
         }
       });
@@ -253,6 +253,7 @@
         return;
       }
 
+      // 👇 in-app redirect after successful signup
       window.location.href = `accountcreated.html?email=${encodeURIComponent(email)}`;
 
     } catch (err) {
