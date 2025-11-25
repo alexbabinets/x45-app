@@ -23,9 +23,8 @@
       margin-bottom:22px;
     }
 
-    /* 15% smaller */
     h1 {
-      font-size:30px;   /* was 36px */
+      font-size:30px;
       margin-bottom:18px;
       font-weight:bold;
     }
@@ -36,12 +35,27 @@
       max-width:600px;
     }
 
-    /* Bold red warning */
     .important {
       color:#ff0000;
       font-size:20px;
       margin-top:20px;
       font-weight:800;
+    }
+
+    .btn {
+      margin-top:24px;
+      background:#cc0000;
+      color:#fff;
+      border:none;
+      padding:12px 28px;
+      border-radius:8px;
+      font-size:16px;
+      font-weight:bold;
+      cursor:pointer;
+      transition:background .3s;
+    }
+    .btn:hover {
+      background:#ff1a1a;
     }
   </style>
 </head>
@@ -60,12 +74,20 @@
 
   <p class="important">Check your spam or junk folder.</p>
 
+  <button class="btn" onclick="goToLogin()">OK, go to Login</button>
+
   <script>
+    // insert real email if present in URL
     const params = new URLSearchParams(window.location.search);
     const email = params.get("email");
     if (email) {
       document.getElementById("confirmation-message").innerHTML =
         `We sent you a link at <strong>${email}</strong>. Please confirm your email to activate your account.`;
+    }
+
+    function goToLogin() {
+      // replace the current page in history so "Back" doesn't come here again
+      window.location.replace('login.html' + (email ? ('?email=' + encodeURIComponent(email)) : ''));
     }
   </script>
 
