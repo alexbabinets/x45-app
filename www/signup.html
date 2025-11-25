@@ -99,6 +99,18 @@
       margin-top:-2px; margin-bottom:6px;
       width:300px; text-align:left; min-height:18px;
     }
+
+    .switch-auth {
+      margin-top:14px;
+      font-size:14px;
+      color:#ccc;
+      text-align:center;
+    }
+    .switch-auth a {
+      color:#fff;
+      text-decoration:underline;
+      cursor:pointer;
+    }
   </style>
 </head>
 
@@ -156,6 +168,11 @@
 
     <button class="btn" type="submit">Start My Free Trial</button>
   </form>
+
+  <div class="switch-auth">
+    Already have an account?
+    <a href="login.html">Log in</a>
+  </div>
 
 <script>
   const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
@@ -218,8 +235,16 @@
     document.getElementById('genderError').innerText  = '';
 
     if (!firstName) { alert("Please enter your first name."); return; }
+    if (!email || !confirmEmail) {
+      document.getElementById('emailError').innerText = "Please enter and confirm your email.";
+      return;
+    }
     if (email !== confirmEmail) {
       document.getElementById('emailError').innerText = "Emails do not match.";
+      return;
+    }
+    if (!password || !confirmPassword) {
+      document.getElementById('passwordError').innerText = "Please enter and confirm your password.";
       return;
     }
     if (password !== confirmPassword) {
@@ -242,8 +267,9 @@
         email,
         password,
         options: {
-          // 👇 redirect used in confirmation email
-          emailRedirectTo: 'https://expressfitness.ca/x45/',
+          // ✅ when user clicks confirmation link in email,
+          // they will be sent to the LOGIN PAGE on your site:
+          emailRedirectTo: 'https://expressfitness.ca/x45/login.html',
           data: { first_name: firstName, last_name: lastName, dob, gender }
         }
       });
@@ -253,7 +279,7 @@
         return;
       }
 
-      // 👇 in-app redirect after successful signup
+      // ✅ in-app redirect after successful signup -> info page
       window.location.href = `accountcreated.html?email=${encodeURIComponent(email)}`;
 
     } catch (err) {
