@@ -6,7 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
   <title>X45 – Welcome</title>
-
   <style>
     :root{
       --bg:#000;
@@ -21,7 +20,6 @@
       font-family: Arial, sans-serif;
       margin: 0;
       text-align: center;
-
       min-height: 100vh;
       padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
       display: flex;
@@ -29,48 +27,39 @@
       align-items: center;
     }
 
-    /* GLOBAL ZOOM OUT */
-    .zoom {
-      transform: scale(0.85);  /* <<--- MAIN ZOOM CONTROL */
-      transform-origin: top center;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-    }
-
     .wrap{
       width: 100%;
-      max-width: 420px;
-      padding: 0 20px;
-      transform: translateY(-2vh);
+      max-width: 320px;          /* narrower column */
+      padding: 0 16px;
+      transform: translateY(-24px); /* move a bit up */
     }
 
     .logo {
-      width: min(52vw, 180px);
-      margin: 0 auto 14px;
+      width: 140px;              /* smaller logo */
+      margin: 0 auto 10px;
       display: block;
     }
 
     h1 {
-      font-size: clamp(22px, 6vw, 28px);
-      margin: 0 0 6px;
+      font-size: 22px;           /* smaller title */
+      margin: 0 0 4px;
       font-weight: 700;
     }
 
     p {
-      font-size: clamp(14px, 4vw, 16px);
-      margin: 0 0 20px;
+      font-size: 14px;           /* smaller subtitle */
+      margin: 0 0 16px;
       opacity: .9;
     }
 
     .btn {
       width: 100%;
-      max-width: 320px;
-      padding: clamp(10px, 3.2vw, 12px) clamp(18px, 5vw, 22px);
+      max-width: 260px;          /* smaller button width */
+      padding: 10px 16px;        /* less padding */
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
-      font-size: clamp(14px, 4.2vw, 16px);
+      font-size: 16px;           /* smaller text */
       font-weight: 600;
       transition: background-color 0.2s ease;
     }
@@ -79,24 +68,20 @@
     .red-btn:hover { background: var(--redH); }
   </style>
 </head>
-
 <body>
 
-  <div class="zoom">
-    <div class="wrap">
-      <img
-        src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
-        class="logo"
-        alt="X45"
-      />
+  <div class="wrap">
+    <img
+      src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
+      class="logo"
+      alt="X45"
+    />
+    <h1>Welcome to X45</h1>
+    <p>Fitness that knows you.</p>
 
-      <h1>Welcome to X45</h1>
-      <p>Fitness that knows you.</p>
-
-      <button class="btn red-btn" onclick="window.location.href='step2-signup.html'">
-        Get Started
-      </button>
-    </div>
+    <button class="btn red-btn" onclick="window.location.href='step2-signup.html'">
+      Get Started
+    </button>
   </div>
 
 </body>
