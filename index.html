@@ -22,7 +22,7 @@
       margin: 0;
       text-align: center;
 
-      /* use safe area + real phone height */
+      /* safe area */
       min-height: 100vh;
       padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
       display: grid;
@@ -31,41 +31,37 @@
 
     .wrap{
       width: 100%;
-      max-width: 420px;
-      padding: 0 20px;
-
-      /* tiny lift so it doesn't feel low/huge */
-      transform: translateY(-2vh);
+      max-width: 360px;     /* smaller than before */
+      padding: 0 16px;
+      transform: translateY(-3vh); /* moved slightly up */
     }
 
     .logo {
-      /* RESPONSIVE size: small on phone, never huge */
-      width: min(52vw, 180px);
-      margin: 0 auto 14px;
+      width: min(42vw, 150px); /* smaller logo */
+      margin: 0 auto 10px;
       display: block;
     }
 
     h1 {
-      /* responsive font that stays smaller on iPhone */
-      font-size: clamp(22px, 6vw, 28px);
-      margin: 0 0 6px;
+      font-size: clamp(18px, 5vw, 24px); /* smaller font */
+      margin: 0 0 4px;
       font-weight: 700;
     }
 
     p {
-      font-size: clamp(14px, 4vw, 16px);
-      margin: 0 0 20px;
-      opacity: .9;
+      font-size: clamp(13px, 3.4vw, 15px);
+      margin: 0 0 16px;
+      opacity: .85;
     }
 
     .btn {
       width: 100%;
-      max-width: 320px;
-      padding: clamp(10px, 3.2vw, 12px) clamp(18px, 5vw, 22px);
+      max-width: 260px;   /* smaller button width */
+      padding: clamp(8px, 2.6vw, 10px) clamp(16px, 4vw, 20px);
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
-      font-size: clamp(14px, 4.2vw, 16px);
+      font-size: clamp(13px, 3.8vw, 15px);
       font-weight: 600;
       transition: background-color 0.2s ease;
     }
