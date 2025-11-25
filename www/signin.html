@@ -3,26 +3,49 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In – X45</title>
+  <title>Login – X45</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { background:#000; font-family:Arial,sans-serif; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; }
-    .logo { max-width:160px; margin-bottom:24px; }
-    h1 { font-size:24px; margin-bottom:16px; color:#00ffcc; text-align:center; }
-    .form-input { padding:14px; margin:6px 0; width:300px; border-radius:8px; border:none; font-size:16px; background:#222; color:#fff; }
-    .form-input::placeholder { color:#aaa; }
-    .btn { background:#cc0000; color:#fff; border:none; padding:14px 30px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; margin-top:18px; width:300px; }
-    .btn:hover { background:#ff1a1a; }
-    .row-line { display:flex; justify-content:center; align-items:center; gap:12px; margin-top:6px; font-size:14px; }
-    a { color:#ccc; cursor:pointer; text-decoration:underline; }
-    #forgot-container { margin-top:14px; display:none; }
-    #forgot-message { margin-top:10px; font-size:15px; }
-    .error { color:#ff4d4d; font-size:14px; margin-top:8px; }
+    body {
+      background-color: #000;
+      font-family: Arial, sans-serif;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .logo { max-width: 160px; margin-bottom: 30px; }
+    h1 { font-size: 24px; margin-bottom: 20px; text-align: center; color: #00ffcc; }
+    .form-input {
+      padding: 14px; margin: 6px 0; width: 300px; border-radius: 8px;
+      border: none; font-size: 16px; background-color: #222; color: #fff;
+    }
+    .form-input::placeholder { color: #aaa; }
+    .btn {
+      background-color: #cc0000; color: #fff; border: none;
+      padding: 14px 30px; border-radius: 8px; font-size: 16px;
+      font-weight: bold; cursor: pointer; margin-top: 20px;
+      transition: background-color 0.3s ease;
+    }
+    .btn:hover { background-color: #ff1a1a; }
+    .error { color: #ff4d4d; font-size: 14px; margin-top: 8px; }
+    .row-line {
+      display: flex; justify-content: center; align-items: center;
+      gap: 12px; margin-top: 6px; font-size: 14px;
+    }
+    a { color: #ccc; cursor: pointer; text-decoration: underline; }
+    #forgot-container { margin-top: 16px; }
+    #forgot-message { margin-top: 12px; font-size: 15px; }
   </style>
 </head>
 <body>
-  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
-  <h1>✅ Your Email Is Confirmed.<br>You can now sign in to X45</h1>
+  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
+       class="logo" alt="X45 Logo" />
+
+  <h1>✅ Your Email Is Confirmed.<br>You can now log in to X45</h1>
 
   <input type="email" class="form-input" id="email" placeholder="Email address" />
   <input type="password" class="form-input" id="password" placeholder="Password" />
@@ -32,37 +55,28 @@
     <a onclick="toggleForgot()">Forgot password?</a>
   </div>
 
-  <div id="forgot-container">
+  <div id="forgot-container" style="display:none;">
     <input type="email" class="form-input" id="forgot-email" placeholder="Enter your email" /><br />
-    <button class="btn" style="background:#007bff;" onclick="sendReset()">Email me the link</button>
+    <button class="btn" style="margin-top:10px; background-color:#007bff;" onclick="sendReset()">
+      Email me the link
+    </button>
     <p id="forgot-message"></p>
   </div>
 
   <div class="error" id="errorBox"></div>
-
-  <button class="btn" onclick="login()">Sign In</button>
+  <button class="btn" onclick="login()">Log In</button>
 
   <script>
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
+    const SUPABASE_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // Handle redirect after email confirmation (hash has access_token & refresh_token)
-    (function handleConfirmationRedirect(){
-      const h = new URLSearchParams(window.location.hash.slice(1));
-      const access_token  = h.get('access_token');
-      const refresh_token = h.get('refresh_token');
-      if (access_token && refresh_token) {
-        client.auth.setSession({ access_token, refresh_token }).then(() => {
-          window.location.href = 'step3-pick-coach.html';
-        }).catch(()=>{ /* leave form visible */ });
-      }
-    })();
 
     function togglePassword() {
       const passInput = document.getElementById('password');
       passInput.type = passInput.type === 'password' ? 'text' : 'password';
     }
+
     function toggleForgot() {
       const forgotDiv = document.getElementById('forgot-container');
       forgotDiv.style.display = forgotDiv.style.display === 'block' ? 'none' : 'block';
@@ -79,9 +93,10 @@
         if (error) {
           errorBox.innerText = error.message;
         } else if (!data.user.email_confirmed_at) {
-          errorBox.innerText = "⚠️ Please confirm your email before signing in.";
+          errorBox.innerText = "⚠️ Please confirm your email before logging in.";
         } else {
-          window.location.href = 'step3-pick-coach.html';
+          // ✅ redirect INSIDE the X45 app (no localhost)
+          window.location.href = 'step1-pick-coach.html';
         }
       } catch (err) {
         errorBox.innerText = 'Unexpected error: ' + err.message;
@@ -89,13 +104,14 @@
     }
 
     async function sendReset() {
-      const email = document.getElementById('forgot-email').value;
+      const email = document.getElementById('forgot-email').value.trim();
       const message = document.getElementById('forgot-message');
       message.textContent = 'Sending...';
       message.style.color = 'white';
 
       try {
         const { error: resetError } = await client.auth.resetPasswordForEmail(email, {
+          // ✅ Supabase requires an ABSOLUTE URL
           redirectTo: 'https://expressfitness.ca/x45/reset-password.html'
         });
 
