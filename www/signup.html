@@ -5,37 +5,119 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Sign Up – X45</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
-    body { background:#000; font-family:Arial,sans-serif; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; }
-    .logo { max-width:160px; margin-bottom:18px; } /* tighter gap */
-    h1 { font-size:42px; margin-bottom:10px; }
-    .subtitle { font-size:18px; color:#ccc; margin-bottom:20px; }
+    body {
+      background:#000;
+      font-family:Arial,sans-serif;
+      color:#fff;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      height:100vh;
+      margin:0;
+      padding-top:40px;
+    }
+
+    /* ⬇ Logo moved closer to heading */
+    .logo {
+      max-width:160px;
+      margin-bottom:6px;
+    }
+
+    /* ⬇ Title centered + 10% smaller */
+    h1 {
+      font-size:38px;
+      margin:0 0 8px 0;
+      text-align:center;
+      width:100%;
+    }
+
+    .subtitle {
+      font-size:18px;
+      color:#ccc;
+      margin-bottom:20px;
+      text-align:center;
+    }
+
     .field { width:300px; position:relative; margin:6px 0; }
-    input[type="text"], input[type="email"], input[type="password"], input[type="date"] { padding:14px; width:100%; border-radius:8px; border:none; font-size:16px; background:#222; color:#fff; box-sizing:border-box; }
+
+    input[type="text"], input[type="email"], input[type="password"], input[type="date"] {
+      padding:14px;
+      width:100%;
+      border-radius:8px;
+      border:none;
+      font-size:16px;
+      background:#222;
+      color:#fff;
+      box-sizing:border-box;
+    }
+
     input::placeholder { color:#aaa; }
+
     .date-wrapper { position:relative; width:300px; }
-    .date-wrapper input[type="date"] { width:100%; padding-right:40px; appearance:none; -webkit-appearance:none; -moz-appearance:none; background:#222; color-scheme:dark; color:#fff; }
-    .date-wrapper input[type="date"]::-webkit-calendar-picker-indicator { display:none; -webkit-appearance:none; }
-    .calendar-icon { position:absolute; right:12px; top:12px; font-size:20px; color:#fff; pointer-events:none; }
-    .eye-icon { position:absolute; top:18px; right:12px; cursor:pointer; font-size:16px; color:#aaa; transition:color .2s; }
+    .date-wrapper input[type="date"] {
+      width:100%; padding-right:40px;
+      appearance:none; -webkit-appearance:none; -moz-appearance:none;
+      background:#222; color-scheme:dark; color:#fff;
+    }
+    .date-wrapper input[type="date"]::-webkit-calendar-picker-indicator {
+      display:none; -webkit-appearance:none;
+    }
+    .calendar-icon {
+      position:absolute; right:12px; top:12px;
+      font-size:20px; color:#fff; pointer-events:none;
+    }
+
+    .eye-icon {
+      position:absolute; top:18px; right:12px;
+      cursor:pointer; font-size:16px; color:#aaa;
+      transition:color .2s;
+    }
     .eye-icon:hover { color:#fff; }
+
     .label { width:300px; font-size:14px; color:#bbb; margin:4px 0 2px 0; }
-    .gender { display:flex; justify-content:center; gap:40px; background:#222; border-radius:8px; padding:12px 0; width:300px; }
+
+    .gender {
+      display:flex; justify-content:center; gap:40px;
+      background:#222; border-radius:8px;
+      padding:12px 0; width:300px;
+    }
     .gender label { display:flex; align-items:center; gap:8px; font-size:14px; }
-    .btn { background:#cc0000; color:#fff; border:none; padding:14px 30px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; margin-top:16px; transition:background .3s; width:300px; }
+
+    .btn {
+      background:#cc0000; color:#fff;
+      border:none; padding:14px 30px;
+      border-radius:8px; font-size:16px;
+      font-weight:bold; cursor:pointer;
+      margin-top:16px; transition:background .3s;
+      width:300px;
+    }
     .btn:hover { background:#ff1a1a; }
-    .error { color:#ff4d4d; font-size:14px; margin-top:-2px; margin-bottom:6px; width:300px; text-align:left; min-height:18px; }
+
+    .error {
+      color:#ff4d4d; font-size:14px;
+      margin-top:-2px; margin-bottom:6px;
+      width:300px; text-align:left; min-height:18px;
+    }
   </style>
 </head>
+
 <body>
-  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
+
+  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
+       class="logo" alt="X45 Logo" />
+
   <h1>Create Your Account</h1>
   <div class="subtitle">Let’s get you started</div>
 
   <form id="signupForm" autocomplete="off" onsubmit="event.preventDefault(); register();">
+
     <div class="field">
       <input type="text" id="firstName" name="firstName" placeholder="First name" autocomplete="given-name" />
     </div>
+
     <div class="field">
       <input type="text" id="lastName" name="lastName" placeholder="Last name (Optional)" autocomplete="family-name" />
     </div>
@@ -57,6 +139,7 @@
     <div class="field">
       <input type="email" id="email" name="email" placeholder="Email address" autocomplete="email" />
     </div>
+
     <div class="field">
       <input type="email" id="confirmEmail" name="confirmEmail" placeholder="Confirm email address" autocomplete="off" />
     </div>
@@ -66,6 +149,7 @@
       <input type="password" id="password" name="password" placeholder="Create password" autocomplete="new-password" />
       <span class="eye-icon" onclick="togglePassword('password', this)">👁️</span>
     </div>
+
     <div class="field">
       <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm password" />
       <span class="eye-icon" onclick="togglePassword('confirmPassword', this)">👁️</span>
@@ -75,81 +159,107 @@
     <button class="btn" type="submit">Start My Free Trial</button>
   </form>
 
-  <script>
-    const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script>
+  const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    (function setDobLimits() {
-      const dob = document.getElementById('dob');
-      const now = new Date();
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, '0');
-      const dd = String(now.getDate()).padStart(2, '0');
-      dob.max = `${yyyy}-${mm}-${dd}`;
-      dob.min = '1900-01-01';
-    })();
+  (function setDobLimits() {
+    const dob = document.getElementById('dob');
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    dob.max = `${yyyy}-${mm}-${dd}`;
+    dob.min = '1900-01-01';
+  })();
 
-    function togglePassword(id, icon) {
-      const input = document.getElementById(id);
-      if (input.type === 'password') { input.type = 'text'; icon.style.color = '#fff'; }
-      else { input.type = 'password'; icon.style.color = '#aaa'; }
+  function togglePassword(id, icon) {
+    const input = document.getElementById(id);
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.style.color = '#fff';
+    } else {
+      input.type = 'password';
+      icon.style.color = '#aaa';
     }
-    function getGender() {
-      const selected = document.querySelector('input[name="gender"]:checked');
-      return selected ? selected.value : '';
+  }
+
+  function getGender() {
+    const selected = document.querySelector('input[name="gender"]:checked');
+    return selected ? selected.value : '';
+  }
+
+  function validateDob(dateStr) {
+    if (!dateStr) return "Please select your date of birth.";
+    const d = new Date(dateStr);
+    const now = new Date();
+    if (d > now) return "DOB cannot be in the future.";
+    const minAge = 13;
+    const age = now.getFullYear() - d.getFullYear() -
+                ((now.getMonth() < d.getMonth() ||
+                (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) ? 1 : 0);
+    if (age < minAge) return `You must be at least ${minAge} years old.`;
+    return "";
+  }
+
+  async function register() {
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName  = document.getElementById('lastName').value.trim();
+    const email     = document.getElementById('email').value.trim();
+    const confirmEmail = document.getElementById('confirmEmail').value.trim();
+    const password  = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const dob       = document.getElementById('dob').value;
+    const gender    = getGender();
+
+    document.getElementById('emailError').innerText   = '';
+    document.getElementById('passwordError').innerText= '';
+    document.getElementById('dobError').innerText     = '';
+    document.getElementById('genderError').innerText  = '';
+
+    if (!firstName) { alert("Please enter your first name."); return; }
+    if (email !== confirmEmail) {
+      document.getElementById('emailError').innerText = "Emails do not match.";
+      return;
     }
-    function validateDob(dateStr) {
-      if (!dateStr) return "Please select your date of birth.";
-      const d = new Date(dateStr);
-      const now = new Date();
-      if (d > now) return "DOB cannot be in the future.";
-      const minAge = 13;
-      const age = now.getFullYear() - d.getFullYear() - ((now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) ? 1 : 0);
-      if (age < minAge) return `You must be at least ${minAge} years old.`;
-      return "";
+    if (password !== confirmPassword) {
+      document.getElementById('passwordError').innerText = "Passwords do not match.";
+      return;
     }
 
-    async function register() {
-      const firstName = document.getElementById('firstName').value.trim();
-      const lastName  = document.getElementById('lastName').value.trim();
-      const email     = document.getElementById('email').value.trim();
-      const confirmEmail = document.getElementById('confirmEmail').value.trim();
-      const password  = document.getElementById('password').value;
-      const confirmPassword = document.getElementById('confirmPassword').value;
-      const dob       = document.getElementById('dob').value;
-      const gender    = getGender();
+    const dobErr = validateDob(dob);
+    if (dobErr) {
+      document.getElementById('dobError').innerText = dobErr;
+      return;
+    }
+    if (!gender) {
+      document.getElementById('genderError').innerText = "Please select gender.";
+      return;
+    }
 
-      document.getElementById('emailError').innerText   = '';
-      document.getElementById('passwordError').innerText= '';
-      document.getElementById('dobError').innerText     = '';
-      document.getElementById('genderError').innerText  = '';
+    try {
+      const { data, error } = await client.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: 'https://expressfitness.ca/x45/signin.html',
+          data: { first_name: firstName, last_name: lastName, dob, gender }
+        }
+      });
 
-      if (!firstName) { alert("Please enter your first name."); return; }
-      if (email !== confirmEmail) { document.getElementById('emailError').innerText = "Emails do not match."; return; }
-      if (password !== confirmPassword) { document.getElementById('passwordError').innerText = "Passwords do not match."; return; }
-
-      const dobErr = validateDob(dob);
-      if (dobErr) { document.getElementById('dobError').innerText = dobErr; return; }
-      if (!gender) { document.getElementById('genderError').innerText = "Please select gender."; return; }
-
-      try {
-        const { data, error } = await client.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: 'https://expressfitness.ca/x45/signin.html',
-            data: { first_name: firstName, last_name: lastName, dob, gender }
-          }
-        });
-
-        if (error) { alert('Supabase Error: ' + error.message); return; }
-
-        window.location.href = `accountcreated.html?email=${encodeURIComponent(email)}`;
-      } catch (err) {
-        alert("Unexpected error: " + err.message);
+      if (error) {
+        alert('Supabase Error: ' + error.message);
+        return;
       }
+
+      window.location.href = `accountcreated.html?email=${encodeURIComponent(email)}`;
+
+    } catch (err) {
+      alert("Unexpected error: " + err.message);
     }
-  </script>
+  }
+</script>
+
 </body>
 </html>
