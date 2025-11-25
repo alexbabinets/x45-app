@@ -3,9 +3,17 @@
 <head>
   <meta charset="UTF-8" />
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <!-- THIS is the ONLY way to zoom out the whole screen on iOS -->
+  <meta name="viewport"
+        content="width=device-width,
+                 initial-scale=0.80,
+                 maximum-scale=0.80,
+                 minimum-scale=0.80,
+                 user-scalable=yes,
+                 viewport-fit=cover">
 
   <title>X45 – Welcome</title>
+
   <style>
     :root{
       --bg:#000;
@@ -19,64 +27,57 @@
       color: var(--ink);
       font-family: Arial, sans-serif;
       margin: 0;
-      text-align: center;
       min-height: 100vh;
-      padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
       display: flex;
       justify-content: center;
       align-items: center;
+      text-align: center;
     }
 
     .wrap{
       width: 100%;
-      max-width: 260px;          /* VERY NARROW COLUMN */
-      padding: 0 16px;
-      transform: translateY(-40px); /* MOVE HIGHER so it’s clearly different */
+      max-width: 420px;
+      padding: 0 20px;
     }
 
     .logo {
-      width: 120px;              /* MUCH smaller logo */
-      margin: 0 auto 8px;
-      display: block;
+      width: 180px;
+      margin: 0 auto 14px;
     }
 
     h1 {
-      font-size: 20px;           /* smaller title */
-      margin: 0 0 4px;
+      font-size: 28px;
+      margin-bottom: 6px;
       font-weight: 700;
     }
 
     p {
-      font-size: 13px;           /* smaller subtitle */
-      margin: 0 0 14px;
+      font-size: 16px;
       opacity: .9;
+      margin-bottom: 20px;
     }
 
     .btn {
       width: 100%;
-      max-width: 220px;          /* smaller button width */
-      padding: 8px 14px;         /* smaller height */
+      max-width: 320px;
+      padding: 12px 22px;
       border: none;
       border-radius: 10px;
       cursor: pointer;
-      font-size: 15px;           /* smaller text */
+      font-size: 18px;
       font-weight: 600;
-      transition: background-color 0.2s ease;
     }
 
-    .red-btn { background: var(--red); color: #fff; }
-    .red-btn:hover { background: var(--redH); }
+    .red-btn{ background:var(--red); color:#fff; }
+    .red-btn:hover{ background:var(--redH); }
   </style>
 </head>
+
 <body>
 
   <div class="wrap">
-    <img
-      src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
-      class="logo"
-      alt="X45"
-    />
-    <h1>Welcome to X45 – v3</h1>
+    <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" />
+    <h1>Welcome to X45</h1>
     <p>Fitness that knows you.</p>
 
     <button class="btn red-btn" onclick="window.location.href='step2-signup.html'">
