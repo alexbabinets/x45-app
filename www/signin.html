@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In – X45</title>
+  <title>Login – X45</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
@@ -16,11 +16,9 @@
       justify-content: center;
       height: 100vh;
       margin: 0;
-      text-align:center;
     }
     .logo { max-width: 160px; margin-bottom: 30px; }
-    h1 { font-size: 24px; margin-bottom: 12px; color: #00ffcc; }
-    .subline { font-size:14px; color:#ccc; margin-bottom:16px; }
+    h1 { font-size: 24px; margin-bottom: 20px; text-align: center; color: #00ffcc; }
     .form-input {
       padding: 14px; margin: 6px 0; width: 300px; border-radius: 8px;
       border: none; font-size: 16px; background-color: #222; color: #fff;
@@ -31,10 +29,9 @@
       padding: 14px 30px; border-radius: 8px; font-size: 16px;
       font-weight: bold; cursor: pointer; margin-top: 20px;
       transition: background-color 0.3s ease;
-      width:300px;
     }
     .btn:hover { background-color: #ff1a1a; }
-    .error { color: #ff4d4d; font-size: 14px; margin-top: 8px; min-height:18px; }
+    .error { color: #ff4d4d; font-size: 14px; margin-top: 8px; }
     .row-line {
       display: flex; justify-content: center; align-items: center;
       gap: 12px; margin-top: 6px; font-size: 14px;
@@ -42,27 +39,11 @@
     a { color: #ccc; cursor: pointer; text-decoration: underline; }
     #forgot-container { margin-top: 16px; }
     #forgot-message { margin-top: 12px; font-size: 15px; }
-
-    .switch-auth {
-      margin-top:14px;
-      font-size:14px;
-      color:#ccc;
-    }
-    .switch-auth a {
-      color:#fff;
-      text-decoration:underline;
-      cursor:pointer;
-    }
   </style>
 </head>
 <body>
-  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
-       class="logo" alt="X45 Logo" />
-
-  <h1>Sign In to X45</h1>
-  <div class="subline" id="login-subline">
-    Please enter your email and password.
-  </div>
+  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
+  <h1>✅ Your Email Is Confirmed.<br>You can now log in to X45</h1>
 
   <input type="email" class="form-input" id="email" placeholder="Email address" />
   <input type="password" class="form-input" id="password" placeholder="Password" />
@@ -74,43 +55,17 @@
 
   <div id="forgot-container" style="display:none;">
     <input type="email" class="form-input" id="forgot-email" placeholder="Enter your email" /><br />
-    <button class="btn" style="margin-top:10px; background-color:#007bff;" type="button" onclick="sendReset()">
-      Email me the link
-    </button>
+    <button class="btn" style="margin-top:10px; background-color:#007bff;" onclick="sendReset()">Email me the link</button>
     <p id="forgot-message"></p>
   </div>
 
   <div class="error" id="errorBox"></div>
-  <button class="btn" type="button" onclick="signIn()">Sign In</button>
-
-  <div class="switch-auth">
-    Don’t have an account yet?
-    <a href="signup.html">Create your free trial</a>
-  </div>
+  <button class="btn" onclick="login()">Log In</button>
 
   <script>
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
-    const SUPABASE_KEY =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // If Supabase sends ?type=signup or ?recovery plus email in query
-    (function initFromParams() {
-      const params = new URLSearchParams(window.location.search);
-      const emailParam = params.get('email');
-      const fromConfirm = params.get('type') === 'recovery' || params.get('type') === 'signup';
-
-      if (emailParam) {
-        document.getElementById('email').value = emailParam;
-        const forgotEmail = document.getElementById('forgot-email');
-        if (forgotEmail) forgotEmail.value = emailParam;
-      }
-
-      if (fromConfirm) {
-        document.getElementById('login-subline').textContent =
-          "Your email is confirmed. You can now sign in to X45.";
-      }
-    })();
 
     function togglePassword() {
       const passInput = document.getElementById('password');
@@ -122,26 +77,20 @@
       forgotDiv.style.display = forgotDiv.style.display === 'block' ? 'none' : 'block';
     }
 
-    async function signIn() {
+    async function login() {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const errorBox = document.getElementById('errorBox');
       errorBox.innerText = '';
-
-      if (!email || !password) {
-        errorBox.innerText = 'Please enter both email and password.';
-        return;
-      }
 
       try {
         const { data, error } = await client.auth.signInWithPassword({ email, password });
         if (error) {
           errorBox.innerText = error.message;
         } else if (!data.user.email_confirmed_at) {
-          errorBox.innerText = "⚠️ Please confirm your email before signing in.";
+          errorBox.innerText = "⚠️ Please confirm your email before logging in.";
         } else {
-          // Member goes to dashboard / next step
-          window.location.href = 'step1-pick-coach.html';
+          window.location.href = 'https://expressfitness.ca/x45/step1-pick-coach.html';
         }
       } catch (err) {
         errorBox.innerText = 'Unexpected error: ' + err.message;
@@ -158,7 +107,6 @@
         const { error: resetError } = await client.auth.resetPasswordForEmail(email, {
           redirectTo: 'https://expressfitness.ca/x45/reset-password.html'
         });
-
         if (resetError) {
           message.textContent = '❌ ' + resetError.message;
           message.style.color = 'red';
@@ -167,7 +115,7 @@
           message.style.color = 'lightgreen';
         }
       } catch (err) {
-        message.textContent = '❌ Unexpected error: ' + err.message;
+        message.textContent = '❌ ' + err.message;
         message.style.color = 'red';
       }
     }
