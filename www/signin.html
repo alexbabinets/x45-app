@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login – X45</title>
+  <title>Sign In – X45</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
@@ -59,7 +59,7 @@
   <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
        class="logo" alt="X45 Logo" />
 
-  <h1>Log in to X45</h1>
+  <h1>Sign In to X45</h1>
   <div class="subline" id="login-subline">
     Please enter your email and password.
   </div>
@@ -74,18 +74,18 @@
 
   <div id="forgot-container" style="display:none;">
     <input type="email" class="form-input" id="forgot-email" placeholder="Enter your email" /><br />
-    <button class="btn" style="margin-top:10px; background-color:#007bff;" onclick="sendReset()">
+    <button class="btn" style="margin-top:10px; background-color:#007bff;" type="button" onclick="sendReset()">
       Email me the link
     </button>
     <p id="forgot-message"></p>
   </div>
 
   <div class="error" id="errorBox"></div>
-  <button class="btn" onclick="login()">Log In</button>
+  <button class="btn" type="button" onclick="signIn()">Sign In</button>
 
   <div class="switch-auth">
     Don’t have an account yet?
-    <a href="signup.html">Create one</a>
+    <a href="signup.html">Create your free trial</a>
   </div>
 
   <script>
@@ -94,8 +94,8 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // If we arrive with ?email=... in URL (from accountcreated or email redirect),
-    // prefill the email and update the subline text.
+    // If we arrive with ?email=... (from accountcreated or email redirect),
+    // prefill email and show "email confirmed" text.
     (function initFromParams() {
       const params = new URLSearchParams(window.location.search);
       const emailParam = params.get('email');
@@ -109,7 +109,7 @@
 
       if (fromConfirm) {
         document.getElementById('login-subline').textContent =
-          "Your email is confirmed. You can now log in to X45.";
+          "Your email is confirmed. You can now sign in to X45.";
       }
     })();
 
@@ -123,7 +123,7 @@
       forgotDiv.style.display = forgotDiv.style.display === 'block' ? 'none' : 'block';
     }
 
-    async function login() {
+    async function signIn() {
       const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
       const errorBox = document.getElementById('errorBox');
@@ -139,9 +139,9 @@
         if (error) {
           errorBox.innerText = error.message;
         } else if (!data.user.email_confirmed_at) {
-          errorBox.innerText = "⚠️ Please confirm your email before logging in.";
+          errorBox.innerText = "⚠️ Please confirm your email before signing in.";
         } else {
-          // ✅ redirect INSIDE the X45 app
+          // member goes to dashboard / next step
           window.location.href = 'step1-pick-coach.html';
         }
       } catch (err) {
@@ -157,7 +157,6 @@
 
       try {
         const { error: resetError } = await client.auth.resetPasswordForEmail(email, {
-          // ✅ Supabase requires an ABSOLUTE URL
           redirectTo: 'https://expressfitness.ca/x45/reset-password.html'
         });
 
