@@ -26,15 +26,17 @@
 </head>
 <body>
 
-  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" alt="X45 Logo" class="logo" />
+  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
+       alt="X45 Logo" class="logo" />
   <h1>Your Account Has Been Created</h1>
 
   <p id="confirmation-message">
-    We sent a confirmation link to <strong>[your email]</strong>. Please open that email and confirm to activate your account.
+    We sent a confirmation link to <strong>[your email]</strong>.
+    Please open that email and confirm to activate your account.
   </p>
 
-  <p class="important">You must confirm your email before you can log in.</p>
-  <p class="muted">Tip: if you don’t see it in a minute, check your spam/junk folder and mark it as “Not spam”.</p>
+  <p class="important">You must confirm your email before you can sign in.</p>
+  <p class="muted">If you don’t see it in a minute, check your spam/junk folder and mark it as “Not spam”.</p>
 
   <script>
     const params = new URLSearchParams(location.search);
@@ -43,8 +45,8 @@
       document.getElementById("confirmation-message").innerHTML =
         `We sent a confirmation link to <strong>${email}</strong>. Please open that email and confirm to activate your account.`;
     }
-    // After user clicks the email link, Supabase sends them to signin.html
-    // (URL is set by emailRedirectTo in signup.html)
+    // After user taps the email link, Supabase will send them to:
+    //   https://expressfitness.ca/x45-app/signin.html
   </script>
 </body>
 </html>
