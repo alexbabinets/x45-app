@@ -74,10 +74,9 @@
 
   <p class="important">Check your spam or junk folder.</p>
 
-  <button class="btn" onclick="goToLogin()">OK, go to Login</button>
+  <button class="btn" onclick="goToSignIn()">OK, go to Sign In</button>
 
   <script>
-    // insert real email if present in URL
     const params = new URLSearchParams(window.location.search);
     const email = params.get("email");
     if (email) {
@@ -85,9 +84,9 @@
         `We sent you a link at <strong>${email}</strong>. Please confirm your email to activate your account.`;
     }
 
-    function goToLogin() {
-      // replace the current page in history so "Back" doesn't come here again
-      window.location.replace('login.html' + (email ? ('?email=' + encodeURIComponent(email)) : ''));
+    function goToSignIn() {
+      // go to SIGN IN page and replace history so "Back" doesn't return here
+      window.location.replace('signin.html' + (email ? ('?email=' + encodeURIComponent(email)) : ''));
     }
   </script>
 
