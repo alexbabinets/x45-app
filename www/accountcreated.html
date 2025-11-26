@@ -37,17 +37,14 @@
   <p class="muted">Tip: if you don’t see it in a minute, check your spam/junk folder and mark it as “Not spam”.</p>
 
   <script>
-    // Show the actual email if provided in the query string
     const params = new URLSearchParams(location.search);
     const email = params.get("email");
     if (email) {
       document.getElementById("confirmation-message").innerHTML =
         `We sent a confirmation link to <strong>${email}</strong>. Please open that email and confirm to activate your account.`;
     }
-    // No sign-in links or buttons here by design.
-    // After the user clicks the email link, Supabase will redirect them to:
-    //   https://expressfitness.ca/x45/signin.html
-    // (set via emailRedirectTo in the signup page)
+    // After user clicks the email link, Supabase sends them to signin.html
+    // (URL is set by emailRedirectTo in signup.html)
   </script>
 </body>
 </html>
