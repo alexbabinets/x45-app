@@ -94,8 +94,7 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // If we arrive with ?email=... (from accountcreated or email redirect),
-    // prefill email and show "email confirmed" text.
+    // If we arrive with ?email=... or ?type=signup / recovery from Supabase
     (function initFromParams() {
       const params = new URLSearchParams(window.location.search);
       const emailParam = params.get('email');
@@ -141,7 +140,7 @@
         } else if (!data.user.email_confirmed_at) {
           errorBox.innerText = "⚠️ Please confirm your email before signing in.";
         } else {
-          // member goes to dashboard / next step
+          // Member goes to dashboard / next step
           window.location.href = 'step1-pick-coach.html';
         }
       } catch (err) {
@@ -158,6 +157,8 @@
       try {
         const { error: resetError } = await client.auth.resetPasswordForEmail(email, {
           redirectTo: 'https://expressfitness.ca/x45/reset-password.html'
+          // For local testing:
+          // redirectTo: 'http://localhost:5500/reset-password.html'
         });
 
         if (resetError) {
