@@ -120,7 +120,7 @@
        class="logo" alt="X45 Logo" />
 
   <h1>Create Your Account</h1>
-  <div class="subtitle">Start your 30-day free trial</div>
+  <div class="subtitle">Let’s get you started</div>
 
   <form id="signupForm" autocomplete="off" onsubmit="event.preventDefault(); register();">
 
@@ -267,9 +267,10 @@
         email,
         password,
         options: {
-          // when the user clicks the confirmation link in EMAIL,
-          // they go to the SIGN IN page on your live site:
+          // LIVE: send confirmed users to your SIGN IN page:
           emailRedirectTo: 'https://expressfitness.ca/x45/signin.html',
+          // For LOCAL testing, temporarily change to:
+          // emailRedirectTo: 'http://localhost:5500/signin.html',
           data: { first_name: firstName, last_name: lastName, dob, gender }
         }
       });
@@ -279,7 +280,7 @@
         return;
       }
 
-      // After successful signup -> show "Account Created" page
+      // After successful signup -> show “Account Created” page
       window.location.href = `accountcreated.html?email=${encodeURIComponent(email)}`;
 
     } catch (err) {
