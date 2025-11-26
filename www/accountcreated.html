@@ -57,6 +57,14 @@
     .btn:hover {
       background:#ff1a1a;
     }
+
+    #close-hint {
+      margin-top:16px;
+      font-size:14px;
+      color:#ccc;
+      max-width:480px;
+      display:none;
+    }
   </style>
 </head>
 <body>
@@ -74,7 +82,12 @@
 
   <p class="important">Check your spam or junk folder.</p>
 
-  <button class="btn" onclick="goToSignIn()">OK, go to Sign In</button>
+  <!-- ✅ This button does NOT go to Sign In. It only dismisses the page. -->
+  <button class="btn" onclick="handleOk()">OK</button>
+
+  <p id="close-hint">
+    You can now close this tab and open your email app to tap “Confirm email”.
+  </p>
 
   <script>
     const params = new URLSearchParams(window.location.search);
@@ -84,9 +97,13 @@
         `We sent you a link at <strong>${email}</strong>. Please confirm your email to activate your account.`;
     }
 
-    function goToSignIn() {
-      // go to SIGN IN page and replace history so "Back" doesn't return here
-      window.location.replace('signin.html' + (email ? ('?email=' + encodeURIComponent(email)) : ''));
+    function handleOk() {
+      // Try to close the tab (works if page was opened by script)
+      window.close();
+
+      // If the browser does not allow closing, just show a hint
+      const hint = document.getElementById('close-hint');
+      hint.style.display = 'block';
     }
   </script>
 
