@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login – X45</title>
+  <title>Sign In – X45</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
@@ -43,7 +43,7 @@
 </head>
 <body>
   <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
-  <h1>✅ Your Email Is Confirmed.<br>You can now log in to X45</h1>
+  <h1>✅ Your Email Is Confirmed.<br>You can now sign in to X45</h1>
 
   <input type="email" class="form-input" id="email" placeholder="Email address" />
   <input type="password" class="form-input" id="password" placeholder="Password" />
@@ -60,7 +60,7 @@
   </div>
 
   <div class="error" id="errorBox"></div>
-  <button class="btn" onclick="login()">Log In</button>
+  <button class="btn" onclick="login()">Sign In</button>
 
   <script>
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
@@ -88,9 +88,10 @@
         if (error) {
           errorBox.innerText = error.message;
         } else if (!data.user.email_confirmed_at) {
-          errorBox.innerText = "⚠️ Please confirm your email before logging in.";
+          errorBox.innerText = "⚠️ Please confirm your email before signing in.";
         } else {
-          window.location.href = 'https://expressfitness.ca/x45/step1-pick-coach.html';
+          // go to next step in same folder (localhost OR /x45/)
+          window.location.href = 'step1-pick-coach.html';
         }
       } catch (err) {
         errorBox.innerText = 'Unexpected error: ' + err.message;
@@ -104,8 +105,10 @@
       message.style.color = 'white';
 
       try {
+        const resetUrl = new URL('reset-password.html', window.location.href).href;
+
         const { error: resetError } = await client.auth.resetPasswordForEmail(email, {
-          redirectTo: 'https://expressfitness.ca/x45/reset-password.html'
+          redirectTo: resetUrl
         });
         if (resetError) {
           message.textContent = '❌ ' + resetError.message;
