@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Account Created – X45</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       background:#000;
-      font-family:Arial, sans-serif;
+      font-family:Arial,sans-serif;
       color:#fff;
       display:flex;
       flex-direction:column;
@@ -17,95 +17,37 @@
       margin:0;
       text-align:center;
     }
-
-    .logo {
-      width:150px;
-      margin-bottom:22px;
-    }
-
-    h1 {
-      font-size:30px;
-      margin-bottom:18px;
-      font-weight:bold;
-    }
-
-    p {
-      font-size:18px;
-      margin-bottom:12px;
-      max-width:600px;
-    }
-
-    .important {
-      color:#ff0000;
-      font-size:20px;
-      margin-top:20px;
-      font-weight:800;
-    }
-
-    .btn {
-      margin-top:24px;
-      background:#cc0000;
-      color:#fff;
-      border:none;
-      padding:12px 28px;
-      border-radius:8px;
-      font-size:16px;
-      font-weight:bold;
-      cursor:pointer;
-      transition:background .3s;
-    }
-    .btn:hover {
-      background:#ff1a1a;
-    }
-
-    #close-hint {
-      margin-top:16px;
-      font-size:14px;
-      color:#ccc;
-      max-width:480px;
-      display:none;
-    }
+    .logo { width:150px; margin-bottom:30px; }
+    h1 { font-size:32px; margin-bottom:20px; }
+    p { font-size:18px; margin-bottom:12px; max-width:640px; }
+    .important { color:#ff3b3b; font-size:18px; margin-top:14px; }
+    .muted { color:#bbb; font-size:14px; margin-top:8px; }
   </style>
 </head>
 <body>
 
-  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
-       alt="X45 Logo"
-       class="logo" />
-
+  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" alt="X45 Logo" class="logo" />
   <h1>Your Account Has Been Created</h1>
 
   <p id="confirmation-message">
-    We sent you a link at <strong>[your email]</strong>.
-    Please confirm your email to activate your account.
+    We sent a confirmation link to <strong>[your email]</strong>. Please open that email and confirm to activate your account.
   </p>
 
-  <p class="important">Check your spam or junk folder.</p>
-
-  <!-- ✅ This button does NOT go to Sign In. It only dismisses the page. -->
-  <button class="btn" onclick="handleOk()">OK</button>
-
-  <p id="close-hint">
-    You can now close this tab and open your email app to tap “Confirm email”.
-  </p>
+  <p class="important">You must confirm your email before you can log in.</p>
+  <p class="muted">Tip: if you don’t see it in a minute, check your spam/junk folder and mark it as “Not spam”.</p>
 
   <script>
-    const params = new URLSearchParams(window.location.search);
+    // Show the actual email if provided in the query string
+    const params = new URLSearchParams(location.search);
     const email = params.get("email");
     if (email) {
       document.getElementById("confirmation-message").innerHTML =
-        `We sent you a link at <strong>${email}</strong>. Please confirm your email to activate your account.`;
+        `We sent a confirmation link to <strong>${email}</strong>. Please open that email and confirm to activate your account.`;
     }
-
-    function handleOk() {
-      // Try to close the tab (works if page was opened by script)
-      window.close();
-
-      // If the browser does not allow closing, just show a hint
-      const hint = document.getElementById('close-hint');
-      hint.style.display = 'block';
-    }
+    // No sign-in links or buttons here by design.
+    // After the user clicks the email link, Supabase will redirect them to:
+    //   https://expressfitness.ca/x45/signin.html
+    // (set via emailRedirectTo in the signup page)
   </script>
-
 </body>
 </html>
