@@ -267,9 +267,9 @@
         email,
         password,
         options: {
-          // LIVE: send confirmed users to your SIGN IN page:
+          // 🔗 THIS controls where "Confirm email" in the email goes:
           emailRedirectTo: 'https://expressfitness.ca/x45/signin.html',
-          // For LOCAL testing, temporarily change to:
+          // For local testing, you can temporarily change this to:
           // emailRedirectTo: 'http://localhost:5500/signin.html',
           data: { first_name: firstName, last_name: lastName, dob, gender }
         }
