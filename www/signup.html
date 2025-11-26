@@ -84,16 +84,18 @@
     <div class="error" id="passwordError"></div>
 
     <button class="btn" type="submit">Start My Free Trial</button>
-    <div class="hint">Already have an account? <a id="signinLink" href="https://expressfitness.ca/x45/signin.html">Sign in</a></div>
+    <div class="hint">
+      Already have an account?
+      <!-- relative link so it works on localhost AND /x45/ -->
+      <a id="signinLink" href="signin.html">Sign in</a>
+    </div>
   </form>
 
   <script>
-    // Supabase client – safe to use anon key in app (RLS must protect your data)
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // DOB bounds (today max, 1900 min)
     (function setDobLimits() {
       const dob = document.getElementById('dob');
       const now = new Date();
@@ -137,13 +139,11 @@
       const dob       = document.getElementById('dob').value;
       const gender    = getGender();
 
-      // clear errors
       emailError.textContent = '';
       passwordError.textContent = '';
       dobError.textContent = '';
       genderError.textContent = '';
 
-      // basic validations
       if (!firstName) { alert("Please enter your first name."); return; }
       if (email !== confirmEmail) { emailError.textContent = "Emails do not match."; return; }
       if (password !== confirmPassword) { passwordError.textContent = "Passwords do not match."; return; }
@@ -153,13 +153,15 @@
       if (!gender) { genderError.textContent = "Please select gender."; return; }
 
       try {
-        // IMPORTANT: Redirect back to LIVE sign-in after email confirmation
+        // build absolute URL to signin.html based on current page (works localhost + live)
+        const confirmUrl = new URL('signin.html', window.location.href).href;
+
         const { data, error } = await client.auth.signUp({
           email,
           password,
           options: {
             data: { first_name: firstName, last_name: lastName, dob, gender },
-            emailRedirectTo: 'https://expressfitness.ca/x45/signin.html'
+            emailRedirectTo: confirmUrl
           }
         });
 
@@ -168,8 +170,8 @@
           return;
         }
 
-        // Go to LIVE confirmation screen, showing the email used
-        window.location.href = 'https://expressfitness.ca/x45/accountcreated.html?email=' + encodeURIComponent(email);
+        // redirect to accountcreated.html in same folder (localhost OR /x45/)
+        window.location.href = 'accountcreated.html?email=' + encodeURIComponent(email);
 
       } catch (err) {
         alert("Unexpected error: " + (err?.message || err));
