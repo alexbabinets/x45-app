@@ -6,140 +6,45 @@
   <title>Sign Up – X45</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body {
-      background:#000;
-      font-family:Arial,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-      color:#fff;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      height:100vh;
-      margin:0;
-    }
+    body { background:#000; font-family:Arial,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; margin:0; }
     .logo { max-width:160px; margin-bottom:30px; }
     h1 { font-size:42px; margin-bottom:10px; text-align:center; }
     .subtitle { font-size:18px; color:#ccc; margin-bottom:24px; text-align:center; }
-
     .label { width:300px; font-size:14px; color:#bbb; margin:4px 0 6px }
     .field { width:300px; position:relative; margin:8px 0; }
-    input[type="text"],
-    input[type="email"],
-    input[type="password"],
-    input[type="date"] {
-      padding:14px;
-      width:100%;
-      border-radius:8px;
-      border:none;
-      font-size:16px;
-      background:#222;
-      color:#fff;
-      box-sizing:border-box;
-      outline:none;
+    input[type="text"], input[type="email"], input[type="password"], input[type="date"] {
+      padding:14px; width:100%; border-radius:8px; border:none; font-size:16px;
+      background:#222; color:#fff; box-sizing:border-box; outline:none;
     }
     input::placeholder { color:#aaa; }
     input:focus { box-shadow:0 0 0 3px rgba(59,130,246,.25) }
-
     .date-wrapper { position:relative; width:300px; }
-    .date-wrapper input[type="date"] {
-      width:100%;
-      padding-right:40px;
-      appearance:none;
-      background:#222;
-      color-scheme:dark;
-      color:#fff;
-    }
-    .date-wrapper input[type="date"]::-webkit-calendar-picker-indicator {
-      display:none;
-      -webkit-appearance:none;
-    }
-    .calendar-icon {
-      position:absolute;
-      right:12px;
-      top:12px;
-      font-size:20px;
-      color:#fff;
-      pointer-events:none;
-    }
-
-    .gender {
-      display:flex;
-      justify-content:center;
-      gap:40px;
-      background:#222;
-      border-radius:8px;
-      padding:12px 0;
-      width:300px;
-      margin:8px 0;
-    }
-    .gender label {
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-size:14px;
-    }
-
-    .eye-icon {
-      position:absolute;
-      top:18px;
-      right:12px;
-      cursor:pointer;
-      font-size:16px;
-      color:#aaa;
-      transition:color .2s;
-    }
+    .date-wrapper input[type="date"] { width:100%; padding-right:40px; appearance:none; background:#222; color-scheme:dark; color:#fff; }
+    .date-wrapper input[type="date"]::-webkit-calendar-picker-indicator { display:none; -webkit-appearance:none; }
+    .calendar-icon { position:absolute; right:12px; top:12px; font-size:20px; color:#fff; pointer-events:none; }
+    .gender { display:flex; justify-content:center; gap:40px; background:#222; border-radius:8px; padding:12px 0; width:300px; margin:8px 0; }
+    .gender label { display:flex; align-items:center; gap:8px; font-size:14px; }
+    .eye-icon { position:absolute; top:18px; right:12px; cursor:pointer; font-size:16px; color:#aaa; transition:color .2s; }
     .eye-icon:hover { color:#fff; }
-
-    .btn {
-      background:#cc0000;
-      color:#fff;
-      border:none;
-      padding:14px 30px;
-      border-radius:8px;
-      font-size:16px;
-      font-weight:bold;
-      cursor:pointer;
-      margin-top:18px;
-      transition:background .3s;
-      width:300px;
-    }
+    .btn { background:#cc0000; color:#fff; border:none; padding:14px 30px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer; margin-top:18px; transition:background .3s; width:300px; }
     .btn:hover { background:#ff1a1a; }
-
-    .error {
-      color:#ff4d4d;
-      font-size:14px;
-      margin-top:6px;
-      width:300px;
-      text-align:left;
-      min-height:18px;
-    }
-
-    .hint {
-      font-size:14px;
-      color:#aaa;
-      margin-top:12px;
-      text-align:center;
-    }
+    .error { color:#ff4d4d; font-size:14px; margin-top:6px; width:300px; text-align:left; min-height:18px; }
+    .hint { font-size:14px; color:#aaa; margin-top:12px; text-align:center; }
     a { color:#7db3ff; text-decoration:none; }
   </style>
 </head>
 <body>
-
-  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
-       class="logo" alt="X45 Logo" />
-
+  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
   <h1>Create Your Account</h1>
   <div class="subtitle">Let’s get you started</div>
 
   <form id="signupForm" autocomplete="off" onsubmit="event.preventDefault(); register();">
     <!-- Names -->
     <div class="field">
-      <input type="text" id="firstName" name="firstName"
-             placeholder="First name" autocomplete="given-name" required />
+      <input type="text" id="firstName" name="firstName" placeholder="First name" autocomplete="given-name" required />
     </div>
     <div class="field">
-      <input type="text" id="lastName" name="lastName"
-             placeholder="Last name (Optional)" autocomplete="family-name" />
+      <input type="text" id="lastName" name="lastName" placeholder="Last name (Optional)" autocomplete="family-name" />
     </div>
 
     <!-- DOB -->
@@ -160,43 +65,40 @@
 
     <!-- Email -->
     <div class="field">
-      <input type="email" id="email" name="email"
-             placeholder="Email address" autocomplete="email" required autocapitalize="none" />
+      <input type="email" id="email" name="email" placeholder="Email address" autocomplete="email" required autocapitalize="none" />
     </div>
     <div class="field">
-      <input type="email" id="confirmEmail" name="confirmEmail"
-             placeholder="Confirm email address" autocomplete="off" required autocapitalize="none" />
+      <input type="email" id="confirmEmail" name="confirmEmail" placeholder="Confirm email address" autocomplete="off" required autocapitalize="none" />
     </div>
     <div class="error" id="emailError"></div>
 
     <!-- Passwords -->
     <div class="field">
-      <input type="password" id="password" name="password"
-             placeholder="Create password" autocomplete="new-password" required minlength="6" />
+      <input type="password" id="password" name="password" placeholder="Create password" autocomplete="new-password" required minlength="6" />
       <span class="eye-icon" onclick="togglePassword('password', this)">👁️</span>
     </div>
     <div class="field">
-      <input type="password" id="confirmPassword" name="confirmPassword"
-             placeholder="Confirm password" required minlength="6" />
+      <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm password" required minlength="6" />
       <span class="eye-icon" onclick="togglePassword('confirmPassword', this)">👁️</span>
     </div>
     <div class="error" id="passwordError"></div>
 
     <button class="btn" type="submit">Start My Free Trial</button>
-
     <div class="hint">
       Already have an account?
-      <!-- same folder: works on localhost AND /x45/ -->
-      <a href="signin.html">Sign in</a>
+      <a id="signinLink" href="https://expressfitness.ca/x45-app/signin.html">Sign in</a>
     </div>
   </form>
 
-  <div class="error" id="formError" style="text-align:center;margin-top:10px;"></div>
+  <!-- Error elements (keep these IDs; code below uses them) -->
+  <div class="error" id="emailError"></div>
+  <div class="error" id="passwordError"></div>
+  <div class="error" id="dobError"></div>
+  <div class="error" id="genderError"></div>
 
   <script>
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
-    const SUPABASE_KEY =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // DOB bounds
@@ -245,31 +147,16 @@
       const dob       = document.getElementById('dob').value;
       const gender    = getGender();
 
-      const emailError    = document.getElementById('emailError');
-      const passwordError = document.getElementById('passwordError');
-      const dobError      = document.getElementById('dobError');
-      const genderError   = document.getElementById('genderError');
-      const formError     = document.getElementById('formError');
-
+      // using global IDs (emailError, etc.) like your original code
       emailError.textContent    = '';
       passwordError.textContent = '';
       dobError.textContent      = '';
       genderError.textContent   = '';
-      formError.textContent     = '';
 
-      if (!firstName) { formError.textContent = "Please enter your first name."; return; }
+      if (!firstName) { alert("Please enter your first name."); return; }
 
-      if (!email || !confirmEmail) {
-        emailError.textContent = "Please enter and confirm your email.";
-        return;
-      }
       if (email !== confirmEmail) {
         emailError.textContent = "Emails do not match.";
-        return;
-      }
-
-      if (!password || !confirmPassword) {
-        passwordError.textContent = "Please enter and confirm your password.";
         return;
       }
       if (password !== confirmPassword) {
@@ -277,46 +164,39 @@
         return;
       }
 
-      const dobMsg = validateDob(dob);
-      if (dobMsg) {
-        dobError.textContent = dobMsg;
+      const dobErrMsg = validateDob(dob);
+      if (dobErrMsg) {
+        dobError.textContent = dobErrMsg;
         return;
       }
-
       if (!gender) {
         genderError.textContent = "Please select gender.";
         return;
       }
 
       try {
-        // base folder URL (works on localhost and on /x45/)
-        const folderUrl = new URL('.', window.location.href).href; // ends with /
-
-        const signinUrl        = new URL('signin.html', folderUrl).href;
-        const accountCreatedUrl = new URL(
-          'accountcreated.html?email=' + encodeURIComponent(email),
-          folderUrl
-        ).href;
-
         const { data, error } = await client.auth.signUp({
           email,
           password,
           options: {
             data: { first_name: firstName, last_name: lastName, dob, gender },
-            emailRedirectTo: signinUrl    // link in email → Sign In page
+            // 🔴 LIVE APP: email confirmation goes to Sign In page online
+            emailRedirectTo: 'https://expressfitness.ca/x45-app/signin.html'
           }
         });
 
         if (error) {
-          formError.textContent = 'Supabase Error: ' + error.message;
+          alert('Supabase Error: ' + error.message);
           return;
         }
 
-        // In-app redirect to Account Created page
-        window.location.href = accountCreatedUrl;
+        // After signup, go to live Account Created page
+        window.location.href =
+          'https://expressfitness.ca/x45-app/accountcreated.html?email=' +
+          encodeURIComponent(email);
 
       } catch (err) {
-        formError.textContent = "Unexpected error: " + (err && err.message ? err.message : err);
+        alert("Unexpected error: " + (err?.message || err));
       }
     }
   </script>
