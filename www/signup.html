@@ -139,7 +139,10 @@
       margin-top:12px;
       text-align:center;
     }
-    a { color:#7db3ff; text-decoration:none; }
+    .hint a {
+      color:#7db3ff;
+      text-decoration:none;
+    }
   </style>
 </head>
 <body>
@@ -205,16 +208,15 @@
     <button class="btn" type="submit">Start My Free Trial</button>
     <div class="hint">
       Already have an account?
-      <!-- PURE RELATIVE LINK – must work if signin.html is in same folder -->
-      <a href="signin.html">Sign in</a>
+      <!-- absolute URL so there is ZERO ambiguity -->
+      <a href="https://expressfitness.ca/x45-app/signin.html">Sign in</a>
     </div>
   </form>
 
   <script>
-    // -------- Build absolute URLs from the current folder (no hard-coded /x45-app) --------
-    const folderUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
-    const SIGNIN_URL         = folderUrl + 'signin.html';
-    const ACCOUNT_CREATED_URL = folderUrl + 'accountcreated.html';
+    // HARD-CODED LIVE URLs (no guessing, Safari can’t get confused)
+    const SIGNIN_URL         = 'https://expressfitness.ca/x45-app/signin.html';
+    const ACCOUNT_CREATED_URL = 'https://expressfitness.ca/x45-app/accountcreated.html';
 
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
@@ -312,7 +314,7 @@
               dob,
               gender
             },
-            // email confirmation redirect: absolute URL for THIS folder
+            // Email confirmation → EXACT sign-in URL
             emailRedirectTo: SIGNIN_URL
           }
         });
@@ -322,7 +324,7 @@
           return;
         }
 
-        // After successful sign up, go to account-created page in same folder
+        // After successful sign up, go to account-created page on same domain
         window.location.href = ACCOUNT_CREATED_URL + '?email=' + encodeURIComponent(email);
 
       } catch (err) {
