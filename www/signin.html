@@ -97,17 +97,14 @@
 
   <div class="hint">
     Don’t have an account yet?
-    <!-- pure relative link back to signup -->
     <a href="signup.html">Create one here</a>
   </div>
 
   <script>
-    // ===== SAME-FOLDER URLS (no hard-coded domain) =====
-    const folderUrl     = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+    const folderUrl  = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
     const DASHBOARD_URL = folderUrl + 'step1-pick-coach.html';
     const RESET_URL     = folderUrl + 'reset-password.html';
 
-    // Supabase client
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -135,7 +132,6 @@
         } else if (!data.user.email_confirmed_at) {
           errorBox.innerText = "⚠️ Please confirm your email before logging in.";
         } else {
-          // success → go to Step 1 in same folder
           window.location.href = DASHBOARD_URL;
         }
       } catch (err) {
