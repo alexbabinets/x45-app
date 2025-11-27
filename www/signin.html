@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <title>Sign In – X45</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In – X45</title> 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
@@ -18,10 +18,14 @@
       margin: 0;
     }
     .logo { max-width: 160px; margin-bottom: 30px; }
-    h1 { font-size: 24px; margin-bottom: 20px; text-align: center; color: #00ffcc; }
+    h1 {
+      font-size: 24px; margin-bottom: 20px;
+      text-align: center; color: #00ffcc;
+    }
     .form-input {
-      padding: 14px; margin: 6px 0; width: 300px; border-radius: 8px;
-      border: none; font-size: 16px; background-color: #222; color: #fff;
+      padding: 14px; margin: 6px 0; width: 300px;
+      border-radius: 8px; border: none; font-size: 16px;
+      background-color: #222; color: #fff;
     }
     .form-input::placeholder { color: #aaa; }
     .btn {
@@ -42,8 +46,7 @@
   </style>
 </head>
 <body>
-  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
-       class="logo" alt="X45 Logo" />
+  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
   <h1>✅ Your Email Is Confirmed.<br>You can now sign in to X45</h1>
 
   <input type="email" class="form-input" id="email" placeholder="Email address" />
@@ -64,6 +67,11 @@
   <button class="btn" onclick="login()">Sign In</button>
 
   <script>
+    // -------- GLOBAL URLS (same-folder links: dashboard & reset) --------
+    const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+    const DASHBOARD_URL = baseUrl + 'step1-pick-coach.html';  // change if your filename is different
+    const RESET_URL     = baseUrl + 'reset-password.html';
+
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -89,13 +97,13 @@
         if (error) {
           errorBox.innerText = error.message;
         } else if (!data.user.email_confirmed_at) {
-          errorBox.innerText = "⚠️ Please confirm your email before signing in.";
+          errorBox.innerText = "⚠️ Please confirm your email before logging in.";
         } else {
-          // LIVE redirect to first onboarding step
-          window.location.href = 'https://expressfitness.ca/x45-app/step1-pick-coach.html';
+          // ✅ Successful login → go to coach selection (or dashboard) in same folder
+          window.location.href = DASHBOARD_URL;
         }
       } catch (err) {
-        errorBox.innerText = 'Unexpected error: ' + err.message;
+        errorBox.innerText = 'Unexpected error: ' + (err.message || err);
       }
     }
 
@@ -107,7 +115,7 @@
 
       try {
         const { error: resetError } = await client.auth.resetPasswordForEmail(email, {
-          redirectTo: 'https://expressfitness.ca/x45-app/reset-password.html'
+          redirectTo: RESET_URL
         });
         if (resetError) {
           message.textContent = '❌ ' + resetError.message;
@@ -117,7 +125,7 @@
           message.style.color = 'lightgreen';
         }
       } catch (err) {
-        message.textContent = '❌ Unexpected error: ' + err.message;
+        message.textContent = '❌ Unexpected error: ' + (err.message || err);
         message.style.color = 'red';
       }
     }
