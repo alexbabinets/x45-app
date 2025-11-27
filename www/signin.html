@@ -101,9 +101,10 @@
   </div>
 
   <script>
-    const folderUrl  = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
-    const DASHBOARD_URL = folderUrl + 'step1-pick-coach.html';
-    const RESET_URL     = folderUrl + 'reset-password.html';
+    // 🧱 same safe base
+    const BASE_URL    = new URL('.', window.location.href).href;
+    const DASHBOARD_URL = new URL('step1-pick-coach.html', BASE_URL).href;
+    const RESET_URL     = new URL('reset-password.html', BASE_URL).href;
 
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
