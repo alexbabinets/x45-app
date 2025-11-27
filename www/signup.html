@@ -213,10 +213,10 @@
   </form>
 
   <script>
-    // Build absolute URLs for this folder (works on GitHub, expressfitness, localhost)
-    const folderUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
-    const SIGNIN_URL          = folderUrl + 'signin.html';
-    const ACCOUNT_CREATED_URL = folderUrl + 'accountcreated.html';
+    // 🧱 SAFE BASE PATH FOR THIS FOLDER
+    const BASE_URL = new URL('.', window.location.href).href;  // always ends with /x45-app/
+    const SIGNIN_URL          = new URL('signin.html', BASE_URL).href;
+    const ACCOUNT_CREATED_URL = new URL('accountcreated.html', BASE_URL).href;
 
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
@@ -306,7 +306,7 @@
           password,
           options: {
             data: { first_name: firstName, last_name: lastName, dob, gender },
-            emailRedirectTo: SIGNIN_URL   // confirmation link → THIS folder's signin.html
+            emailRedirectTo: SIGNIN_URL   // ✅ correct folder sign-in URL
           }
         });
 
