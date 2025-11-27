@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In – X45</title>
+  <title>Sign In – X45</title> 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
@@ -90,8 +90,8 @@
         } else if (!data.user.email_confirmed_at) {
           errorBox.innerText = "⚠️ Please confirm your email before signing in.";
         } else {
-          // go to next step in same folder (localhost OR /x45/)
-          window.location.href = 'step1-pick-coach.html';
+          // LIVE redirect to first onboarding step
+          window.location.href = 'https://expressfitness.ca/x45-app/step1-pick-coach.html';
         }
       } catch (err) {
         errorBox.innerText = 'Unexpected error: ' + err.message;
@@ -105,10 +105,8 @@
       message.style.color = 'white';
 
       try {
-        const resetUrl = new URL('reset-password.html', window.location.href).href;
-
         const { error: resetError } = await client.auth.resetPasswordForEmail(email, {
-          redirectTo: resetUrl
+          redirectTo: 'https://expressfitness.ca/x45-app/reset-password.html'
         });
         if (resetError) {
           message.textContent = '❌ ' + resetError.message;
@@ -118,7 +116,7 @@
           message.style.color = 'lightgreen';
         }
       } catch (err) {
-        message.textContent = '❌ ' + err.message;
+        message.textContent = '❌ Unexpected error: ' + err.message;
         message.style.color = 'red';
       }
     }
