@@ -208,21 +208,20 @@
     <button class="btn" type="submit">Start My Free Trial</button>
     <div class="hint">
       Already have an account?
-      <!-- absolute URL so there is ZERO ambiguity -->
-      <a href="https://expressfitness.ca/x45-app/signin.html">Sign in</a>
+      <a href="signin.html">Sign in</a>
     </div>
   </form>
 
   <script>
-    // HARD-CODED LIVE URLs (no guessing, Safari can’t get confused)
-    const SIGNIN_URL         = 'https://expressfitness.ca/x45-app/signin.html';
-    const ACCOUNT_CREATED_URL = 'https://expressfitness.ca/x45-app/accountcreated.html';
+    // Build absolute URLs for this folder (works on GitHub, expressfitness, localhost)
+    const folderUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+    const SIGNIN_URL          = folderUrl + 'signin.html';
+    const ACCOUNT_CREATED_URL = folderUrl + 'accountcreated.html';
 
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // DOB bounds (today max, 1900 min)
     (function setDobLimits() {
       const dob = document.getElementById('dob');
       const now = new Date();
@@ -273,13 +272,11 @@
       const dobError      = document.getElementById('dobError');
       const genderError   = document.getElementById('genderError');
 
-      // clear errors
       emailError.textContent    = '';
       passwordError.textContent = '';
       dobError.textContent      = '';
       genderError.textContent   = '';
 
-      // validations
       if (!firstName) {
         alert("Please enter your first name.");
         return;
@@ -308,14 +305,8 @@
           email,
           password,
           options: {
-            data: {
-              first_name: firstName,
-              last_name: lastName,
-              dob,
-              gender
-            },
-            // Email confirmation → EXACT sign-in URL
-            emailRedirectTo: SIGNIN_URL
+            data: { first_name: firstName, last_name: lastName, dob, gender },
+            emailRedirectTo: SIGNIN_URL   // confirmation link → THIS folder's signin.html
           }
         });
 
@@ -324,7 +315,6 @@
           return;
         }
 
-        // After successful sign up, go to account-created page on same domain
         window.location.href = ACCOUNT_CREATED_URL + '?email=' + encodeURIComponent(email);
 
       } catch (err) {
