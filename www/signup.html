@@ -208,15 +208,14 @@
     <button class="btn" type="submit">Start My Free Trial</button>
     <div class="hint">
       Already have an account?
-      <a href="signin.html">Sign in</a>
+      <a href="https://expressfitness.ca/x45-app/signin.html">Sign in</a>
     </div>
   </form>
 
   <script>
-    // 🧱 SAFE BASE PATH FOR THIS FOLDER
-    const BASE_URL = new URL('.', window.location.href).href;  // always ends with /x45-app/
-    const SIGNIN_URL          = new URL('signin.html', BASE_URL).href;
-    const ACCOUNT_CREATED_URL = new URL('accountcreated.html', BASE_URL).href;
+    // 🔴 HARD-CODED LIVE URLS – CHANGE ONLY IF YOUR PATH IS DIFFERENT
+    const SIGNIN_URL          = 'https://expressfitness.ca/x45-app/signin.html';
+    const ACCOUNT_CREATED_URL = 'https://expressfitness.ca/x45-app/accountcreated.html';
 
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
@@ -306,7 +305,8 @@
           password,
           options: {
             data: { first_name: firstName, last_name: lastName, dob, gender },
-            emailRedirectTo: SIGNIN_URL   // ✅ correct folder sign-in URL
+            // 🔴 EXACT URL SAFARI MUST OPEN AFTER EMAIL CONFIRM
+            emailRedirectTo: SIGNIN_URL
           }
         });
 
