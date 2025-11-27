@@ -205,15 +205,16 @@
     <button class="btn" type="submit">Start My Free Trial</button>
     <div class="hint">
       Already have an account?
-      <!-- plain relative link: MUST work if signin.html is in same folder -->
+      <!-- PURE RELATIVE LINK – must work if signin.html is in same folder -->
       <a href="signin.html">Sign in</a>
     </div>
   </form>
 
   <script>
-    // 🔴 HARD-CODED SIGN-IN URL FOR SUPABASE REDIRECT
-    const SIGNIN_URL = 'https://expressfitness.ca/x45-app/signin.html';
-    const ACCOUNT_CREATED_URL = 'https://expressfitness.ca/x45-app/accountcreated.html';
+    // -------- Build absolute URLs from the current folder (no hard-coded /x45-app) --------
+    const folderUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+    const SIGNIN_URL         = folderUrl + 'signin.html';
+    const ACCOUNT_CREATED_URL = folderUrl + 'accountcreated.html';
 
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
@@ -311,7 +312,7 @@
               dob,
               gender
             },
-            // Supabase confirmation link → this exact URL
+            // email confirmation redirect: absolute URL for THIS folder
             emailRedirectTo: SIGNIN_URL
           }
         });
@@ -321,7 +322,7 @@
           return;
         }
 
-        // After successful sign up, go to account-created page on same domain
+        // After successful sign up, go to account-created page in same folder
         window.location.href = ACCOUNT_CREATED_URL + '?email=' + encodeURIComponent(email);
 
       } catch (err) {
