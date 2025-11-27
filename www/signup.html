@@ -17,67 +17,146 @@
       height:100vh;
       margin:0;
     }
-    .logo { max-width:160px; margin-bottom:30px; }
-    h1 { font-size:42px; margin-bottom:10px; text-align:center; }
-    .subtitle { font-size:18px; color:#ccc; margin-bottom:24px; text-align:center; }
-    .label { width:300px; font-size:14px; color:#bbb; margin:4px 0 6px }
-    .field { width:300px; position:relative; margin:8px 0; }
-    input[type="text"], input[type="email"], input[type="password"], input[type="date"] {
-      padding:14px; width:100%; border-radius:8px; border:none; font-size:16px;
-      background:#222; color:#fff; box-sizing:border-box; outline:none;
+    .logo {
+      max-width:160px;
+      margin-bottom:12px; /* closer to heading */
+    }
+    h1 {
+      font-size:36px;              /* ~15% smaller than 42px */
+      margin-bottom:8px;
+      text-align:center;
+    }
+    .subtitle {
+      font-size:18px;
+      color:#ccc;
+      margin-bottom:20px;
+      text-align:center;
+    }
+    .label {
+      width:300px;
+      font-size:14px;
+      color:#bbb;
+      margin:4px 0 6px;
+    }
+    .field {
+      width:300px;
+      position:relative;
+      margin:8px 0;
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="date"] {
+      padding:14px;
+      width:100%;
+      border-radius:8px;
+      border:none;
+      font-size:16px;
+      background:#222;
+      color:#fff;
+      box-sizing:border-box;
+      outline:none;
     }
     input::placeholder { color:#aaa; }
-    input:focus { box-shadow:0 0 0 3px rgba(59,130,246,.25) }
-    .date-wrapper { position:relative; width:300px; }
+    input:focus {
+      box-shadow:0 0 0 3px rgba(59,130,246,.25);
+    }
+    .date-wrapper {
+      position:relative;
+      width:300px;
+    }
     .date-wrapper input[type="date"] {
-      width:100%; padding-right:40px; appearance:none;
-      background:#222; color-scheme:dark; color:#fff;
+      width:100%;
+      padding-right:40px;
+      appearance:none;
+      background:#222;
+      color-scheme:dark;
+      color:#fff;
     }
     .date-wrapper input[type="date"]::-webkit-calendar-picker-indicator {
-      display:none; -webkit-appearance:none;
+      display:none;
+      -webkit-appearance:none;
     }
     .calendar-icon {
-      position:absolute; right:12px; top:12px;
-      font-size:20px; color:#fff; pointer-events:none;
+      position:absolute;
+      right:12px;
+      top:12px;
+      font-size:20px;
+      color:#fff;
+      pointer-events:none;
     }
     .gender {
-      display:flex; justify-content:center; gap:40px;
-      background:#222; border-radius:8px; padding:12px 0;
-      width:300px; margin:8px 0;
+      display:flex;
+      justify-content:center;
+      gap:40px;
+      background:#222;
+      border-radius:8px;
+      padding:12px 0;
+      width:300px;
+      margin:8px 0;
     }
-    .gender label { display:flex; align-items:center; gap:8px; font-size:14px; }
+    .gender label {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:14px;
+    }
     .eye-icon {
-      position:absolute; top:18px; right:12px;
-      cursor:pointer; font-size:16px; color:#aaa; transition:color .2s;
+      position:absolute;
+      top:18px;
+      right:12px;
+      cursor:pointer;
+      font-size:16px;
+      color:#aaa;
+      transition:color .2s;
     }
     .eye-icon:hover { color:#fff; }
     .btn {
-      background:#cc0000; color:#fff; border:none;
-      padding:14px 30px; border-radius:8px; font-size:16px;
-      font-weight:bold; cursor:pointer; margin-top:18px;
-      transition:background .3s; width:300px;
+      background:#cc0000;
+      color:#fff;
+      border:none;
+      padding:14px 30px;
+      border-radius:8px;
+      font-size:16px;
+      font-weight:bold;
+      cursor:pointer;
+      margin-top:18px;
+      transition:background .3s;
+      width:300px;
     }
     .btn:hover { background:#ff1a1a; }
     .error {
-      color:#ff4d4d; font-size:14px; margin-top:6px;
-      width:300px; text-align:left; min-height:18px;
+      color:#ff4d4d;
+      font-size:14px;
+      margin-top:6px;
+      width:300px;
+      text-align:left;
+      min-height:18px;
     }
-    .hint { font-size:14px; color:#aaa; margin-top:12px; text-align:center; }
+    .hint {
+      font-size:14px;
+      color:#aaa;
+      margin-top:12px;
+      text-align:center;
+    }
     a { color:#7db3ff; text-decoration:none; }
   </style>
 </head>
 <body>
-  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
+  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
+       class="logo" alt="X45 Logo" />
   <h1>Create Your Account</h1>
   <div class="subtitle">Let’s get you started</div>
 
   <form id="signupForm" autocomplete="off" onsubmit="event.preventDefault(); register();">
     <!-- Names -->
     <div class="field">
-      <input type="text" id="firstName" name="firstName" placeholder="First name" autocomplete="given-name" required />
+      <input type="text" id="firstName" name="firstName"
+             placeholder="First name" autocomplete="given-name" required />
     </div>
     <div class="field">
-      <input type="text" id="lastName" name="lastName" placeholder="Last name (Optional)" autocomplete="family-name" />
+      <input type="text" id="lastName" name="lastName"
+             placeholder="Last name (Optional)" autocomplete="family-name" />
     </div>
 
     <!-- DOB -->
@@ -98,20 +177,27 @@
 
     <!-- Email -->
     <div class="field">
-      <input type="email" id="email" name="email" placeholder="Email address" autocomplete="email" required autocapitalize="none" />
+      <input type="email" id="email" name="email"
+             placeholder="Email address" autocomplete="email"
+             required autocapitalize="none" />
     </div>
     <div class="field">
-      <input type="email" id="confirmEmail" name="confirmEmail" placeholder="Confirm email address" autocomplete="off" required autocapitalize="none" />
+      <input type="email" id="confirmEmail" name="confirmEmail"
+             placeholder="Confirm email address" autocomplete="off"
+             required autocapitalize="none" />
     </div>
     <div class="error" id="emailError"></div>
 
     <!-- Passwords -->
     <div class="field">
-      <input type="password" id="password" name="password" placeholder="Create password" autocomplete="new-password" required minlength="6" />
+      <input type="password" id="password" name="password"
+             placeholder="Create password" autocomplete="new-password"
+             required minlength="6" />
       <span class="eye-icon" onclick="togglePassword('password', this)">👁️</span>
     </div>
     <div class="field">
-      <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm password" required minlength="6" />
+      <input type="password" id="confirmPassword" name="confirmPassword"
+             placeholder="Confirm password" required minlength="6" />
       <span class="eye-icon" onclick="togglePassword('confirmPassword', this)">👁️</span>
     </div>
     <div class="error" id="passwordError"></div>
@@ -124,12 +210,12 @@
   </form>
 
   <script>
-    // -------- GLOBAL URLS (work on localhost, GitHub, any folder) --------
+    // -------- GLOBAL URLS: same-folder links for GitHub / any host --------
     const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
     const SIGNIN_URL = baseUrl + 'signin.html';
     const ACCOUNT_CREATED_URL = baseUrl + 'accountcreated.html';
 
-    // Update the link under the form
+    // Set the sign-in link under the form
     document.getElementById('signinLink').href = SIGNIN_URL;
 
     // Supabase client
@@ -167,7 +253,8 @@
       if (d > now) return "DOB cannot be in the future.";
       const minAge = 13;
       const age = now.getFullYear() - d.getFullYear()
-        - ((now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) ? 1 : 0);
+        - ((now.getMonth() < d.getMonth() ||
+           (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) ? 1 : 0);
       if (age < minAge) return `You must be at least ${minAge} years old.`;
       return "";
     }
@@ -182,7 +269,6 @@
       const dob       = document.getElementById('dob').value;
       const gender    = getGender();
 
-      // error elements
       const emailError    = document.getElementById('emailError');
       const passwordError = document.getElementById('passwordError');
       const dobError      = document.getElementById('dobError');
@@ -195,7 +281,10 @@
       genderError.textContent   = '';
 
       // validations
-      if (!firstName) { alert("Please enter your first name."); return; }
+      if (!firstName) {
+        alert("Please enter your first name.");
+        return;
+      }
       if (email !== confirmEmail) {
         emailError.textContent = "Emails do not match.";
         return;
@@ -206,16 +295,27 @@
       }
 
       const dobErr = validateDob(dob);
-      if (dobErr) { dobError.textContent = dobErr; return; }
-      if (!gender) { genderError.textContent = "Please select gender."; return; }
+      if (dobErr) {
+        dobError.textContent = dobErr;
+        return;
+      }
+      if (!gender) {
+        genderError.textContent = "Please select gender.";
+        return;
+      }
 
       try {
         const { data, error } = await client.auth.signUp({
           email,
           password,
           options: {
-            data: { first_name: firstName, last_name: lastName, dob, gender },
-            // 🔗 After clicking email link, user is sent to signin.html in the same folder
+            data: {
+              first_name: firstName,
+              last_name: lastName,
+              dob,
+              gender
+            },
+            // After confirming email, Supabase will send user back to signin.html
             emailRedirectTo: SIGNIN_URL
           }
         });
@@ -225,7 +325,7 @@
           return;
         }
 
-        // Go to confirmation screen, showing the email used
+        // Redirect to confirmation page with email in query
         window.location.href = ACCOUNT_CREATED_URL + '?email=' + encodeURIComponent(email);
 
       } catch (err) {
