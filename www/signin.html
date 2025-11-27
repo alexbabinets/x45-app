@@ -97,14 +97,13 @@
 
   <div class="hint">
     Don’t have an account yet?
-    <a href="signup.html">Create one here</a>
+    <a href="https://expressfitness.ca/x45-app/signup.html">Create one here</a>
   </div>
 
   <script>
-    // 🧱 same safe base
-    const BASE_URL    = new URL('.', window.location.href).href;
-    const DASHBOARD_URL = new URL('step1-pick-coach.html', BASE_URL).href;
-    const RESET_URL     = new URL('reset-password.html', BASE_URL).href;
+    // 🔴 HARD-CODED LIVE URLS
+    const DASHBOARD_URL = 'https://expressfitness.ca/x45-app/step1-pick-coach.html';
+    const RESET_URL     = 'https://expressfitness.ca/x45-app/reset-password.html';
 
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
