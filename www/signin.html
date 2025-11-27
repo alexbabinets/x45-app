@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Sign In – X45</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
@@ -16,37 +16,66 @@
       justify-content: center;
       height: 100vh;
       margin: 0;
+      text-align: center;
     }
     .logo { max-width: 160px; margin-bottom: 30px; }
     h1 {
-      font-size: 24px; margin-bottom: 20px;
-      text-align: center; color: #00ffcc;
+      font-size: 24px;
+      margin-bottom: 20px;
+      text-align: center;
+      color: #00ffcc;
     }
     .form-input {
-      padding: 14px; margin: 6px 0; width: 300px;
-      border-radius: 8px; border: none; font-size: 16px;
-      background-color: #222; color: #fff;
+      padding: 14px;
+      margin: 6px 0;
+      width: 300px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+      background-color: #222;
+      color: #fff;
+      box-sizing: border-box;
     }
     .form-input::placeholder { color: #aaa; }
     .btn {
-      background-color: #cc0000; color: #fff; border: none;
-      padding: 14px 30px; border-radius: 8px; font-size: 16px;
-      font-weight: bold; cursor: pointer; margin-top: 20px;
+      background-color: #cc0000;
+      color: #fff;
+      border: none;
+      padding: 14px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 20px;
       transition: background-color 0.3s ease;
     }
     .btn:hover { background-color: #ff1a1a; }
-    .error { color: #ff4d4d; font-size: 14px; margin-top: 8px; }
+    .error { color: #ff4d4d; font-size: 14px; margin-top: 8px; min-height: 18px; }
     .row-line {
-      display: flex; justify-content: center; align-items: center;
-      gap: 12px; margin-top: 6px; font-size: 14px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      margin-top: 6px;
+      font-size: 14px;
     }
     a { color: #ccc; cursor: pointer; text-decoration: underline; }
     #forgot-container { margin-top: 16px; }
     #forgot-message { margin-top: 12px; font-size: 15px; }
+    .hint {
+      margin-top: 16px;
+      font-size: 14px;
+      color: #aaa;
+    }
+    .hint a {
+      color: #7db3ff;
+      text-decoration: none;
+    }
   </style>
 </head>
 <body>
-  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
+  <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
+       class="logo" alt="X45 Logo" />
   <h1>✅ Your Email Is Confirmed.<br>You can now sign in to X45</h1>
 
   <input type="email" class="form-input" id="email" placeholder="Email address" />
@@ -59,19 +88,26 @@
 
   <div id="forgot-container" style="display:none;">
     <input type="email" class="form-input" id="forgot-email" placeholder="Enter your email" /><br />
-    <button class="btn" style="margin-top:10px; background-color:#007bff;" onclick="sendReset()">Email me the link</button>
+    <button class="btn" style="margin-top:10px;" onclick="sendReset()">Email me the link</button>
     <p id="forgot-message"></p>
   </div>
 
   <div class="error" id="errorBox"></div>
   <button class="btn" onclick="login()">Sign In</button>
 
-  <script>
-    // -------- GLOBAL URLS (same-folder links: dashboard & reset) --------
-    const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
-    const DASHBOARD_URL = baseUrl + 'step1-pick-coach.html';  // change if your filename is different
-    const RESET_URL     = baseUrl + 'reset-password.html';
+  <div class="hint">
+    Don’t have an account yet?
+    <!-- pure relative link back to signup -->
+    <a href="signup.html">Create one here</a>
+  </div>
 
+  <script>
+    // ===== SAME-FOLDER URLS (no hard-coded domain) =====
+    const folderUrl     = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+    const DASHBOARD_URL = folderUrl + 'step1-pick-coach.html';
+    const RESET_URL     = folderUrl + 'reset-password.html';
+
+    // Supabase client
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -99,7 +135,7 @@
         } else if (!data.user.email_confirmed_at) {
           errorBox.innerText = "⚠️ Please confirm your email before logging in.";
         } else {
-          // ✅ Successful login → go to coach selection (or dashboard) in same folder
+          // success → go to Step 1 in same folder
           window.location.href = DASHBOARD_URL;
         }
       } catch (err) {
