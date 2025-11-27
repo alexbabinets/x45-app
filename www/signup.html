@@ -19,10 +19,10 @@
     }
     .logo {
       max-width:160px;
-      margin-bottom:12px; /* closer to heading */
+      margin-bottom:10px; /* closer to heading */
     }
     h1 {
-      font-size:36px;              /* ~15% smaller than 42px */
+      font-size:36px;      /* ~15% smaller than 42px */
       margin-bottom:8px;
       text-align:center;
     }
@@ -205,20 +205,16 @@
     <button class="btn" type="submit">Start My Free Trial</button>
     <div class="hint">
       Already have an account?
-      <a id="signinLink" href="#">Sign in</a>
+      <!-- plain relative link: MUST work if signin.html is in same folder -->
+      <a href="signin.html">Sign in</a>
     </div>
   </form>
 
   <script>
-    // -------- GLOBAL URLS: same-folder links for GitHub / any host --------
-    const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
-    const SIGNIN_URL = baseUrl + 'signin.html';
-    const ACCOUNT_CREATED_URL = baseUrl + 'accountcreated.html';
+    // 🔴 HARD-CODED SIGN-IN URL FOR SUPABASE REDIRECT
+    const SIGNIN_URL = 'https://expressfitness.ca/x45-app/signin.html';
+    const ACCOUNT_CREATED_URL = 'https://expressfitness.ca/x45-app/accountcreated.html';
 
-    // Set the sign-in link under the form
-    document.getElementById('signinLink').href = SIGNIN_URL;
-
-    // Supabase client
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -315,7 +311,7 @@
               dob,
               gender
             },
-            // After confirming email, Supabase will send user back to signin.html
+            // Supabase confirmation link → this exact URL
             emailRedirectTo: SIGNIN_URL
           }
         });
@@ -325,7 +321,7 @@
           return;
         }
 
-        // Redirect to confirmation page with email in query
+        // After successful sign up, go to account-created page on same domain
         window.location.href = ACCOUNT_CREATED_URL + '?email=' + encodeURIComponent(email);
 
       } catch (err) {
