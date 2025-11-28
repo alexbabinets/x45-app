@@ -19,11 +19,7 @@
 
     #welcome-back { font-size: 36px; font-weight: bold; margin-bottom: 10px; color: #fff; }
     #welcome-sub  { font-size: 20px; font-weight: normal; margin-bottom: 10px; color: #fff; }
-    #step-label   {
-      font-size: 24px; font-weight: bold;
-      margin-top: 20px; margin-bottom: 30px;
-      color: #00b3ff; text-decoration: underline;
-    }
+    #step-label   { font-size: 24px; font-weight: bold; margin-top: 20px; margin-bottom: 30px; color: #00b3ff; text-decoration: underline; }
 
     .coach-group {
       display: flex;
@@ -41,8 +37,7 @@
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 14px;
       padding: 16px 14px 14px;
-      transition: transform .15s ease, border-color .15s ease,
-                  box-shadow .15s ease, background .15s ease;
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease, background .15s ease;
     }
     .coach-card:hover{
       transform: translateY(-3px);
@@ -51,11 +46,7 @@
       background: rgba(0,179,255,0.04);
     }
 
-    label img {
-      width: 170px;
-      border-radius: 12px;
-      margin: 6px 0 10px;
-    }
+    label img { width: 170px; border-radius: 12px; margin: 6px 0 10px; }
 
     .coach-title{
       display: flex;
@@ -69,11 +60,7 @@
       color: #fff;
     }
 
-    input[type="radio"] {
-      transform: scale(1.3);
-      margin-right: 6px;
-      accent-color: #00b3ff;
-    }
+    input[type="radio"] { transform: scale(1.3); margin-right: 6px; accent-color: #00b3ff; }
 
     .coach-desc{
       font-size: 14.5px;
@@ -113,7 +100,8 @@
 </head>
 <body>
   <div class="container">
-    <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
+    <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
+         class="logo" alt="X45 Logo" />
     
     <div id="welcome-back">Welcome back.</div>
     <div id="welcome-sub">Let’s get excited and create your X45 program.</div>
@@ -174,18 +162,18 @@
   </div>
 
   <script>
-    // -------- GLOBAL URLS (same-folder links) --------
-    const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
-    const NEXT_URL = baseUrl + 'step2-fitness-level.html';
-
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    const SIGNIN_URL = 'https://expressfitness.ca/x45-app/signin.html';
+    const NEXT_PAGE  = 'https://expressfitness.ca/x45-app/step2-fitness-level.html';
+
     async function loadUser() {
       const { data: { user }, error } = await client.auth.getUser();
       if (error || !user) {
-        alert("You are not logged in.");
+        // если не залогинен — отправляем на sign in
+        window.location.href = SIGNIN_URL;
         return;
       }
 
@@ -196,8 +184,7 @@
         .single();
 
       if (!fetchError && data && data.first_name) {
-        document.getElementById("welcome-back").textContent =
-          `Welcome back, ${data.first_name}.`;
+        document.getElementById("welcome-back").textContent = `Welcome back, ${data.first_name}.`;
       }
     }
 
@@ -217,7 +204,7 @@
       try {
         const { data: { user }, error: userError } = await client.auth.getUser();
         if (!user || userError) {
-          alert("You are not logged in.");
+          window.location.href = SIGNIN_URL;
           return;
         }
 
@@ -232,13 +219,14 @@
         }
 
         const coachEncoded = encodeURIComponent(coachName);
-        const welcomeText = document.getElementById("welcome-back").textContent;
-        const namePart = welcomeText.split(",")[1] || "";
-        const name = namePart.replace(".", "").trim() || "Member";
+        const nameText = document.getElementById("welcome-back").textContent;
+        let name = "Member";
+        if (nameText.includes(",")) {
+          name = nameText.split(",")[1].replace(".", "").trim();
+        }
         const nameEncoded = encodeURIComponent(name);
 
-        // 🔗 Go to Step 2 in the same folder
-        window.location.href = `${NEXT_URL}?coach=${coachEncoded}&name=${nameEncoded}`;
+        window.location.href = `${NEXT_PAGE}?coach=${coachEncoded}&name=${nameEncoded}`;
       } catch (err) {
         alert("Unexpected error: " + err.message);
       }
