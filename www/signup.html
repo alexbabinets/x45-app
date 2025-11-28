@@ -19,10 +19,10 @@
     }
     .logo {
       max-width:160px;
-      margin-bottom:10px; /* ближе к заголовку */
+      margin-bottom:10px; /* closer to heading */
     }
     h1 {
-      font-size:36px;      /* ~15% меньше чем 42px */
+      font-size:36px;      /* ~15% smaller than 42px */
       margin-bottom:8px;
       text-align:center;
     }
@@ -208,7 +208,7 @@
     <button class="btn" type="submit">Start My Free Trial</button>
     <div class="hint">
       Already have an account?
-      <a href="https://expressfitness.ca/x45-app/signin.html">Sign in</a>
+      <a href="signin.html">Sign in</a>
     </div>
   </form>
 
@@ -217,8 +217,10 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const SIGNIN_URL = 'https://expressfitness.ca/x45-app/signin.html';
-    const ACCOUNT_CREATED_URL = 'https://expressfitness.ca/x45-app/accountcreated.html';
+    // Base path for this folder, e.g. "/x45-app/"
+    const FOLDER_PATH = window.location.pathname.replace(/[^\/]+$/, ''); // strip filename
+    const SIGNIN_URL = window.location.origin + FOLDER_PATH + 'signin.html';
+    const ACCOUNT_CREATED_URL = 'accountcreated.html'; // relative file in same folder
 
     (function setDobLimits() {
       const dob = document.getElementById('dob');
@@ -304,7 +306,7 @@
           password,
           options: {
             data: { first_name: firstName, last_name: lastName, dob, gender },
-            emailRedirectTo: SIGNIN_URL
+            emailRedirectTo: SIGNIN_URL   // ✅ email link goes to signin in this folder
           }
         });
 
@@ -313,7 +315,7 @@
           return;
         }
 
-        // Переносим на экран "проверь почту"
+        // ✅ Go to accountcreated.html in the same folder
         window.location.href = ACCOUNT_CREATED_URL + '?email=' + encodeURIComponent(email);
 
       } catch (err) {
