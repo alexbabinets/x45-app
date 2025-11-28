@@ -208,16 +208,13 @@
     <button class="btn" type="submit">Start My Free Trial</button>
     <div class="hint">
       Already have an account?
-      <a href="signin.html">Sign in</a>
+      <a href="https://expressfitness.ca/x45-app/signin.html">Sign in</a>
     </div>
   </form>
 
   <script>
-    // 🔹 RELATIVE redirects (same folder)
-    const ACCOUNT_CREATED_PAGE = 'accountcreated.html';
-
-    // Absolute URL just for the email link (Supabase requirement)
-    const SIGNIN_ABSOLUTE_URL = new URL('signin.html', window.location.href).href;
+    // 🔴 This is the ONLY URL Supabase will use after email confirmation
+    const SIGNIN_URL = 'https://expressfitness.ca/x45-app/signin.html';
 
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
@@ -307,7 +304,7 @@
           password,
           options: {
             data: { first_name: firstName, last_name: lastName, dob, gender },
-            emailRedirectTo: SIGNIN_ABSOLUTE_URL
+            emailRedirectTo: SIGNIN_URL   // 🔴 THIS is what goes into the email
           }
         });
 
@@ -316,8 +313,9 @@
           return;
         }
 
-        // 🔹 RELATIVE redirect (no domain, no path games)
-        window.location.href = ACCOUNT_CREATED_PAGE + '?email=' + encodeURIComponent(email);
+        // Optional: local “account created” page if you want:
+        // window.location.href = 'https://expressfitness.ca/x45-app/accountcreated.html?email=' + encodeURIComponent(email);
+        alert("Account created. Check your email to confirm your address.");
 
       } catch (err) {
         alert("Unexpected error: " + (err?.message || err));
