@@ -213,7 +213,7 @@
   </form>
 
   <script>
-    // 🔴 This is the ONLY URL Supabase will use after email confirmation
+    // This is the ONLY URL Supabase will use after email confirmation
     const SIGNIN_URL = 'https://expressfitness.ca/x45-app/signin.html';
 
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
@@ -304,7 +304,7 @@
           password,
           options: {
             data: { first_name: firstName, last_name: lastName, dob, gender },
-            emailRedirectTo: SIGNIN_URL   // 🔴 THIS is what goes into the email
+            emailRedirectTo: SIGNIN_URL
           }
         });
 
@@ -313,10 +313,7 @@
           return;
         }
 
-        // Optional: local “account created” page if you want:
-        // window.location.href = 'https://expressfitness.ca/x45-app/accountcreated.html?email=' + encodeURIComponent(email);
-        alert("Account created. Check your email to confirm your address.");
-
+        alert("Account created. Check your email and tap the link to confirm.");
       } catch (err) {
         alert("Unexpected error: " + (err?.message || err));
       }
