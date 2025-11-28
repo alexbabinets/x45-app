@@ -19,10 +19,10 @@
     }
     .logo {
       max-width:160px;
-      margin-bottom:10px; /* closer to heading */
+      margin-bottom:10px; /* ближе к заголовку */
     }
     h1 {
-      font-size:36px;      /* ~15% smaller than 42px */
+      font-size:36px;      /* ~15% меньше чем 42px */
       margin-bottom:8px;
       text-align:center;
     }
@@ -213,12 +213,12 @@
   </form>
 
   <script>
-    // This is the ONLY URL Supabase will use after email confirmation
-    const SIGNIN_URL = 'https://expressfitness.ca/x45-app/signin.html';
-
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const SIGNIN_URL = 'https://expressfitness.ca/x45-app/signin.html';
+    const ACCOUNT_CREATED_URL = 'https://expressfitness.ca/x45-app/accountcreated.html';
 
     (function setDobLimits() {
       const dob = document.getElementById('dob');
@@ -313,7 +313,9 @@
           return;
         }
 
-        alert("Account created. Check your email and tap the link to confirm.");
+        // Переносим на экран "проверь почту"
+        window.location.href = ACCOUNT_CREATED_URL + '?email=' + encodeURIComponent(email);
+
       } catch (err) {
         alert("Unexpected error: " + (err?.message || err));
       }
