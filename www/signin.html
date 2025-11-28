@@ -103,10 +103,12 @@
   <script>
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
-    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const DASHBOARD_URL = 'https://expressfitness.ca/x45-app/step1-pick-coach.html';
-    const RESET_URL     = 'https://expressfitness.ca/x45-app/reset-password.html';
+    // ЖЁСТКО: после входа всегда сюда
+    const STEP1_URL = 'https://expressfitness.ca/x45-app/step1-pick-coach.html';
+    // ЖЁСТКО: reset-password redirect
+    const RESET_URL = 'https://expressfitness.ca/x45-app/reset-password.html';
 
     function togglePassword() {
       const passInput = document.getElementById('password');
@@ -131,7 +133,7 @@
         } else if (!data.user.email_confirmed_at) {
           errorBox.innerText = "⚠️ Please confirm your email before logging in.";
         } else {
-          window.location.href = DASHBOARD_URL;
+          window.location.href = STEP1_URL;
         }
       } catch (err) {
         errorBox.innerText = 'Unexpected error: ' + (err.message || err);
