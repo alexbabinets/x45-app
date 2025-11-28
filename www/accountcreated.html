@@ -35,7 +35,7 @@
   </p>
 
   <p class="important">You must confirm your email before you can sign in.</p>
-  <p class="muted">If you don’t see it, check spam/junk and mark it as “Not spam”.</p>
+  <p class="muted">Tip: if you don’t see it in a minute, check your spam/junk folder and mark it as “Not spam”.</p>
 
   <script>
     const params = new URLSearchParams(location.search);
@@ -44,7 +44,6 @@
       document.getElementById("confirmation-message").innerHTML =
         `We sent a confirmation link to <strong>${email}</strong>. Please open that email and confirm to activate your account.`;
     }
-    // After clicking the email link, Supabase will redirect them to signin.html (from signup config)
   </script>
 </body>
 </html>
