@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>X45 – Step 2: Fitness Level</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0a0b0d; --panel:#101216; --ink:#eef2f7; --muted:#9aa0a6;
+      --blue:#2f5f7a; --blueHover:#376e8e; --line:#1b1d22; --border:#1b1c20;
+      --ring: rgba(128,173,214,.25);
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:Inter,system-ui,Arial,sans-serif;
+      text-align:center;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    .page{max-width:900px;margin:auto;padding:40px 20px}
+    img.logo{width:180px;margin-bottom:20px;max-width:60%}
+
+    #step-label{font-size:32px;font-weight:900;margin:10px 0 4px}
+    .sub-heading{font-size:18px;color:#cbd5e1;margin:0 0 8px}
+    .blue-heading{font-size:22px;font-weight:900;color:#00b3ff;text-decoration:underline;margin:0 0 18px}
+
+    .coach-image{
+      width:160px;
+      border-radius:12px;
+      margin:12px auto 12px;
+      animation:breathe 3.5s ease-in-out infinite;
+      display:block;
+    }
+    @keyframes breathe{
+      0%{transform:scale(1)}
+      50%{transform:scale(1.03)}
+      100%{transform:scale(1)}
+    }
+    .dialogue{font-size:18px;line-height:1.6;margin-bottom:24px}
+
+    .level-group{
+      display:flex;
+      justify-content:center;
+      flex-wrap:wrap;
+      gap:16px;
+      margin:10px 0 30px;
+    }
+    .level-option{
+      border-radius:14px;
+      padding:16px 18px;
+      width:260px;
+      text-align:left;
+      transition:border-color .15s ease, box-shadow .15s ease, transform .12s ease;
+      cursor:pointer;
+      border:1px solid var(--border);
+      background:#121419;
+    }
+    .level-option:hover{
+      transform:translateY(-1px);
+      box-shadow:0 0 0 6px var(--ring);
+    }
+    .level-option input[type="radio"]{
+      transform:scale(1.3);
+      margin-right:10px;
+      vertical-align:middle;
+      accent-color:#00b3ff;
+    }
+    .level-title{font-weight:900;font-size:16px}
+    .level-desc{font-size:14px;color:#c0c6d0;margin-top:6px;line-height:1.4}
+
+    /* === Color Themes === */
+    .level-option[data-color="beginner"]{
+      background:linear-gradient(135deg,#13401d,#0e2413);
+      border-color:#1f3b21;
+    }
+    .level-option[data-color="beginner"]:hover{
+      border-color:#22c55e;
+      box-shadow:0 0 0 6px rgba(34,197,94,.25);
+    }
+
+    .level-option[data-color="intermediate"]{
+      background:linear-gradient(135deg,#1a3148,#0e1823);
+      border-color:#1d3557;
+    }
+    .level-option[data-color="intermediate"]:hover{
+      border-color:#3b82f6;
+      box-shadow:0 0 0 6px rgba(59,130,246,.25);
+    }
+
+    .level-option[data-color="advanced"]{
+      background:linear-gradient(135deg,#4a1618,#240909);
+      border-color:#551d20;
+    }
+    .level-option[data-color="advanced"]:hover{
+      border-color:#ef4444;
+      box-shadow:0 0 0 6px rgba(239,68,68,.3);
+      background:linear-gradient(135deg,#621d20,#2a0a0b);
+    }
+
+    .philosophy{
+      font-size:16px;
+      color:#d9e1ee;
+      max-width:760px;
+      margin:10px auto 10px;
+      line-height:1.7;
+    }
+
+    .btn{
+      border:1px solid var(--line);
+      background:var(--blue);
+      border-color:transparent;
+      color:#fff;
+      border-radius:12px;
+      padding:12px 28px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      font-weight:800;
+      font-size:17px;
+      min-width:220px;
+    }
+    .btn:hover{background:var(--blueHover)}
+
+    .error-bar{
+      margin-top:10px;
+      font-size:14px;
+      color:#ff4d4d;
+      min-height:18px;
+    }
+
+    @media (max-width:600px){
+      .page{padding:28px 16px 24px}
+      #step-label{font-size:26px}
+      .sub-heading{font-size:16px}
+      .blue-heading{font-size:18px}
+      .level-option{width:100%;max-width:340px}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <img
+      src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
+      class="logo"
+      alt="X45 Logo"
+    />
+
+    <div id="step-label">Your Fitness Level</div>
+    <div class="sub-heading">This helps personalize your X45 experience.</div>
+    <div class="blue-heading">Step 2. Your Fitness Level</div>
+
+    <img
+      id="coachImg"
+      class="coach-image"
+      alt="Your coach"
+      src="https://expressfitness.ca/wp-content/uploads/2025/04/zara.png"
+    />
+    <div class="dialogue" id="coach-dialogue"></div>
+
+    <form id="level-form">
+      <div class="level-group">
+        <label class="level-option" data-color="beginner">
+          <div>
+            <input type="radio" name="fitness_level" value="beginner" />
+            <span class="level-title">Beginner</span>
+          </div>
+          <div class="level-desc">
+            I’ve never exercised before, or it’s been a long time.
+          </div>
+        </label>
+
+        <label class="level-option" data-color="intermediate">
+          <div>
+            <input type="radio" name="fitness_level" value="intermediate" />
+            <span class="level-title">Intermediate</span>
+          </div>
+          <div class="level-desc">
+            I’m presently exercising / occasionally active.
+          </div>
+        </label>
+
+        <label class="level-option" data-color="advanced">
+          <div>
+            <input type="radio" name="fitness_level" value="advanced" />
+            <span class="level-title">Advanced</span>
+          </div>
+          <div class="level-desc">
+            I train regularly and I’m looking for a challenge.
+          </div>
+        </label>
+      </div>
+
+      <div class="philosophy">
+        Remember, <strong>X45 is about 45 minutes of any physical activity</strong> —
+        walking, stretching, cleaning, dancing, lifting, or training.
+        The <strong>intensity is up to you</strong>. Every minute you move counts.
+      </div>
+
+      <button type="submit" class="btn">Continue</button>
+      <div id="error-bar" class="error-bar"></div>
+    </form>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
+    const SUPABASE_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
+
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const errorBar = document.getElementById('error-bar');
+
+    const coachImages = {
+      Zara: 'https://expressfitness.ca/wp-content/uploads/2025/04/zara.png',
+      Stephanie: 'https://expressfitness.ca/wp-content/uploads/2025/04/step.png',
+      Max: 'https://expressfitness.ca/wp-content/uploads/2025/04/MAX-NEW-1.png'
+    };
+
+    // Build URL for next step in the same /x45-app folder
+    function nextStepUrl() {
+      const base = window.location.origin + window.location.pathname.replace(/[^\/]+$/, '');
+      return base + 'step3-fitness-goals.html';
+    }
+
+    async function loadUserAndCoach() {
+      const { data, error } = await client.auth.getUser();
+
+      if (error || !data?.user) {
+        // Not logged in – send back to signin
+        window.location.href = 'signin.html';
+        return;
+      }
+
+      const user = data.user;
+
+      const { data: profile, error: profError } = await client
+        .from('x45_users')
+        .select('first_name, coach, fitness_level')
+        .eq('id', user.id)
+        .single();
+
+      let firstName = 'friend';
+      let coach = 'Zara';
+
+      if (!profError && profile) {
+        if (profile.first_name) firstName = profile.first_name;
+        if (profile.coach) coach = profile.coach;
+      }
+
+      // Update coach image + dialogue
+      document.getElementById('coachImg').src =
+        coachImages[coach] || coachImages.Zara;
+
+      document.getElementById('coach-dialogue').innerHTML = `
+        Hey ${firstName}, I am ${coach} – your fitness coach.<br>
+        Thank you for selecting me to guide you in this exciting fitness journey.<br>
+        Before we start, I just need to know one thing to make your experience personal.<br>
+        <strong>What is your fitness level?</strong>
+      `;
+
+      // Pre-select level if already stored
+      if (profile && profile.fitness_level) {
+        const radio = document.querySelector(
+          'input[name="fitness_level"][value="' + profile.fitness_level + '"]'
+        );
+        if (radio) radio.checked = true;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadUserAndCoach);
+
+    document.getElementById('level-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorBar.textContent = '';
+
+      const picked = document.querySelector('input[name="fitness_level"]:checked');
+      if (!picked) {
+        errorBar.textContent = 'Please select your current fitness level.';
+        return;
+      }
+
+      const level = picked.value;
+
+      try {
+        const { data, error: userErr } = await client.auth.getUser();
+        if (!data?.user || userErr) {
+          window.location.href = 'signin.html';
+          return;
+        }
+
+        const user = data.user;
+
+        const { error: updErr } = await client
+          .from('x45_users')
+          .update({ fitness_level: level })
+          .eq('id', user.id);
+
+        if (updErr) {
+          errorBar.textContent = 'Database error: ' + updErr.message;
+          return;
+        }
+      } catch (err) {
+        errorBar.textContent = 'Unexpected error: ' + (err.message || err);
+        return;
+      }
+
+      window.location.href = nextStepUrl();
+    });
+  </script>
+</body>
+</html>
