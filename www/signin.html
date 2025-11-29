@@ -105,9 +105,8 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const BASE = window.location.origin + window.location.pathname.replace(/[^\/]+$/, '');
-    const RESET_URL = BASE + 'reset-password.html';     // ссылка из письма reset
-    const STEP1_REL = 'step1-pick-coach.html';          // дальше идём относительным путём
+    // IMPORTANT: Step 1 page – SAME FOLDER, SAME NAME
+    const STEP1_URL = 'step1-pick-coach.html';
 
     function togglePassword() {
       const passInput = document.getElementById('password');
@@ -130,10 +129,10 @@
         if (error) {
           errorBox.innerText = error.message;
         } else if (!data.user.email_confirmed_at) {
-          errorBox.innerText = "⚠️ Please confirm your email before logging in.";
+          errorBox.innerText = "⚠️ Please confirm your email before signing in.";
         } else {
-          // после входа → step1-pick-coach.html (рядом)
-          window.location.href = STEP1_REL;
+          // ✅ On success go straight to step1 page in same folder
+          window.location.href = STEP1_URL;
         }
       } catch (err) {
         errorBox.innerText = 'Unexpected error: ' + (err.message || err);
@@ -146,9 +145,13 @@
       message.textContent = 'Sending...';
       message.style.color = 'white';
 
+      // build reset URL in the same folder as this page
+      const base = window.location.origin + window.location.pathname.replace(/[^\/]+$/, '');
+      const resetUrl = base + 'reset-password.html';
+
       try {
         const { error: resetError } = await client.auth.resetPasswordForEmail(email, {
-          redirectTo: RESET_URL
+          redirectTo: resetUrl
         });
         if (resetError) {
           message.textContent = '❌ ' + resetError.message;
