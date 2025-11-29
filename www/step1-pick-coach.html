@@ -1,28 +1,337 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>X45 – Step 1: Pick Coach</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>X45 – Pick Your Coach</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body{
-      background:#000;
-      color:#fff;
-      font-family:Arial,sans-serif;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      height:100vh;
-      margin:0;
-      text-align:center;
+    body {
+      background-color: #000;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      -webkit-font-smoothing: antialiased;
     }
-    h1{ font-size:28px; margin-bottom:10px; }
-    p{ font-size:18px; max-width:500px; }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px 30px;
+    }
+
+    img.logo {
+      width: 180px;
+      max-width: 60%;
+      margin: 10px auto 18px;
+      display: block;
+    }
+
+    #welcome-back {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    #welcome-sub {
+      font-size: 18px;
+      font-weight: normal;
+      margin-bottom: 8px;
+      color: #eee;
+    }
+
+    #step-label {
+      font-size: 22px;
+      font-weight: bold;
+      margin-top: 18px;
+      margin-bottom: 26px;
+      color: #00b3ff;
+      text-decoration: underline;
+    }
+
+    .coach-group { 
+      display: flex; 
+      justify-content: center; 
+      flex-wrap: wrap; 
+      gap: 24px; 
+      margin-bottom: 24px; 
+    }
+
+    label { cursor: pointer; }
+
+    .coach-card {
+      width: 240px;
+      max-width: 100%;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 16px 14px 14px;
+      transition: transform .15s ease, border-color .15s ease,
+                  box-shadow .15s ease, background .15s ease;
+    }
+
+    .coach-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(0,179,255,0.55);
+      box-shadow: 0 0 0 2px rgba(0,179,255,0.12);
+      background: rgba(0,179,255,0.04);
+    }
+
+    label img {
+      width: 170px;
+      max-width: 100%;
+      border-radius: 12px;
+      margin: 6px 0 10px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .coach-title {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 4px;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    input[type="radio"] {
+      transform: scale(1.3);
+      margin-right: 6px;
+      accent-color: #00b3ff;
+    }
+
+    .coach-desc {
+      font-size: 14.5px;
+      line-height: 1.45;
+      color: #cfd6df;
+      text-align: left;
+      margin: 0 auto;
+      padding: 0 6px;
+    }
+
+    .coach-desc strong {
+      color: #fff;
+      font-weight: bold;
+    }
+
+    button {
+      background-color: #e60023;
+      color: white;
+      padding: 14px 30px;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background .15s ease, transform .05s ease;
+      width: 260px;
+      max-width: 90%;
+    }
+
+    button:hover { background-color: #ff1a1a; }
+    button:active { transform: translateY(1px); }
+
+    .error-bar {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #ff4d4d;
+      min-height: 18px;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 28px 16px 24px;
+      }
+      #welcome-back { font-size: 26px; }
+      #welcome-sub  { font-size: 16px; }
+      #step-label   { font-size: 18px; }
+      .coach-card   { width: 100%; max-width: 340px; }
+      label img     { width: 180px; }
+    }
   </style>
 </head>
 <body>
-  <h1>Step 1 – Pick Your Coach</h1>
-  <p>If you are seeing this, the redirect from <strong>signin.html</strong> works and the 404 is gone. Now you can replace this file with your real coach page, keeping the same filename: <strong>step1-pick-coach.html</strong>.</p>
+  <div class="container">
+    <img
+      src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png"
+      class="logo"
+      alt="X45 Logo"
+    />
+    
+    <div id="welcome-back">Welcome back.</div>
+    <div id="welcome-sub">Let’s get excited and create your X45 program.</div>
+    <div id="step-label">Step 1. Choose your coach.</div>
+
+    <form id="coach-form">
+      <div class="coach-group">
+
+        <!-- ZARA -->
+        <label>
+          <div class="coach-card">
+            <img
+              src="https://expressfitness.ca/wp-content/uploads/2025/04/zara.png"
+              alt="Coach Zara"
+            />
+            <div class="coach-title">
+              <input type="radio" name="coach" value="Zara" />
+              <span>Coach Zara</span>
+            </div>
+            <p class="coach-desc">
+              <strong>Specialty:</strong> Helps you break through mental blocks,
+              overcome self-doubt, and build the emotional strength required for a truly
+              lasting transformation in your body and mind.<br><br>
+              <strong>Style:</strong> Warm, intuitive, energetic, and deeply supportive —
+              she inspires growth with honesty and heart, making you feel understood,
+              empowered, and ready to rise.
+            </p>
+          </div>
+        </label>
+
+        <!-- STEPHANIE -->
+        <label>
+          <div class="coach-card">
+            <img
+              src="https://expressfitness.ca/wp-content/uploads/2025/04/step.png"
+              alt="Coach Stephanie"
+            />
+            <div class="coach-title">
+              <input type="radio" name="coach" value="Stephanie" />
+              <span>Coach Stephanie</span>
+            </div>
+            <p class="coach-desc">
+              <strong>Specialty:</strong> Helps you rebuild self-esteem, reclaim your
+              inner power, and stay consistent with your fitness and nutrition habits
+              so progress becomes natural and unstoppable.<br><br>
+              <strong>Style:</strong> Fun, feisty, and full of genuine encouragement —
+              she motivates like a loyal best friend who lifts your spirit and never
+              lets you fall behind your goals.
+            </p>
+          </div>
+        </label>
+
+        <!-- MAX -->
+        <label>
+          <div class="coach-card">
+            <img
+              src="https://expressfitness.ca/wp-content/uploads/2025/04/MAX-NEW-1.png"
+              alt="Coach Max"
+            />
+            <div class="coach-title">
+              <input type="radio" name="coach" value="Max" />
+              <span>Coach Max</span>
+            </div>
+            <p class="coach-desc">
+              <strong>Specialty:</strong> Helps you remove excuses, develop discipline,
+              and create structure so you can transform your body and mindset with
+              clarity, strength, and long-term direction.<br><br>
+              <strong>Style:</strong> Bold, direct, and fearless — he pushes you with
+              intensity and care, guiding you to become the strongest, most resilient
+              version of yourself.
+            </p>
+          </div>
+        </label>
+
+      </div>
+
+      <button type="submit">Continue</button>
+      <div id="error-bar" class="error-bar"></div>
+    </form>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
+    const SUPABASE_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
+
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const errorBar = document.getElementById('error-bar');
+
+    // Build URL for next step in the same folder
+    function step2Url(coach, name) {
+      const base = window.location.origin + window.location.pathname.replace(/[^\/]+$/, '');
+      return `${base}step2-fitness-level.html?coach=${encodeURIComponent(coach)}&name=${encodeURIComponent(name)}`;
+    }
+
+    async function loadUser() {
+      const { data, error } = await client.auth.getUser();
+
+      if (error || !data?.user) {
+        // If not logged in, send back to signin
+        window.location.href = 'signin.html';
+        return;
+      }
+
+      const user = data.user;
+
+      const { data: profile, error: fetchError } = await client
+        .from('x45_users')
+        .select('first_name')
+        .eq('id', user.id)
+        .single();
+
+      if (!fetchError && profile && profile.first_name) {
+        document.getElementById("welcome-back").textContent =
+          `Welcome back, ${profile.first_name}.`;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadUser);
+
+    document.getElementById("coach-form").addEventListener("submit", async function(event) {
+      event.preventDefault();
+      errorBar.textContent = '';
+
+      const coach = document.querySelector('input[name="coach"]:checked');
+      if (!coach) {
+        errorBar.textContent = "Please select a coach.";
+        return;
+      }
+
+      const coachName = coach.value;
+
+      try {
+        const { data, error: userError } = await client.auth.getUser();
+        if (!data?.user || userError) {
+          window.location.href = 'signin.html';
+          return;
+        }
+
+        const user = data.user;
+
+        const { error } = await client
+          .from('x45_users')
+          .update({ coach: coachName })
+          .eq('id', user.id);
+
+        if (error) {
+          errorBar.textContent = "Database error: " + error.message;
+          return;
+        }
+
+        // Extract first name from welcome-back text if available
+        const welcomeText = document.getElementById("welcome-back").textContent;
+        let name = "Member";
+        const parts = welcomeText.split(",");
+        if (parts.length > 1) {
+          name = parts[1].replace(".", "").trim() || "Member";
+        }
+
+        const nextUrl = step2Url(coachName, name);
+        window.location.href = nextUrl;
+
+      } catch (err) {
+        errorBar.textContent = "Unexpected error: " + (err.message || err);
+      }
+    });
+  </script>
 </body>
 </html>
