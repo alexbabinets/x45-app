@@ -16,44 +16,127 @@
       --badge:#1a2531;
     }
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Arial,sans-serif;text-align:center}
-    .page{max-width:900px;margin:auto;padding:40px 20px}
-    img.logo{width:180px;margin-bottom:20px}
-
-    #step-label{font-size:36px;font-weight:900;margin:10px 0 4px}
-    .sub-heading{font-size:18px;color:#cbd5e1;margin:0 0 8px}
-    .blue-heading{font-size:22px;font-weight:900;color:#00b3ff;text-decoration:underline;margin:0 0 18px}
-
-    .coach-image{width:160px;border-radius:12px;margin:12px auto 24px;animation:breathe 3.5s ease-in-out infinite;display:block}
-    @keyframes breathe{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
-
-    .dialogue{font-size:18px;line-height:1.6;margin-bottom:24px;max-width:760px;margin-left:auto;margin-right:auto}
-    .selects{display:grid;gap:12px;justify-content:center}
-    select{
-      background:#121419;border:1px solid var(--border);color:#fff;padding:14px 18px;
-      border-radius:10px;font-size:16px;width:100%;max-width:420px;outline:none;
-      margin:0 auto;text-align-last:center;
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:Inter,system-ui,Arial,sans-serif;
+      text-align:center;
     }
-    select:focus{box-shadow:0 0 0 5px var(--ring)}
+    .page{
+      max-width:900px;
+      margin:auto;
+      padding:40px 20px 32px;
+    }
+    img.logo{
+      width:180px;
+      margin-bottom:20px;
+    }
+
+    #step-label{
+      font-size:36px;
+      font-weight:900;
+      margin:10px 0 4px;
+    }
+    .sub-heading{
+      font-size:18px;
+      color:#cbd5e1;
+      margin:0 0 8px;
+    }
+    .blue-heading{
+      font-size:22px;
+      font-weight:900;
+      color:#00b3ff;
+      text-decoration:underline;
+      margin:0 0 18px;
+    }
+
+    .coach-image{
+      width:160px;
+      border-radius:12px;
+      margin:12px auto 24px;
+      animation:breathe 3.5s ease-in-out infinite;
+      display:block;
+    }
+    @keyframes breathe{
+      0%{transform:scale(1)}
+      50%{transform:scale(1.03)}
+      100%{transform:scale(1)}
+    }
+
+    .dialogue{
+      font-size:18px;
+      line-height:1.6;
+      margin-bottom:18px;
+      max-width:760px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    .mini-steps-label{
+      font-size:14px;
+      color:#cbd5e1;
+      margin:6px 0 -4px;
+      opacity:.9;
+    }
+
+    /* ====== STANDOUT SELECT CONTROLS ====== */
+    .selects{
+      margin:26px auto 10px;
+      max-width:460px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    select{
+      width:100%;
+      max-width:460px;
+      margin:0 auto;
+      background:linear-gradient(135deg,#101625,#141b2b);
+      border:2px solid var(--blue);
+      box-shadow:0 0 25px rgba(47,95,122,.55);
+      color:#fff;
+      padding:14px 18px;
+      border-radius:999px;
+      font-size:17px;
+      font-weight:700;
+      text-align-last:center;
+      cursor:pointer;
+      outline:none;
+      transition:
+        border-color .18s ease,
+        box-shadow .18s ease,
+        transform .12s ease;
+    }
+    select:hover{
+      border-color:var(--blueHover);
+      box-shadow:0 0 30px rgba(55,110,142,.85);
+      transform:translateY(-1px);
+    }
+    select:focus{
+      box-shadow:0 0 0 2px rgba(0,179,255,.65);
+    }
 
     .other-wrap{
       display:none;
       width:100%;
-      max-width:420px;
-      margin:0 auto;
+      max-width:460px;
+      margin:4px auto 0;
     }
     .other-input{
       width:100%;
-      background:#121419;
-      border:1px solid var(--border);
+      background:#101625;
+      border:2px solid var(--blue);
       color:#fff;
-      padding:14px 18px;
-      border-radius:10px;
+      padding:13px 18px;
+      border-radius:999px;
       font-size:16px;
-      outline:none;
       text-align:center;
+      outline:none;
+      box-shadow:0 0 20px rgba(47,95,122,.55);
     }
-    .other-input:focus{box-shadow:0 0 0 5px var(--ring)}
+    .other-input:focus{
+      box-shadow:0 0 0 2px rgba(0,179,255,.65);
+    }
     .other-hint{
       font-size:12px;
       color:var(--muted);
@@ -72,23 +155,99 @@
       object-fit:contain;
     }
 
-    .btn{border:1px solid var(--line);background:var(--btn);border-color:transparent;
-      color:#fff;border-radius:12px;padding:12px 28px;cursor:pointer;display:inline-flex;
-      align-items:center;gap:8px;font-weight:800;font-size:17px}
+    .btn{
+      border:1px solid var(--line);
+      background:var(--btn);
+      border-color:transparent;
+      color:#fff;
+      border-radius:12px;
+      padding:12px 28px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-weight:800;
+      font-size:17px;
+      margin-top:8px;
+    }
     .btn:hover{background:var(--btnH)}
-    .skip{display:block;margin-top:16px;font-size:15px;color:#9aa0a6;text-decoration:underline;cursor:pointer}
+    .skip{
+      display:block;
+      margin-top:16px;
+      font-size:15px;
+      color:#9aa0a6;
+      text-decoration:underline;
+      cursor:pointer;
+    }
 
-    .help{margin:20px auto 10px;max-width:760px;text-align:left;background:var(--card);border:1px solid var(--cardBorder);border-radius:14px;padding:14px}
-    .help-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
-    .help-title{font-weight:900;font-size:18px}
-    .badge{font-size:12px;border:1px solid var(--pillBorder);background:var(--badge);color:#cfe6ff;border-radius:999px;padding:6px 10px;font-weight:800}
-    .vids{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:999px;text-decoration:none;
-      background:var(--pill);border:1px solid var(--pillBorder);color:#e8f5ff;font-weight:800;font-size:13px}
+    /* Help panel */
+    .help{
+      margin:22px auto 10px;
+      max-width:760px;
+      text-align:left;
+      background:var(--card);
+      border:1px solid var(--cardBorder);
+      border-radius:14px;
+      padding:14px;
+    }
+    .help-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .help-title{
+      font-weight:900;
+      font-size:18px;
+    }
+    .badge{
+      font-size:12px;
+      border:1px solid var(--pillBorder);
+      background:var(--badge);
+      color:#cfe6ff;
+      border-radius:999px;
+      padding:6px 10px;
+      font-weight:800;
+    }
+    .vids{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin:10px 0;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius:999px;
+      text-decoration:none;
+      background:var(--pill);
+      border:1px solid var(--pillBorder);
+      color:#e8f5ff;
+      font-weight:800;
+      font-size:13px;
+    }
     .pill:hover{border-color:#3a465a}
-    .steps{margin:10px 0 0;padding-left:18px}
-    .steps li{margin:6px 0;color:#d5deea;font-size:14px}
-    .muted{color:var(--muted);font-size:13px}
+    .steps{
+      margin:10px 0 0;
+      padding-left:18px;
+    }
+    .steps li{
+      margin:6px 0;
+      color:#d5deea;
+      font-size:14px;
+    }
+    .muted{
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    @media (max-width:480px){
+      #step-label{font-size:30px}
+      .dialogue{font-size:16px}
+    }
   </style>
 </head>
 <body>
@@ -101,6 +260,10 @@
 
     <img id="coachImg" class="coach-image" alt="Your coach" />
     <div class="dialogue" id="coach-dialogue"></div>
+
+    <p class="mini-steps-label">
+      Step 1: Pick your device • Step 2: Model • Step 3: Color
+    </p>
 
     <div class="selects">
       <select id="deviceSelect" aria-label="Choose your device">
@@ -157,6 +320,7 @@
         <div class="help-title" id="helpTitle">How to connect</div>
         <span class="badge" id="helpBadge">Quick Guide</span>
       </div>
+      <!-- Links (YouTube) appear ABOVE the steps -->
       <div class="vids" id="helpVids"></div>
       <ol class="steps" id="helpSteps"></ol>
       <div class="muted" id="helpNote" style="margin-top:8px"></div>
@@ -172,24 +336,30 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    const basePath = `${window.location.origin}/x45-app`;
-
-    /* ========= Page state ========= */
-    const params = new URLSearchParams(window.location.search);
-
-    let coach = 'Zara';
-    let name  = 'friend';
-    let level = '';
-    let goal  = '';
-    let meal  = '';
-
+    /* ========= Coach / profile state ========= */
     const coachImages = {
       Zara: 'https://expressfitness.ca/wp-content/uploads/2025/04/zara.png',
       Stephanie: 'https://expressfitness.ca/wp-content/uploads/2025/04/step.png',
       Max: 'https://expressfitness.ca/wp-content/uploads/2025/04/MAX-NEW-1.png'
     };
 
-    /* ========= EXACT DEVICE CONFIG (unchanged) ========= */
+    let coach = 'Zara';
+    let name = 'friend';
+    let level = '';
+    let goal = '';
+    let meal = '';
+
+    const coachImgEl = document.getElementById('coachImg');
+    const coachDialogueEl = document.getElementById('coach-dialogue');
+
+    function updateCoachUI(){
+      coachImgEl.src = coachImages[coach] || coachImages.Zara;
+      coachDialogueEl.innerHTML =
+        `Nice work, ${name}. You’ve locked in your meal plan — consistency starts right there.<br>
+         Next, choose your exact wearable below so I know how to sync you properly.`;
+    }
+
+    /* ========= EXACT DEVICE CONFIG ========= */
     const DEVICE_CONFIG = {
       "Apple Watch": {
         "Series 7": {
@@ -745,9 +915,6 @@
     };
 
     /* ========= DOM references ========= */
-    const coachImgEl = document.getElementById('coachImg');
-    const coachDialogueEl = document.getElementById('coach-dialogue');
-
     const deviceSelect = document.getElementById("deviceSelect");
     const modelSelect  = document.getElementById("modelSelect");
     const colorSelect  = document.getElementById("colorSelect");
@@ -894,18 +1061,15 @@
       }
     }
 
-    function hydrateFromStorage(){
-      const storedDevice = localStorage.getItem('device') || '';
-      const storedModel  = localStorage.getItem('device_model') || '';
-      const storedColor  = localStorage.getItem('device_color') || '';
-      const storedOther  = localStorage.getItem('device_other_name') || '';
-
+    function hydrateSelections(storedDevice, storedModel, storedColor, storedOther){
       if (storedDevice && deviceSelect.querySelector(`option[value="${storedDevice}"]`)) {
         deviceSelect.value = storedDevice;
         toggleOtherUI(storedDevice);
 
         if(storedDevice === "Other"){
-          otherDeviceInput.value = storedOther || '';
+          if (storedOther) {
+            otherDeviceInput.value = storedOther;
+          }
         } else {
           populateModels(storedDevice);
           if (storedModel && modelSelect.querySelector(`option[value="${storedModel}"]`)) {
@@ -916,14 +1080,12 @@
             }
           }
         }
-
         renderHelp(storedDevice);
       }
-
       updatePreview();
     }
 
-    /* ========= Event listeners ========= */
+    // When device changes
     deviceSelect.addEventListener("change", ()=>{
       const device = deviceSelect.value;
 
@@ -950,6 +1112,7 @@
       updatePreview();
     });
 
+    // When model changes
     modelSelect.addEventListener("change", ()=>{
       const device = deviceSelect.value;
       const model  = modelSelect.value;
@@ -957,98 +1120,101 @@
       updatePreview();
     });
 
+    // When color changes
     colorSelect.addEventListener("change", ()=>{
       updatePreview();
     });
 
+    // When Other name changes
     otherDeviceInput.addEventListener("input", ()=>{
       const val = otherDeviceInput.value.trim();
       localStorage.setItem("device_other_name", val);
       updatePreview();
     });
 
-    /* ========= INIT: auth + profile ========= */
-    (async function initPage(){
-      try {
-        const { data: { user }, error: userErr } = await client.auth.getUser();
-
-        if (userErr || !user) {
-          window.location.href = `${basePath}/signin.html`;
+    /* ========= Auth + profile init ========= */
+    async function initPage(){
+      try{
+        const { data: { user }, error } = await client.auth.getUser();
+        if (!user || error) {
+          window.location.href = 'signin.html';
           return;
         }
 
-        let profile = null;
-        try {
-          const { data, error } = await client
-            .from('x45_users')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-          if (!error && data) profile = data;
-        } catch (e) {
-          console.warn('Profile load error:', e?.message);
+        const { data: profile, error: pErr } = await client
+          .from('x45_users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (!pErr && profile) {
+          coach = profile.coach || coach;
+          name  = profile.first_name || name;
+          level = profile.fitness_level || level;
+          goal  = profile.fitness_goal || goal;
+          meal  = profile.meal_support || meal;
+
+          localStorage.setItem('coach', coach);
+          localStorage.setItem('name', name);
+          if (level) localStorage.setItem('fitness_level', level);
+          if (goal)  localStorage.setItem('fitness_goal', goal);
+          if (meal)  localStorage.setItem('meal_support', meal);
+
+          const d = profile.device || '';
+          const m = profile.device_model || '';
+          const c = profile.device_color || '';
+          const o = profile.device_other_name || '';
+          if (d || m || c || o) {
+            localStorage.setItem('device', d);
+            localStorage.setItem('device_model', m || '');
+            localStorage.setItem('device_color', c || '');
+            localStorage.setItem('device_other_name', o || '');
+            hydrateSelections(d, m, c, o);
+          } else {
+            hydrateSelections(
+              localStorage.getItem('device') || '',
+              localStorage.getItem('device_model') || '',
+              localStorage.getItem('device_color') || '',
+              localStorage.getItem('device_other_name') || ''
+            );
+          }
+        } else {
+          // Fallback: URL params + localStorage
+          const params = new URLSearchParams(window.location.search);
+          coach = params.get('coach') || localStorage.getItem('coach') || coach;
+          name  = params.get('name')  || localStorage.getItem('name')  || name;
+          level = params.get('level') || localStorage.getItem('fitness_level') || level;
+          goal  = params.get('goal')  || localStorage.getItem('fitness_goal')  || goal;
+          meal  = params.get('meal_support') || localStorage.getItem('meal_support') || meal;
+
+          hydrateSelections(
+            localStorage.getItem('device') || '',
+            localStorage.getItem('device_model') || '',
+            localStorage.getItem('device_color') || '',
+            localStorage.getItem('device_other_name') || ''
+          );
         }
+      } catch(err){
+        console.warn('Init error:', err?.message || err);
+        const params = new URLSearchParams(window.location.search);
+        coach = params.get('coach') || localStorage.getItem('coach') || coach;
+        name  = params.get('name')  || localStorage.getItem('name')  || name;
+        level = params.get('level') || localStorage.getItem('fitness_level') || level;
+        goal  = params.get('goal')  || localStorage.getItem('fitness_goal')  || goal;
+        meal  = params.get('meal_support') || localStorage.getItem('meal_support') || meal;
 
-        coach = (profile && profile.coach) ||
-                params.get('coach') ||
-                localStorage.getItem('coach') ||
-                'Zara';
-
-        name = (profile && profile.first_name) ||
-               params.get('name') ||
-               localStorage.getItem('name') ||
-               'friend';
-
-        level = (profile && profile.fitness_level) ||
-                params.get('level') ||
-                localStorage.getItem('fitness_level') ||
-                '';
-
-        goal = (profile && profile.fitness_goal) ||
-               params.get('goal') ||
-               localStorage.getItem('fitness_goal') ||
-               '';
-
-        meal = (profile && profile.meal_support) ||
-               params.get('meal_support') ||
-               localStorage.getItem('meal_support') ||
-               '';
-
-        localStorage.setItem('coach', coach);
-        localStorage.setItem('name', name);
-        if (level) localStorage.setItem('fitness_level', level);
-        if (goal) localStorage.setItem('fitness_goal', goal);
-        if (meal) localStorage.setItem('meal_support', meal);
-
-        coachImgEl.src = coachImages[coach] || coachImages.Zara;
-        coachDialogueEl.innerHTML =
-          `Nice work, ${name}. You’ve locked in your meal plan — consistency starts right there.<br>
-           Next, choose your exact wearable below so I know how to sync you properly.`;
-
-        // Prefill device from profile if present
-        if (profile) {
-          if (profile.device) {
-            localStorage.setItem('device', profile.device);
-          }
-          if (profile.device_model) {
-            localStorage.setItem('device_model', profile.device_model);
-          }
-          if (profile.device_color) {
-            localStorage.setItem('device_color', profile.device_color);
-          }
-          if (profile.device_other_name) {
-            localStorage.setItem('device_other_name', profile.device_other_name);
-          }
-          if (profile.device_connected) {
-            localStorage.setItem('device_connected', 'true');
-          }
-        }
-
-        hydrateFromStorage();
-      } catch (err) {
-        console.warn('Init error:', err?.message);
+        hydrateSelections(
+          localStorage.getItem('device') || '',
+          localStorage.getItem('device_model') || '',
+          localStorage.getItem('device_color') || '',
+          localStorage.getItem('device_other_name') || ''
+        );
       }
-    })();
+
+      updateCoachUI();
+    }
+
+    initPage();
 
     /* ========= Continue / Skip ========= */
     document.getElementById("continueBtn").addEventListener("click", async () => {
@@ -1111,7 +1277,7 @@
           device_color: '',
           device_other_name: otherNameRaw
         }).toString();
-        window.location.href = `${basePath}/step6-contract.html?${q}`;
+        window.location.href = `step6-contract.html?${q}`;
         return;
       }
 
@@ -1184,7 +1350,7 @@
         device_model: model || '',
         device_color: color || ''
       }).toString();
-      window.location.href = `${basePath}/step6-contract.html?${q}`;
+      window.location.href = `step6-contract.html?${q}`;
     });
 
     document.getElementById("skipLink").addEventListener("click", () => {
@@ -1195,7 +1361,7 @@
         goal,
         meal_support: meal
       }).toString();
-      window.location.href = `${basePath}/step6-contract.html?${q}`;
+      window.location.href = `step6-contract.html?${q}`;
     });
   </script>
 </body>
