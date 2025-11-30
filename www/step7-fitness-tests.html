@@ -1,0 +1,350 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>X45 – Step 7: Fitness Tests</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{
+      --bg:#0a0b0d; --panel:#101216; --ink:#eef2f7; --muted:#9aa0a6;
+      --blue:#2f5f7a; --blueHover:#376e8e; --line:#1b1d22; --border:#1b1c20;
+      --ring: rgba(128,173,214,.25);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:Inter,system-ui,Arial,sans-serif;
+      text-align:center
+    }
+    .page{max-width:900px;margin:auto;padding:40px 20px}
+    img.logo{width:180px;margin-bottom:20px}
+
+    #step-label{font-size:36px;font-weight:900;margin:10px 0 4px}
+    .sub-heading{font-size:18px;color:#cbd5e1;margin:0 0 8px}
+    .blue-heading{font-size:22px;font-weight:900;color:#00b3ff;text-decoration:underline;margin:0 0 18px}
+
+    .coach-image{
+      width:160px;border-radius:12px;
+      margin:12px auto 24px;
+      animation:breathe 3.5s ease-in-out infinite;
+      display:block
+    }
+    @keyframes breathe{
+      0%{transform:scale(1)}
+      50%{transform:scale(1.03)}
+      100%{transform:scale(1)}
+    }
+    .dialogue{
+      font-size:18px;
+      line-height:1.6;
+      margin-bottom:24px;
+      max-width:760px;
+      margin-left:auto;
+      margin-right:auto
+    }
+
+    .tests{
+      display:flex;
+      justify-content:center;
+      flex-wrap:wrap;
+      gap:16px;
+      margin:10px 0 30px
+    }
+    .test-card{
+      border-radius:14px;
+      padding:16px 18px;
+      width:260px;
+      text-align:left;
+      transition:border-color .15s ease, box-shadow .15s ease, transform .12s ease;
+      cursor:pointer;
+      border:1px solid var(--border);
+      position:relative;
+      text-decoration:none;
+      color:var(--ink);
+      display:block;
+    }
+    .test-card:hover{
+      transform:translateY(-1px);
+      box-shadow:0 0 0 6px var(--ring)
+    }
+    .test-head{display:flex;align-items:center;gap:10px}
+    .test-icon{font-size:20px}
+    .test-title{font-weight:900;font-size:16px}
+    .test-desc{font-size:14px;color:#c0c6d0;margin-top:6px;line-height:1.4}
+
+    /* Completed state */
+    .test-card.completed{
+      cursor:default;
+      background:#0f1116;
+      border-color:#262a33;
+      transform:none;
+      box-shadow:none;
+    }
+    .test-card.completed:hover{transform:none;box-shadow:none}
+    .test-card.completed .test-title,
+    .test-card.completed .test-desc,
+    .test-card.completed .test-icon{color:#9aa0a6}
+    .badge{
+      position:absolute;top:10px;right:10px;
+      background:#16a34a;color:#d1fae5;
+      font-weight:800;border-radius:999px;
+      padding:4px 10px;font-size:12px;
+      border:1px solid rgba(255,255,255,.2);
+      z-index:2;
+    }
+
+    /* Color themes (match earlier pages) */
+    .redish   {background:#2a0d0d;border-color:#531a1a;}
+    .redish .test-icon{color:#e06666;}
+    .orangeish{background:#2a1e0a;border-color:#593c17;}
+    .orangeish .test-icon{color:#f2b179;}
+    .greenish {background:#0c2213;border-color:#214a2a;}
+    .greenish .test-icon{color:#70c793;}
+    .blueish  {background:#0d1f2b;border-color:#1e3a4a;}
+    .blueish .test-icon{color:#6bb4e0;}
+
+    .note{font-size:14px;color:#9aa0a6;margin:10px 0 0}
+    .btn{
+      border:1px solid var(--line);
+      background:var(--blue);
+      border-color:transparent;
+      color:#fff;
+      border-radius:12px;
+      padding:12px 28px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-weight:800;
+      font-size:17px
+    }
+    .btn:hover{background:var(--blueHover)}
+    .done-wrap{margin-top:18px}
+    .skip{
+      display:inline-block;
+      margin-top:16px;
+      font-size:15px;
+      color:#9aa0a6;
+      text-decoration:underline;
+      cursor:pointer;
+    }
+
+    @media (max-width:480px){
+      #step-label{font-size:30px}
+      .dialogue{font-size:16px}
+      .test-card{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo"/>
+    <div id="step-label">Your Starting Point</div>
+    <div class="sub-heading">Choose a quick test — this sets your baseline to track results.</div>
+    <div class="blue-heading">Step 7. Fitness Tests</div>
+
+    <img id="coachImg" class="coach-image" alt="Your coach"/>
+    <div class="dialogue" id="coach-dialogue"></div>
+
+    <div id="tests" class="tests"></div>
+
+    <div id="allDone" class="done-wrap" style="display:none;">
+      <div class="sub-heading" style="color:#9fe870;font-weight:800">
+        Awesome — you’ve completed all starting tests.
+      </div>
+      <button id="toDash" class="btn">Go to Dashboard</button>
+    </div>
+
+    <div class="note">Completed tests stay marked for 4 weeks. You can redo them anytime.</div>
+    <a id="skipLink" class="skip">Skip for now</a>
+  </div>
+
+  <script>
+    // ----- Coach + name + other params -----
+    const qs = new URLSearchParams(location.search);
+
+    function normalizeCoach(raw){
+      if(!raw) return "";
+      const s = String(raw).toLowerCase().trim();
+      if(s.includes("zara")) return "Zara";
+      if(s.includes("steph")) return "Stephanie";
+      if(s.includes("max")) return "Max";
+      return "";
+    }
+
+    const coach = normalizeCoach(qs.get("coach")) || normalizeCoach(localStorage.getItem("coach")) || "Zara";
+    const name  = (qs.get("name") || localStorage.getItem("name") || "friend").trim();
+    const level = qs.get("level") || localStorage.getItem("fitness_level") || "";
+    const goal  = qs.get("goal")  || localStorage.getItem("fitness_goal")  || "";
+    const meal  = qs.get("meal_support") || localStorage.getItem("meal_support") || "";
+
+    localStorage.setItem("coach",coach);
+    localStorage.setItem("name",name);
+
+    const coachImages = {
+      Zara:'https://expressfitness.ca/wp-content/uploads/2025/04/zara.png',
+      Stephanie:'https://expressfitness.ca/wp-content/uploads/2025/04/step.png',
+      Max:'https://expressfitness.ca/wp-content/uploads/2025/04/MAX-NEW-1.png'
+    };
+    document.getElementById("coachImg").src = coachImages[coach] || coachImages.Zara;
+
+    document.getElementById("coach-dialogue").innerHTML =
+      `Great work, ${name}. Let’s record a quick baseline — this is your starting point to track progress and see your results. Pick any test below to begin.`;
+
+    // ----- Tests -----
+    const TESTS = [
+      { key:"cardio",   title:"Cardiovascular", icon:"fa-heartbeat",
+        href:"cardiovascular-test.html",
+        desc:"3-minute step test — measures how quickly your heart rate recovers.",
+        theme:"redish" },
+      { key:"pushups",  title:"Push-Ups",       icon:"fa-dumbbell",
+        href:"pushups-test.html",
+        desc:"Do as many quality push-ups as you can — checks upper-body strength.",
+        theme:"greenish" },
+      { key:"squats",   title:"Squats",         icon:"fa-person-running",
+        href:"squat-test.html",
+        desc:"Perform controlled air-squats — measures leg endurance.",
+        theme:"blueish" },
+      { key:"bodyfat",  title:"Body Fat",       icon:"fa-ruler-combined",
+        href:"body-fat-test.html",
+        desc:"Measure waist/hips/neck with a tape — we track change over time.",
+        theme:"orangeish" }
+    ];
+    const CANON = new Set(TESTS.map(t=>t.key));
+
+    // ----- Supabase-scoped local progress -----
+    const SUPABASE_URL='https://ajoimwcrmszhmcjrpxjv.supabase.co';
+    const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const RETEST_DAYS = 28;
+    const alias = {
+      upper:"pushups",
+      lower:"squats",
+      cardiovascular:"cardio",
+      body_fat:"bodyfat",
+      bf:"bodyfat",
+      pu:"pushups",
+      sq:"squats"
+    };
+    const normKey = k => {
+      const s=(k||"").toLowerCase().trim();
+      return alias[s] || (CANON.has(s) ? s : "");
+    };
+    const addDays = (d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x;};
+    const expired = iso => !iso || (new Date(iso) < new Date());
+
+    function storageKeyFor(userId){ return `tests_progress:${userId || 'guest'}`; }
+
+    async function init(){
+      // Who is signed in?
+      let userId = null;
+      try {
+        const { data:{ user } } = await sb.auth.getUser();
+        userId = user?.id || null;
+      } catch(_){
+        userId = null;
+      }
+
+      // If account changed, clear generic guest so new member starts clean
+      const lastUser = localStorage.getItem('progress_last_user') || '';
+      if (userId && lastUser && lastUser !== userId){
+        localStorage.removeItem(storageKeyFor('guest'));
+      }
+      localStorage.setItem('progress_last_user', userId || '');
+
+      const key = storageKeyFor(userId);
+      const getLocal = () => { try { return JSON.parse(localStorage.getItem(key) || "{}"); } catch { return {}; } };
+      const setLocal = v => localStorage.setItem(key, JSON.stringify(v || {}));
+
+      const justKey = normKey(qs.get("completed") || qs.get("completeKey"));
+      let state = getLocal();
+      let completed = new Set(Array.isArray(state.completed) ? state.completed : []);
+      let expires   = state.expires || null;
+
+      if (expires && expired(expires)) { completed.clear(); expires = null; }
+      if (justKey && CANON.has(justKey)) {
+        completed.add(justKey);
+        if (!expires) expires = addDays(new Date(), RETEST_DAYS).toISOString();
+      }
+
+      setLocal({ completed: Array.from(completed), expires });
+      render(Array.from(completed));
+
+      // Clean URL from ?completed=&completeKey=
+      if (qs.has("completed") || qs.has("completeKey")) {
+        history.replaceState({}, "", location.pathname);
+      }
+    }
+
+    function render(doneArr){
+      const done = new Set((doneArr||[]).map(s=>String(s).toLowerCase()));
+      const wrap = document.getElementById("tests");
+      wrap.innerHTML = "";
+
+      TESTS.forEach(t=>{
+        const finished = done.has(t.key);
+        const u = new URL(t.href, window.location.origin);
+        u.searchParams.set("coach", coach);
+        u.searchParams.set("name",  name);
+        u.searchParams.set("return", window.location.origin + window.location.pathname);
+        u.searchParams.set("completeParam", "completed");
+        u.searchParams.set("completeKey", t.key);
+
+        const a = document.createElement("a");
+        a.className = `test-card ${t.theme}` + (finished ? " completed" : "");
+        a.href = finished ? "javascript:void(0)" : u.toString();
+        if (finished) a.setAttribute("aria-disabled","true");
+
+        a.innerHTML = `
+          ${finished ? '<span class="badge">Completed</span>' : ''}
+          <div class="test-head">
+            <i class="fa-solid ${t.icon} test-icon"></i>
+            <div class="test-title">${t.title}</div>
+          </div>
+          <div class="test-desc">${t.desc}</div>
+        `;
+        wrap.appendChild(a);
+      });
+
+      const allDone = document.getElementById("allDone");
+      const finishedAll = doneArr && doneArr.length >= TESTS.length;
+      allDone.style.display = finishedAll ? "block" : "none";
+
+      const toDash = document.getElementById("toDash");
+      if (toDash) {
+        toDash.onclick = () => {
+          const q = new URLSearchParams({
+            coach,
+            name,
+            level,
+            goal,
+            meal_support: meal
+          }).toString();
+          window.location.href = `step10-dashboard-login.html?${q}`;
+        };
+      }
+    }
+
+    // Skip link → Dashboard, keeping params
+    document.getElementById("skipLink").addEventListener("click", (e)=>{
+      e.preventDefault();
+      const q = new URLSearchParams({
+        coach,
+        name,
+        level,
+        goal,
+        meal_support: meal
+      }).toString();
+      window.location.href = `step10-dashboard-login.html?${q}`;
+    });
+
+    init();
+  </script>
+</body>
+</html>
