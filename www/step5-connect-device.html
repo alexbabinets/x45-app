@@ -3,248 +3,1128 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>X45 – Step 6: Commitment</title>
+  <title>X45 – Step 5: Connect Your Device</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     :root{
       --bg:#0a0b0d; --panel:#101216; --ink:#eef2f7; --muted:#9aa0a6;
-      --blue:#2f5f7a; --blueHover:#376e8e; --line:#1b1d22; --border:#1b1c20;
-      --ring: rgba(128,173,214,.25);
+      --blue:#2f5f7a; --blueHover:#376e8e; --line:#1b1d22; --border:#1b1c20; --ring: rgba(128,173,214,.25);
+      --btn:#2f5f7a; --btnH:#376e8e;
+      --card:#0e1218; --cardBorder:#222832;
+      --pill:#121820; --pillBorder:#2a3240;
+      --badge:#1a2531;
     }
     *{box-sizing:border-box}
-    body{
-      margin:0;
-      background:var(--bg);
-      color:var(--ink);
-      font-family:Inter,system-ui,Arial,sans-serif;
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Arial,sans-serif;text-align:center}
+    .page{max-width:900px;margin:auto;padding:40px 20px}
+    img.logo{width:180px;margin-bottom:20px}
+
+    #step-label{font-size:36px;font-weight:900;margin:10px 0 4px}
+    .sub-heading{font-size:18px;color:#cbd5e1;margin:0 0 8px}
+    .blue-heading{font-size:22px;font-weight:900;color:#00b3ff;text-decoration:underline;margin:0 0 18px}
+
+    .coach-image{width:160px;border-radius:12px;margin:12px auto 24px;animation:breathe 3.5s ease-in-out infinite;display:block}
+    @keyframes breathe{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+
+    .dialogue{font-size:18px;line-height:1.6;margin-bottom:24px;max-width:760px;margin-left:auto;margin-right:auto}
+    .selects{display:grid;gap:12px;justify-content:center}
+    select{
+      background:#121419;border:1px solid var(--border);color:#fff;padding:14px 18px;
+      border-radius:10px;font-size:16px;width:100%;max-width:420px;outline:none;
+      margin:0 auto;text-align-last:center;
+    }
+    select:focus{box-shadow:0 0 0 5px var(--ring)}
+
+    /* Other device input (matches style) */
+    .other-wrap{
+      display:none;
+      width:100%;
+      max-width:420px;
+      margin:0 auto;
+    }
+    .other-input{
+      width:100%;
+      background:#121419;
+      border:1px solid var(--border);
+      color:#fff;
+      padding:14px 18px;
+      border-radius:10px;
+      font-size:16px;
+      outline:none;
       text-align:center;
     }
-    .page{
-      max-width:900px;
-      margin:auto;
-      padding:40px 20px;
-    }
-    img.logo{
-      width:180px;
-      margin-bottom:20px;
+    .other-input:focus{box-shadow:0 0 0 5px var(--ring)}
+    .other-hint{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:6px;
+      text-align:center;
     }
 
-    #step-label{
-      font-size:36px;
-      font-weight:900;
-      margin:10px 0 4px;
-    }
-    .sub-heading{
-      font-size:18px;
-      color:#cbd5e1;
-      margin:0 0 8px;
-    }
-    .blue-heading{
-      font-size:22px;
-      font-weight:900;
-      color:#00b3ff;
-      text-decoration:underline;
-      margin:0 0 18px;
-    }
-
-    .coach-image{
+    .device-preview{
       width:160px;
+      max-width:70%;
       border-radius:12px;
-      margin:12px auto 24px;
-      animation:breathe 3.5s ease-in-out infinite;
-      display:block;
-    }
-    @keyframes breathe{
-      0%{transform:scale(1)}
-      50%{transform:scale(1.03)}
-      100%{transform:scale(1)}
+      border:1px solid var(--cardBorder);
+      background:#000;
+      display:none;
+      margin:18px auto 22px;
+      object-fit:contain;
     }
 
-    .dialogue{
-      font-size:18px;
-      line-height:1.6;
-      margin-bottom:24px;
-      max-width:760px;
-      margin-left:auto;
-      margin-right:auto;
-    }
-    .highlight{
-      font-weight:900;
-      color:#fff;
-      font-size:20px;
-    }
-    .device{
-      color:#00b3ff;
-      font-weight:900;
-    }
-    .note{
-      color:#cbd5e1;
-      font-size:16px;
-      line-height:1.7;
-      max-width:740px;
-      margin:20px auto;
-    }
+    .btn{border:1px solid var(--line);background:var(--btn);border-color:transparent;
+      color:#fff;border-radius:12px;padding:12px 28px;cursor:pointer;display:inline-flex;
+      align-items:center;gap:8px;font-weight:800;font-size:17px}
+    .btn:hover{background:var(--btnH)}
+    .skip{display:block;margin-top:16px;font-size:15px;color:#9aa0a6;text-decoration:underline;cursor:pointer}
 
-    .btn{
-      border:1px solid var(--line);
-      background:var(--blue);
-      border-color:transparent;
-      color:#fff;
-      border-radius:12px;
-      padding:12px 28px;
-      cursor:pointer;
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      font-weight:800;
-      font-size:17px;
-      margin-top:24px;
-    }
-    .btn:hover{background:var(--blueHover)}
-
-    @media (max-width:480px){
-      #step-label{font-size:30px}
-      .dialogue{font-size:16px}
-    }
+    /* Help panel */
+    .help{margin:20px auto 10px;max-width:760px;text-align:left;background:var(--card);border:1px solid var(--cardBorder);border-radius:14px;padding:14px}
+    .help-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+    .help-title{font-weight:900;font-size:18px}
+    .badge{font-size:12px;border:1px solid var(--pillBorder);background:var(--badge);color:#cfe6ff;border-radius:999px;padding:6px 10px;font-weight:800}
+    .vids{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:999px;text-decoration:none;
+      background:var(--pill);border:1px solid var(--pillBorder);color:#e8f5ff;font-weight:800;font-size:13px}
+    .pill:hover{border-color:#3a465a}
+    .steps{margin:10px 0 0;padding-left:18px}
+    .steps li{margin:6px 0;color:#d5deea;font-size:14px}
+    .muted{color:var(--muted);font-size:13px}
   </style>
 </head>
 <body>
   <div class="page">
     <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
 
-    <div id="step-label">Your Commitment</div>
-    <div class="sub-heading">You’re almost there — this is the moment that changes everything.</div>
-    <div class="blue-heading">Step 6. Commitment</div>
+    <div id="step-label">Get Connected</div>
+    <div class="sub-heading">Sync your activity automatically from your wearable.</div>
+    <div class="blue-heading">Step 5. Connect Your Device</div>
 
     <img id="coachImg" class="coach-image" alt="Your coach" />
     <div class="dialogue" id="coach-dialogue"></div>
 
-    <div class="note">
-      Wearing your <span id="deviceName" class="device">device</span> daily lets X45 automatically track your activity.<br>
-      No manual logs — just move, live, and let technology do the counting.<br><br>
-      <strong>All I need now is your “yes.”</strong><br>
-      Tap below to start your X45 journey today.
+    <div class="selects">
+      <select id="deviceSelect" aria-label="Choose your device">
+        <option value="">Choose your device</option>
+        <option value="Apple Watch">Apple Watch</option>
+        <option value="Fitbit">Fitbit</option>
+        <option value="Garmin">Garmin</option>
+        <option value="WHOOP">WHOOP</option>
+        <option value="Oura Ring">Oura Ring</option>
+        <option value="Samsung Galaxy Fit">Samsung Galaxy Fit</option>
+        <option value="Polar">Polar</option>
+        <option value="Xiaomi Band">Xiaomi Band</option>
+        <option value="Huawei Watch">Huawei Watch</option>
+        <option value="Amazfit">Amazfit</option>
+        <option value="Letsfit">Letsfit</option>
+        <option value="Yamay">Yamay</option>
+        <option value="Coros">Coros</option>
+        <option value="Lintelek">Lintelek</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <select id="modelSelect" aria-label="Choose model" style="display:none">
+        <option value="">Choose model</option>
+      </select>
+
+      <select id="colorSelect" aria-label="Choose color" style="display:none">
+        <option value="">Choose color</option>
+      </select>
+
+      <!-- Only appears for Other -->
+      <div id="otherWrap" class="other-wrap">
+        <input
+          id="otherDeviceInput"
+          class="other-input"
+          type="text"
+          placeholder="Enter your device name"
+          aria-label="Enter your device name"
+          autocomplete="off"
+        />
+        <div class="other-hint">Example: Withings ScanWatch, Moov Now, Generic Tracker</div>
+      </div>
     </div>
 
-    <button class="btn" id="acceptBtn">Accept & Begin</button>
+    <img
+      id="devicePreview"
+      class="device-preview"
+      src=""
+      alt="Selected device preview"
+    />
+
+    <!-- Hidden until a device is selected -->
+    <section id="help" class="help" style="display:none">
+      <div class="help-head">
+        <div class="help-title" id="helpTitle">How to connect</div>
+        <span class="badge" id="helpBadge">Quick Guide</span>
+      </div>
+      <!-- Links (YouTube) appear ABOVE the steps -->
+      <div class="vids" id="helpVids"></div>
+      <ol class="steps" id="helpSteps"></ol>
+      <div class="muted" id="helpNote" style="margin-top:8px"></div>
+    </section>
+
+    <button class="btn" id="continueBtn">Continue</button>
+    <a id="skipLink" class="skip">Skip for now</a>
   </div>
 
   <script>
-    // ========= Supabase client =========
+    /* ========= Supabase ========= */
     const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // ========= Base state =========
+    /* ========= Page params ========= */
+    const params = new URLSearchParams(window.location.search);
+    const coach = params.get('coach') || localStorage.getItem('coach') || 'Zara';
+    const name  = params.get('name')  || localStorage.getItem('name')  || 'friend';
+    const level = params.get('level') || localStorage.getItem('fitness_level') || '';
+    const goal  = params.get('goal')  || localStorage.getItem('fitness_goal')  || '';
+    const meal  = params.get('meal_support') || localStorage.getItem('meal_support') || '';
+
     const coachImages = {
       Zara: 'https://expressfitness.ca/wp-content/uploads/2025/04/zara.png',
       Stephanie: 'https://expressfitness.ca/wp-content/uploads/2025/04/step.png',
       Max: 'https://expressfitness.ca/wp-content/uploads/2025/04/MAX-NEW-1.png'
     };
+    document.getElementById('coachImg').src = coachImages[coach] || coachImages.Zara;
 
-    let coach = 'Zara';
-    let name  = 'friend';
-    let device = 'your device';
+    document.getElementById('coach-dialogue').innerHTML =
+      `Nice work, ${name}. You’ve locked in your meal plan — consistency starts right there.<br>
+       Next, choose your exact wearable below so I know how to sync you properly.`;
 
-    const coachImgEl = document.getElementById('coachImg');
-    const coachDialogueEl = document.getElementById('coach-dialogue');
-    const deviceNameEl = document.getElementById('deviceName');
-    const acceptBtn = document.getElementById('acceptBtn');
+    /* ========= EXACT DEVICE CONFIG (mirrored) ========= */
+    const DEVICE_CONFIG = {
+      "Apple Watch": {
+        "Series 7": {
+          "Blue": "https://m.media-amazon.com/images/I/61X6oBjkFNL._AC_SL1500_.jpg",
+          "Midnight": "https://m.media-amazon.com/images/I/71CdiPOxohL._AC_SL1500_.jpg",
+          "Starlight": "https://m.media-amazon.com/images/I/51xh7tngF7L._AC_SL1000_.jpg",
+          "Green": "https://m.media-amazon.com/images/I/71TORNQIJ4L._AC_SL1500_.jpg",
+          "Red": "https://m.media-amazon.com/images/I/71XohCtGXHL._AC_SL1500_.jpg",
+          "Silver": "https://m.media-amazon.com/images/I/51PFo22nfpL._AC_SL1000_.jpg",
+          "Space Black": "https://m.media-amazon.com/images/I/51atwKS6EiL._AC_SL1000_.jpg"
+        },
+        "Series 8": {
+          "Starlight": "https://m.media-amazon.com/images/I/71rimxfInpL._AC_SL1500_.jpg",
+          "Midnight": "https://m.media-amazon.com/images/I/71XMTLtZd5L._AC_SL1500_.jpg",
+          "Red": "https://m.media-amazon.com/images/I/71DfMwITnaL._AC_SL1500_.jpg",
+          "Silver": "https://m.media-amazon.com/images/I/71Hr-vPvJuL._AC_SL1500_.jpg"
+        },
+        "Series 9": {
+          "Red": "https://m.media-amazon.com/images/I/712JCP+XbEL._AC_SL1500_.jpg",
+          "Gold": "https://m.media-amazon.com/images/I/71da0k24mhL._AC_SL1500_.jpg",
+          "Pink": "https://m.media-amazon.com/images/I/61FxhPzi4oL._AC_SL1200_.jpg",
+          "Midnight": "https://m.media-amazon.com/images/I/71aXGgNCE9L._AC_SL1500_.jpg",
+          "Starlight": "https://m.media-amazon.com/images/I/71DORreQX+L._AC_SL1500_.jpg",
+          "Silver": "https://m.media-amazon.com/images/I/71cANOnqpHL._AC_SL1500_.jpg"
+        },
+        "Series 10": {
+          "Black": "https://m.media-amazon.com/images/I/71+ebO-T8NL._AC_SL1500_.jpg",
+          "Silver": "https://m.media-amazon.com/images/I/515bMBmasSL._AC_SL1200_.jpg",
+          "Gold": "https://m.media-amazon.com/images/I/716zbElG8NL._AC_SL1500_.jpg",
+          "Rose Gold": "https://m.media-amazon.com/images/I/61i3ax+W1sL._AC_SL1500_.jpg",
+          "Slate": "https://m.media-amazon.com/images/I/61wLzJ2s5JL._AC_SL1500_.jpg",
+          "Natural": "https://m.media-amazon.com/images/I/81T+JXTBfFL._AC_SL1500_.jpg"
+        },
+        "Ultra": {
+          "Titanium": "https://m.media-amazon.com/images/I/6165pya85SL._AC_SL1500_.jpg",
+          "Space Gray": "https://m.media-amazon.com/images/I/61bRxzilc+L._AC_SL1500_.jpg",
+          "Silver": "https://m.media-amazon.com/images/I/71CEEe2ehuL._AC_SL1500_.jpg",
+          "Natural": "https://m.media-amazon.com/images/I/81Xz6Fx079L._AC_SL1500_.jpg",
+          "Black": "https://m.media-amazon.com/images/I/81MbFmh-M2L._AC_SL1500_.jpg"
+        },
+        "SE": {
+          "Space Gray": "https://m.media-amazon.com/images/I/618HSW6un3L._AC_SL1500_.jpg",
+          "Silver": "https://m.media-amazon.com/images/I/71Ou9Fl-eXL._AC_SL1500_.jpg",
+          "Gold": "https://m.media-amazon.com/images/I/81XIJVqW-2L._AC_SL1500_.jpg",
+          "Midnight": "https://m.media-amazon.com/images/I/71BZ5AXoxmL._AC_SL1500_.jpg",
+          "Starlight": "https://m.media-amazon.com/images/I/61Ni41KYxDL._AC_SL1500_.jpg"
+        }
+      },
+      "Fitbit": {
+        "Inspire 3": {
+          "__noColor": "https://m.media-amazon.com/images/I/61UWlMIuyLL._AC_SL1500_.jpg"
+        },
+        "Charge 6": {
+          "Black": "https://m.media-amazon.com/images/I/61ZtqtvoD2L._AC_SL1500_.jpg",
+          "Silver": "https://m.media-amazon.com/images/I/61wn2jfhBkL._AC_SL1500_.jpg"
+        },
+        "Versa 4": {
+          "Black": "https://m.media-amazon.com/images/I/61jUiN1bCrL._AC_SL1500_.jpg",
+          "Cooper Rose": "https://m.media-amazon.com/images/I/61EDq8HCXgL._AC_SL1500_.jpg",
+          "Platinum": "https://m.media-amazon.com/images/I/61ZYteSkDvL._AC_SL1500_.jpg"
+        },
+        "Sense 2": {
+          "Graphite": "https://m.media-amazon.com/images/I/51GeUyZUB9L._AC_SL1000_.jpg",
+          "Platinum": "https://m.media-amazon.com/images/I/61Q79ulDs6L._AC_SL1500_.jpg",
+          "Pale Gold": "https://m.media-amazon.com/images/I/61c1QC4lF-L._AC_SL1500_.jpg"
+        }
+      },
+      "Garmin": {
+        "Forerunner 265": {
+          "Black": "https://m.media-amazon.com/images/I/71W+S88m5JL._AC_SL1500_.jpg",
+          "Aqua and Black": "https://m.media-amazon.com/images/I/71RKd0UuTTL._AC_SL1500_.jpg",
+          "Whitestone and Tidal Blue": "https://m.media-amazon.com/images/I/71iSHugswGL._AC_SL1500_.jpg"
+        },
+        "Forerunner 265S": {
+          "Black and Amp Yellow": "https://m.media-amazon.com/images/I/71p4pHfN3BL._AC_SL1500_.jpg",
+          "Light Pink and Power Grey": "https://m.media-amazon.com/images/I/71UUm1mOhjL._AC_SL1500_.jpg",
+          "Whitestone and Neo Tropic": "https://m.media-amazon.com/images/I/71-wnp+C-eL._AC_SL1500_.jpg"
+        },
+        "Venu 3": {
+          "Steel Bezel": "https://m.media-amazon.com/images/I/517RF8gjAbL._AC_SL1000_.jpg",
+          "Silver Bezel": "https://m.media-amazon.com/images/I/51zsA4NgoQL._AC_SL1000_.jpg"
+        },
+        "Venu 3S": {
+          "Soft Gold Bezel": "https://m.media-amazon.com/images/I/61EBinZZ7xL._AC_SL1500_.jpg",
+          "Slate Bezel": "https://m.media-amazon.com/images/I/61W9pa-ENwL._AC_SL1500_.jpg"
+        },
+        "Fenix 7": {
+          "Black": "https://m.media-amazon.com/images/I/71js3xxPb7L._AC_SL1500_.jpg",
+          "Fog Gray": "https://m.media-amazon.com/images/I/71hkemCxOLL._AC_SL1500_.jpg"
+        },
+        "Fenix 7S Pro": {
+          "Soft Gold": "https://m.media-amazon.com/images/I/71GqkLYDQaL._AC_SL1500_.jpg"
+        },
+        "Fenix 8 Pro": {
+          "Carbon Grey": "https://m.media-amazon.com/images/I/61vFRwSLaoL._AC_SL1500_.jpg",
+          "Titanium": "https://m.media-amazon.com/images/I/61GpbuABckL._AC_SL1500_.jpg",
+          "Graphite": "https://m.media-amazon.com/images/I/61GpbuABckL._AC_SL1500_.jpg"
+        }
+      },
+      "WHOOP": {
+        "5.0": {
+          "Silver": "https://m.media-amazon.com/images/I/61AMMnmroeL._AC_SL1500_.jpg",
+          "Black": "https://m.media-amazon.com/images/I/61Fe+1-71-L._AC_SL1500_.jpg"
+        }
+      },
+      "Oura Ring": {
+        "Gen 3": {
+          "Silver": "https://m.media-amazon.com/images/I/61FS1+mDc+L._AC_SL1500_.jpg",
+          "Black": "https://m.media-amazon.com/images/I/61tv2SSCDlL._AC_SL1500_.jpg",
+          "Gold": "https://m.media-amazon.com/images/I/61gcIPGWWzL._AC_SL1500_.jpg",
+          "Rose Gold": "https://m.media-amazon.com/images/I/61fEFHjsTDL._AC_SL1500_.jpg",
+          "Brushed Titanium": "https://m.media-amazon.com/images/I/61+bRb7T25L._AC_SL1500_.jpg",
+          "Stealth": "https://m.media-amazon.com/images/I/61pHtQLDz4L._AC_SL1500_.jpg"
+        }
+      },
+      "Samsung Galaxy Fit": {
+        "Fit3": {
+          "Black": "https://m.media-amazon.com/images/I/5163cMsZUsL._AC_SL1500_.jpg",
+          "Pink": "https://m.media-amazon.com/images/I/51wj8Fa+BkL._AC_SL1080_.jpg",
+          "Silver": "https://m.media-amazon.com/images/I/615By15noiL._AC_SL1500_.jpg"
+        }
+      },
+      "Polar": {
+        "Vantage V3": {
+          "Black": "https://m.media-amazon.com/images/I/51Cf-tSvxHL._AC_SL1001_.jpg"
+        },
+        "Vantage V2": {
+          "Silver": "https://m.media-amazon.com/images/I/61xBs2VSztL._AC_SL1080_.jpg"
+        },
+        "Grit X2 Pro": {
+          "Black": "https://m.media-amazon.com/images/I/81hPXOvSJ+L._AC_SL1500_.jpg",
+          "Titan": "https://m.media-amazon.com/images/I/81gwe1pl1qL._AC_SL1500_.jpg",
+          "Stone Gray": "https://m.media-amazon.com/images/I/71goOzCYmNL._AC_SL1500_.jpg",
+          "Stainless Steel": "https://m.media-amazon.com/images/I/718hKkhDeZL._AC_SL1500_.jpg"
+        },
+        "Ignite 3": {
+          "Black": "https://m.media-amazon.com/images/I/61PX3bTEnfL._AC_SL1448_.jpg",
+          "Titanium": "https://m.media-amazon.com/images/I/71r3bl13+oL._AC_SL1500_.jpg",
+          "Gold": "https://m.media-amazon.com/images/I/61SIOGizMxL._AC_SL1448_.jpg"
+        }
+      },
+      "Xiaomi Band": {
+        "Smart Band 9": {
+          "Black": "https://m.media-amazon.com/images/I/61F1N0dIXvL._AC_SL1500_.jpg"
+        },
+        "Smart Band 10": {
+          "Black": "https://m.media-amazon.com/images/I/51XrOqJxTVL._AC_SL1000_.jpg",
+          "Silver": "https://m.media-amazon.com/images/I/613hB4kCooL._AC_SL1500_.jpg"
+        }
+      },
+      "Huawei Watch": {
+        "FIT 4": {
+          "Black": "https://m.media-amazon.com/images/I/516mZ64p7rL._AC_.jpg",
+          "Gray": "https://m.media-amazon.com/images/I/61E1CCsagKL._AC_.jpg",
+          "Purple": "https://m.media-amazon.com/images/I/51Fda3JcQcL._AC_.jpg",
+          "White": "https://m.media-amazon.com/images/I/51sXdVvq0rL._AC_.jpg"
+        },
+        "FIT 4 Pro": {
+          "Green": "https://m.media-amazon.com/images/I/61aSZoTc0vL._AC_.jpg",
+          "Blue": "https://m.media-amazon.com/images/I/5171QkUTuyL._AC_.jpg",
+          "Black": "https://m.media-amazon.com/images/I/51T81iVgl0L._AC_.jpg"
+        },
+        "FIT 3": {
+          "Silver": "https://m.media-amazon.com/images/I/819RHdi5tWL._AC_SL1500_.jpg",
+          "Black": "https://m.media-amazon.com/images/I/71qth-es3nL._AC_SL1500_.jpg",
+          "Pink": "https://m.media-amazon.com/images/I/719ZfUQywVL._AC_SL1500_.jpg"
+        },
+        "FIT 2": {
+          "Black": "https://m.media-amazon.com/images/I/51bUhw-L7-L._AC_SL1000_.jpg",
+          "Gray": "https://m.media-amazon.com/images/I/81pYwvESwWL._AC_SL1500_.jpg"
+        },
+        "FIT 2 Classic": {
+          "Moonlight White": "https://m.media-amazon.com/images/I/61IWla9+NPL._AC_SL1000_.jpg"
+        },
+        "FIT 3 Special Addition": {
+          "Pink": "https://m.media-amazon.com/images/I/612HYjAbOqL._AC_SL1000_.jpg"
+        },
+        "GT 5 Pro": {
+          "Black": "https://m.media-amazon.com/images/I/719aD5y8dCL._AC_SL1500_.jpg",
+          "Titanium": "https://m.media-amazon.com/images/I/717GiZJVToL._AC_SL1500_.jpg",
+          "White Ceramic": "https://m.media-amazon.com/images/I/81pXhyydc8L._AC_SL1500_.jpg"
+        },
+        "GT 5": {
+          "Blue": "https://m.media-amazon.com/images/I/71PdcyM5kcL._AC_SL1500_.jpg",
+          "Black": "https://m.media-amazon.com/images/I/61nliZrLUHL._AC_SL1500_.jpg",
+          "Brown": "https://m.media-amazon.com/images/I/71QCj3gLWFL._AC_SL1500_.jpg",
+          "Gold": "https://m.media-amazon.com/images/I/81t9AFh6XLL._AC_SL1500_.jpg",
+          "White": "https://m.media-amazon.com/images/I/71Wbs8jOhDL._AC_SL1500_.jpg"
+        },
+        "GT 6 Pro": {
+          "Black": "https://m.media-amazon.com/images/I/81NxBXUtaiL._AC_SL1500_.jpg",
+          "Brown": "https://m.media-amazon.com/images/I/71pFj-GCZkL._AC_SL1500_.jpg",
+          "Titanium": "https://m.media-amazon.com/images/I/81e3IzNg-2L._AC_SL1500_.jpg"
+        },
+        "GT 6": {
+          "Gray": "https://m.media-amazon.com/images/I/81TWfUebgIL._AC_SL1500_.jpg",
+          "Purple": "https://m.media-amazon.com/images/I/71Gd1WINOuL._AC_SL1500_.jpg",
+          "White": "https://m.media-amazon.com/images/I/81vtZaqhC4L._AC_SL1500_.jpg",
+          "Black": "https://m.media-amazon.com/images/I/71gtM4ew3OL._AC_SL1500_.jpg",
+          "Green": "https://m.media-amazon.com/images/I/71JbEiw-qnL._AC_SL1500_.jpg"
+        }
+      },
+      "Amazfit": {
+        "Balance": {
+          "Black": "https://m.media-amazon.com/images/I/61ACOwvUwSL._AC_SL1500_.jpg",
+          "Sunset Grey": "https://m.media-amazon.com/images/I/71w8zMUc7oL._AC_SL1500_.jpg"
+        },
+        "Bip 5": {
+          "Charcoal": "https://m.media-amazon.com/images/I/61kCGyZra5L._AC_SL1500_.jpg",
+          "Pink": "https://m.media-amazon.com/images/I/61xOL21rKJL._AC_SL1500_.jpg"
+        },
+        "Bip 6": {
+          "Black": "https://m.media-amazon.com/images/I/61UvVTN0IEL._AC_SL1500_.jpg",
+          "Blush": "https://m.media-amazon.com/images/I/61Z2UcRVdiL._AC_SL1500_.jpg",
+          "Charcoal": "https://m.media-amazon.com/images/I/61bBHUOgqsL._AC_SL1500_.jpg",
+          "Red": "https://m.media-amazon.com/images/I/61a6F-g0bYL._AC_SL1500_.jpg",
+          "Petite Stone": "https://m.media-amazon.com/images/I/618Rd3bbPsL._AC_SL1500_.jpg"
+        },
+        "Active 2": {
+          "Red": "https://m.media-amazon.com/images/I/71rNwQV3ORL._AC_SL1500_.jpg",
+          "Black": "https://m.media-amazon.com/images/I/71mpuO4LqeL._AC_SL1500_.jpg"
+        },
+        "Active 2 Square": {
+          "Black": "https://m.media-amazon.com/images/I/71iNNUyae9L._AC_SL1500_.jpg"
+        },
+        "Active 2 Premium": {
+          "Black": "https://m.media-amazon.com/images/I/71XpjL4qkPL._AC_SL1500_.jpg"
+        }
+      },
+      "Letsfit": {
+        "IW1": {
+          "Black": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-IW1-black_1800x1800.jpg?v=1639552848",
+          "Pink": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-IW1-pink_1800x1800.jpg?v=1639552848",
+          "Gray": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-IW1-gray_1800x1800.jpg?v=1639552991",
+          "Blue": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-IW1-blue_1800x1800.jpg?v=1639553021",
+          "Dark Blue": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-IW1-darkblue_1800x1800.jpg?v=1639553021",
+          "Purple": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-IW1-purple_1800x1800.jpg?v=1639553021"
+        },
+        "EW1": {
+          "Black": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-EW1-Black_1800x1800.jpg?v=1639556748",
+          "Light Blue": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-EW1-blue_1800x1800.jpg?v=1639556723",
+          "Light Green": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-EW1-lightgreen_1800x1800.jpg?v=1639556723",
+          "Pink": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-EW1-Pink_1800x1800.jpg?v=1639556723",
+          "Purple": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-EW1-purple_1800x1800.jpg?v=1639556748"
+        }
+      },
+      "Yamay": {
+        "D3": {
+          "Black": "http://www.yamaytech.com/uploads/20250523/65919dc9e8d50e8a74c017da90c72493.jpg"
+        },
+        "KW1": {
+          "Pink": "http://www.yamaytech.com/uploads/20240826/95c41cf986d5385e60bdcf6011aa67a2.jpg"
+        },
+        "H1": {
+          "Black": "http://www.yamaytech.com/uploads/20231121/c82d096b967d8e201fec05a5142b694f.jpg"
+        },
+        "SW022": {
+          "Black": "http://www.yamaytech.com/uploads/20231121/0a24d4fc2769f2e90549986ad991e76f.png"
+        },
+        "H2": {
+          "Black": "http://www.yamaytech.com/uploads/20231121/0387e0410f7a1cfc4d9d38a030adea14.jpg"
+        },
+        "D1": {
+          "Black": "http://www.yamaytech.com/uploads/20231121/e15b3c0ef25720347b7fd9e92130c813.jpg"
+        },
+        "FC1": {
+          "Black": "http://www.yamaytech.com/uploads/20231121/a32c3228e0265a4c8317b3cac95a53a1.png"
+        },
+        "S3": {
+          "Black": "http://www.yamaytech.com/uploads/20250523/801a056e50e09952f0aed69d962ec637.jpg"
+        },
+        "SW336": {
+          "Black": "http://www.yamaytech.com/uploads/20231121/e5d5e60daff726538de56d17877a92b8.png"
+        }
+      },
+      "Coros": {
+        "PACE 3": {
+          "Black silicon": "https://m.media-amazon.com/images/I/61HE8zhwT7L._AC_SL1500_.jpg",
+          "White silicon": "https://m.media-amazon.com/images/I/61KBRtAjahL._AC_SL1500_.jpg",
+          "White nylon": "https://m.media-amazon.com/images/I/81HCogC9cGL._AC_SL1500_.jpg",
+          "Black nylon": "https://m.media-amazon.com/images/I/81OX6InPf2L._AC_SL1500_.jpg"
+        }
+      },
+      "Lintelek": {
+        "__noModel": {
+          "Purple": "https://i.ebayimg.com/images/g/HXQAAOSwvbRgJF0G/s-l1200.jpg",
+          "Dark Blue": "https://m.media-amazon.com/images/I/61rPZwOSyYL.jpg",
+          "Teal": "https://techzila.co/cdn/shop/products/41RB20hqPVL_800x.jpg?v=1613301810",
+          "Pink": "https://i5.walmartimages.com/seo/Lintelek-Fitness-Tracker-Activity-Tracker-Smart-Watch-Heart-Rate-Monitor-Pedometer-Fitness-Watch_54efe91a-42d4-44ff-84d3-ebf0829f8179.9ec1cb73f773dc21543ac0114285ecc2.jpeg?odnHeight=768&odnWidth=768&odnBg=FFFFFF",
+          "Black": "https://www.refinery29.com/images/11247860.png?format=webp&width=NaN&height=NaN&quality=85"
+        }
+      },
+      "Other": {
+        "__noModel": {
+          "__noColor": ""
+        }
+      }
+    };
 
-    function renderUI(){
-      // Image
-      coachImgEl.src = coachImages[coach] || coachImages.Zara;
-
-      // Dialogue text
-      coachDialogueEl.innerHTML =
-        `<span class="highlight>${coach}</span> here, ${name}.<br>
-         You’ve set everything up — now it’s about showing up for yourself.<br><br>
-         Once you tap this button, we treat your daily <span class="device">45 minutes</span> like a promise — 
-         not to me, but to <strong>you</strong>.`;
-
-      // Device text
-      deviceNameEl.textContent = device || 'your device';
+    function imgForBrand(device, model = '', color = '') {
+      const cfg = DEVICE_CONFIG[device];
+      if (cfg) {
+        let modelKey = model && cfg[model] ? model : null;
+        if (!modelKey && cfg["__noModel"]) {
+          modelKey = "__noModel";
+        }
+        if (modelKey) {
+          const colorCfg = cfg[modelKey];
+          let colorKey = color && colorCfg[color] ? color : null;
+          if (!colorKey && colorCfg["__noColor"]) {
+            colorKey = "__noColor";
+          }
+          if (!colorKey) {
+            const keys = Object.keys(colorCfg);
+            if (keys.length === 1) {
+              colorKey = keys[0];
+            }
+          }
+          if (colorKey && colorCfg[colorKey]) {
+            return colorCfg[colorKey] || '';
+          }
+        }
+      }
+      return '';
     }
 
-    async function initPage(){
-      // 1) URL params
-      const params = new URLSearchParams(window.location.search);
-      const qpCoach  = params.get('coach');
-      const qpName   = params.get('name');
-      const qpDevice = params.get('device');
+    function selectionComplete(device, model, color, otherName){
+      if(!device) return false;
 
-      if (qpCoach)  coach  = qpCoach;
-      if (qpName)   name   = qpName;
-      if (qpDevice) device = qpDevice;
+      if(device === "Other"){
+        return !!(otherName && otherName.trim().length > 0);
+      }
 
-      // 2) localStorage fallback
-      coach  = localStorage.getItem('coach') || coach;
-      name   = localStorage.getItem('name') || name;
-      device = localStorage.getItem('device') || device;
+      const cfg = DEVICE_CONFIG[device];
+      if(!cfg) return false;
 
-      // Initial render so you see *something* even if Supabase fails
-      renderUI();
+      const hasNoModel = !!cfg["__noModel"];
+      const modelKeys = Object.keys(cfg).filter(k => k !== '__noModel');
 
-      // 3) Try Supabase profile (best source)
-      try{
-        const { data: { user }, error: userErr } = await client.auth.getUser();
-        if (!user || userErr) {
-          return; // stay with URL/localStorage data
-        }
+      let modelKey = null;
 
-        const { data: profile, error: pErr } = await client
-          .from('x45_users')
-          .select('coach, first_name, device')
-          .eq('id', user.id)
-          .single();
+      if (hasNoModel && modelKeys.length === 0) {
+        modelKey = "__noModel";
+      } else {
+        if (!model) return false;
+        modelKey = model;
+        if (!cfg[modelKey]) return false;
+      }
 
-        if (!pErr && profile) {
-          if (profile.coach)      coach  = profile.coach;
-          if (profile.first_name) name   = profile.first_name;
-          if (profile.device)     device = profile.device;
+      const colorCfg = cfg[modelKey];
+      if (!colorCfg) return false;
 
-          // Save back to localStorage for next pages
-          localStorage.setItem('coach', coach);
-          localStorage.setItem('name', name);
-          if (device) localStorage.setItem('device', device);
+      const colorKeys = Object.keys(colorCfg).filter(k => k !== '__noColor');
+      const needsColor = colorKeys.length > 0;
 
-          renderUI();
-        }
-      } catch(e){
-        console.warn('Step 6 init error:', e?.message || e);
-        // keep whatever we already rendered
+      if (!needsColor) return true;
+
+      if (!color) return false;
+      if (!colorCfg[color]) return false;
+
+      return true;
+    }
+
+    /* ========= Tutorials map (YouTube search links so they always open) ========= */
+    const YT = (q) => `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+    const TUTORIALS = {
+      "Apple Watch": {
+        note: "Uses Apple Health on iPhone.",
+        videos: [
+          { title:"Pair Apple Watch with iPhone", url: YT("pair apple watch with iphone") },
+          { title:"Enable Apple Health sharing", url: YT("apple health app permissions connect app share data") },
+          { title:"Troubleshoot sync", url: YT("apple watch health sync troubleshooting") }
+        ],
+        steps: [
+          "Open the Watch app on iPhone → ‘Pair New Watch’.",
+          "Finish pairing and sign into iCloud.",
+          "Open the Health app → Profile → Apps → enable permissions for X45.",
+          "Keep Bluetooth on; wear the watch snug.",
+          "Open X45 and run ‘Sync Now’ once."
+        ]
+      },
+      "Fitbit": {
+        note: "Syncs via Fitbit cloud.",
+        videos: [
+          { title:"Set up Fitbit & all-day sync", url: YT("fitbit setup all day sync") },
+          { title:"Connect Fitbit to apps", url: YT("connect fitbit to third party app") }
+        ],
+        steps: [
+          "Install Fitbit app and sign in.",
+          "Pair your device (Profile → Set up a device).",
+          "Turn on All-Day Sync in Fitbit.",
+          "In X45, connect Fitbit and allow permissions.",
+          "Tap ‘Sync Now’ in X45."
+        ]
+      },
+      "Garmin": {
+        note: "Uses Garmin Connect authorization.",
+        videos: [
+          { title:"Pair watch in Garmin Connect", url: YT("pair garmin watch garmin connect") },
+          { title:"Authorize third-party apps", url: YT("garmin connect authorize third party app") }
+        ],
+        steps: [
+          "Install Garmin Connect and pair your watch.",
+          "Sign in to your Garmin account.",
+          "In X45, choose Garmin and complete the OAuth screen.",
+          "Return to X45 and run a test sync."
+        ]
+      },
+      "WHOOP": {
+        note: "Reads recovery/strain/sleep via WHOOP cloud.",
+        videos: [
+          { title:"Set up WHOOP", url: YT("whoop setup guide") },
+          { title:"Connect WHOOP to apps", url: YT("whoop connect third party app") }
+        ],
+        steps: [
+          "Install WHOOP app and wear the strap.",
+          "Ensure data uploads to WHOOP.",
+          "In X45, pick WHOOP and authorize access.",
+          "Use ‘Sync Now’ after a workout or sleep."
+        ]
+      },
+      "Oura Ring": {
+        note: "Pulls sleep/HRV/Readiness from Oura Cloud.",
+        videos: [
+          { title:"Set up Oura Ring", url: YT("oura ring setup pair") },
+          { title:"Share Oura data with apps", url: YT("oura ring connect third party app") }
+        ],
+        steps: [
+          "Install Oura app and pair the ring.",
+          "Allow background permissions.",
+          "In X45, connect Oura and approve permissions.",
+          "Wear overnight; check readiness next day."
+        ]
+      },
+      "Samsung Galaxy Fit": {
+        note: "Use Samsung Health.",
+        videos: [
+          { title:"Pair Galaxy Fit", url: YT("pair samsung galaxy fit wearable app") },
+          { title:"Enable Samsung Health data access", url: YT("samsung health permissions share data with apps") }
+        ],
+        steps: [
+          "Open Galaxy Wearable and add your Galaxy Fit.",
+          "Open Samsung Health → enable app data sharing.",
+          "Back in X45, run ‘Sync Now’."
+        ]
+      },
+      "Polar": {
+        note: "Links through Polar Flow.",
+        videos: [
+          { title:"Pair with Polar Flow", url: YT("polar flow pair device setup") },
+          { title:"Connect Polar Flow to apps", url: YT("polar flow connect third party app") }
+        ],
+        steps: [
+          "Install Polar Flow and pair your device.",
+          "In X45, choose Polar and link accounts.",
+          "Start an activity; sync to confirm."
+        ]
+      },
+      "Xiaomi Band": {
+        note: "Mi Fitness / Zepp Life (varies by model).",
+        videos: [
+          { title:"Set up Xiaomi Band", url: YT("xiaomi mi band setup pair") },
+          { title:"Share data to apps", url: YT("mi fitness zepp life share data with apps") }
+        ],
+        steps: [
+          "Install Mi Fitness (or Zepp Life) and pair.",
+          "Enable background activity for reliable sync.",
+          "Authorize X45 when prompted; run a test sync."
+        ]
+      },
+      "Huawei Watch": {
+        note: "Uses HUAWEI Health.",
+        videos: [
+          { title:"Pair in HUAWEI Health", url: YT("huawei watch pair huawei health") },
+          { title:"Allow background permissions", url: YT("huawei health background permissions android") }
+        ],
+        steps: [
+          "Install HUAWEI Health and pair.",
+          "Allow background/Bluetooth permissions.",
+          "In X45, connect Huawei (where supported).",
+          "Sync and verify steps/HR."
+        ]
+      },
+      "Letsfit": {
+        note: "Letsfit app + background sync.",
+        videos: [
+          { title:"Set up Letsfit", url: YT("letsfit watch setup app pair") }
+        ],
+        steps: [
+          "Install Letsfit app and pair.",
+          "Enable notification access/background activity.",
+          "Open X45 and run a test sync."
+        ]
+      },
+      "Yamay": {
+        note: "Often VeryFitPro/FitCloudPro (varies).",
+        videos: [
+          { title:"Pair with VeryFitPro", url: YT("veryfitpro setup pair watch") }
+        ],
+        steps: [
+          "Install the recommended companion app.",
+          "Pair the watch and enable background sync.",
+          "Return to X45 and sync."
+        ]
+      },
+      "Coros": {
+        note: "Coros app → authorize X45.",
+        videos: [
+          { title:"Set up Coros", url: YT("coros watch setup pair app") },
+          { title:"Link Coros to apps", url: YT("coros connect third party app") }
+        ],
+        steps: [
+          "Install Coros app and pair your watch.",
+          "Authorize Coros in X45 and test sync."
+        ]
+      },
+      "Lintelek": {
+        note: "VeryFitPro/FitCloudPro (by model).",
+        videos: [
+          { title:"Set up Lintelek", url: YT("lintelek fitness tracker setup") }
+        ],
+        steps: [
+          "Install the companion app noted in the manual.",
+          "Pair and enable background sync.",
+          "Open X45 and sync."
+        ]
+      },
+      "Amazfit": {
+        note: "Zepp (Amazfit) app + sharing.",
+        videos: [
+          { title:"Pair in Zepp (Amazfit)", url: YT("zepp amazfit pair setup") },
+          { title:"Share data with apps", url: YT("zepp amazfit share data with apps permissions") }
+        ],
+        steps: [
+          "Install Zepp and pair your device.",
+          "Allow Zepp to run in background.",
+          "Authorize X45 to read activity/HR.",
+          "Run ‘Sync Now’ in X45."
+        ]
+      },
+      "Other": {
+        note: "Generic companion-app flow.",
+        videos: [
+          { title:"Generic pairing guide", url: YT("how to pair fitness tracker to phone") }
+        ],
+        steps: [
+          "Install the manufacturer’s app and pair the device.",
+          "Enable background sync/notifications if asked.",
+          "Pick your brand in X45 when supported, or use ‘Other’.",
+          "Run ‘Sync Now’ to test data flow."
+        ]
+      }
+    };
+
+    /* ========= DOM references ========= */
+    const deviceSelect = document.getElementById("deviceSelect");
+    const modelSelect  = document.getElementById("modelSelect");
+    const colorSelect  = document.getElementById("colorSelect");
+    const devicePreview = document.getElementById("devicePreview");
+    const otherWrap = document.getElementById("otherWrap");
+    const otherDeviceInput = document.getElementById("otherDeviceInput");
+
+    const help      = document.getElementById("help");
+    const helpTitle = document.getElementById("helpTitle");
+    const helpBadge = document.getElementById("helpBadge");
+    const helpVids  = document.getElementById("helpVids");
+    const helpSteps = document.getElementById("helpSteps");
+    const helpNote  = document.getElementById("helpNote");
+
+    function renderHelp(brand){
+      const data = TUTORIALS[brand];
+      if(!data){
+        help.style.display="none";
+        return;
+      }
+      help.style.display="block";
+      helpTitle.textContent = `How to connect — ${brand}`;
+      helpBadge.textContent = "Quick Guide";
+      helpVids.innerHTML = "";
+      helpSteps.innerHTML = "";
+      helpNote.textContent = data.note || "";
+
+      (data.videos || []).forEach((v, i)=>{
+        const a = document.createElement("a");
+        a.className = "pill";
+        a.target = "_blank"; a.rel="noopener";
+        a.href = v.url;
+        a.textContent = "🎥 " + (v.title || `Tutorial ${i+1}`);
+        helpVids.appendChild(a);
+      });
+
+      (data.steps || []).forEach(s=>{
+        const li = document.createElement("li");
+        li.textContent = s;
+        helpSteps.appendChild(li);
+      });
+    }
+
+    function populateModels(device) {
+      modelSelect.innerHTML = '<option value="">Choose model</option>';
+      const cfg = DEVICE_CONFIG[device];
+      if (!cfg) {
+        modelSelect.style.display = 'none';
+        colorSelect.style.display = 'none';
+        return;
+      }
+      const modelKeys = Object.keys(cfg).filter(k => k !== '__noModel');
+      if (cfg["__noModel"] && modelKeys.length === 0) {
+        modelSelect.style.display = 'none';
+        populateColors(device, '');
+        return;
+      }
+      modelKeys.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m;
+        modelSelect.appendChild(opt);
+      });
+      modelSelect.style.display = modelKeys.length ? 'block' : 'none';
+      colorSelect.style.display = 'none';
+      colorSelect.value = '';
+    }
+
+    function populateColors(device, model) {
+      colorSelect.innerHTML = '<option value="">Choose color</option>';
+      const cfg = DEVICE_CONFIG[device];
+      if (!cfg) {
+        colorSelect.style.display = 'none';
+        return;
+      }
+      let modelKey = model && cfg[model] ? model : null;
+      if (!modelKey && cfg["__noModel"]) {
+        modelKey = "__noModel";
+      }
+      if (!modelKey) {
+        colorSelect.style.display = 'none';
+        return;
+      }
+      const colorCfg = cfg[modelKey];
+      const colorKeys = Object.keys(colorCfg);
+      if (colorKeys.length === 1 && colorKeys[0] === '__noColor') {
+        colorSelect.style.display = 'none';
+        return;
+      }
+      colorKeys.forEach(c => {
+        if (c === '__noColor') return;
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        colorSelect.appendChild(opt);
+      });
+      if (colorSelect.options.length > 1) {
+        colorSelect.style.display = 'block';
+      } else if (colorSelect.options.length === 1) {
+        colorSelect.style.display = 'block';
+      } else {
+        colorSelect.style.display = 'none';
       }
     }
 
-    initPage();
+    function toggleOtherUI(device){
+      if(device === "Other"){
+        otherWrap.style.display = "block";
+        modelSelect.style.display = "none";
+        colorSelect.style.display = "none";
+        modelSelect.value = "";
+        colorSelect.value = "";
+      } else {
+        otherWrap.style.display = "none";
+        otherDeviceInput.value = "";
+      }
+    }
 
-    // ========= Accept & Begin =========
-    acceptBtn.addEventListener('click', async () => {
-      localStorage.setItem('x45contract', 'accepted');
-      try{
-        const { data: { user } } = await client.auth.getUser();
-        if (user) {
-          await client
+    function updatePreview() {
+      const device = deviceSelect.value || localStorage.getItem('device') || '';
+      const model  = modelSelect.value || localStorage.getItem('device_model') || '';
+      const color  = colorSelect.value || localStorage.getItem('device_color') || '';
+      const otherName = otherDeviceInput.value || localStorage.getItem('device_other_name') || '';
+
+      if(device === "Other"){
+        devicePreview.src = '';
+        devicePreview.style.display = 'none';
+        return;
+      }
+
+      if (!selectionComplete(device, model, color, otherName)) {
+        devicePreview.src = '';
+        devicePreview.style.display = 'none';
+        return;
+      }
+
+      const src = imgForBrand(device, model, color);
+      if (src) {
+        devicePreview.src = src;
+        devicePreview.style.display = 'block';
+      } else {
+        devicePreview.src = '';
+        devicePreview.style.display = 'none';
+      }
+    }
+
+    // When device changes
+    deviceSelect.addEventListener("change", ()=>{
+      const device = deviceSelect.value;
+
+      modelSelect.value = '';
+      colorSelect.value = '';
+      otherDeviceInput.value = '';
+
+      if(device){
+        localStorage.setItem("device", device);
+        toggleOtherUI(device);
+
+        if(device !== "Other"){
+          populateModels(device);
+        }
+
+        renderHelp(device);
+      } else {
+        help.style.display = "none";
+        modelSelect.style.display = 'none';
+        colorSelect.style.display = 'none';
+        otherWrap.style.display = "none";
+      }
+
+      updatePreview();
+    });
+
+    // When model changes
+    modelSelect.addEventListener("change", ()=>{
+      const device = deviceSelect.value;
+      const model  = modelSelect.value;
+      populateColors(device, model);
+      updatePreview();
+    });
+
+    // When color changes
+    colorSelect.addEventListener("change", ()=>{
+      updatePreview();
+    });
+
+    // When Other name changes
+    otherDeviceInput.addEventListener("input", ()=>{
+      const val = otherDeviceInput.value.trim();
+      localStorage.setItem("device_other_name", val);
+      updatePreview();
+    });
+
+    // Prefill selects from localStorage if present
+    (function hydrateFromLocalStorage(){
+      const storedDevice = localStorage.getItem('device') || '';
+      const storedModel  = localStorage.getItem('device_model') || '';
+      const storedColor  = localStorage.getItem('device_color') || '';
+      const storedOther  = localStorage.getItem('device_other_name') || '';
+
+      if (storedDevice && deviceSelect.querySelector(`option[value="${storedDevice}"]`)) {
+        deviceSelect.value = storedDevice;
+        toggleOtherUI(storedDevice);
+
+        if(storedDevice === "Other"){
+          otherDeviceInput.value = storedOther;
+        } else {
+          populateModels(storedDevice);
+          if (storedModel && modelSelect.querySelector(`option[value="${storedModel}"]`)) {
+            modelSelect.value = storedModel;
+            populateColors(storedDevice, storedModel);
+            if (storedColor && colorSelect.querySelector(`option[value="${storedColor}"]`)) {
+              colorSelect.value = storedColor;
+            }
+          }
+        }
+
+        renderHelp(storedDevice);
+      }
+
+      updatePreview();
+    })();
+
+    /* ========= Continue / Skip ========= */
+    document.getElementById("continueBtn").addEventListener("click", async () => {
+      const device = deviceSelect.value;
+      let model = modelSelect.value;
+      let color = colorSelect.value;
+      const otherNameRaw = otherDeviceInput.value.trim();
+
+      if (!device) {
+        alert("Please select a device or skip.");
+        return;
+      }
+
+      // OTHER: require custom name, no model/color, no image
+      if(device === "Other"){
+        if(!otherNameRaw){
+          alert("Please enter your device name.");
+          otherDeviceInput.focus();
+          return;
+        }
+
+        model = '';
+        color = '';
+
+        localStorage.setItem("device", device);
+        localStorage.setItem("device_model", '');
+        localStorage.setItem("device_color", '');
+        localStorage.setItem("device_other_name", otherNameRaw);
+        localStorage.setItem("device_connected", 'true');
+
+        try {
+          const { data: { user }, error: userErr } = await client.auth.getUser();
+          if (user && !userErr) {
+            const { error: updErr } = await client
+              .from('x45_users')
+              .update({
+                device,
+                device_model: null,
+                device_color: null,
+                device_other_name: otherNameRaw,
+                device_connected: true
+              })
+              .eq('id', user.id);
+            if (updErr && updErr.code !== '42703') {
+              console.warn('DB update error:', updErr.message);
+            }
+          }
+        } catch (err) {
+          console.warn('Skipping DB update:', err?.message);
+        }
+
+        const q = new URLSearchParams({
+          coach,
+          name,
+          level,
+          goal,
+          meal_support: meal,
+          device,
+          device_model: '',
+          device_color: '',
+          device_other_name: otherNameRaw
+        }).toString();
+
+        // ✅ Proper redirect to Step 6: Commitment (no localhost)
+        window.location.href = `step6-commitment.html?${q}`;
+        return;
+      }
+
+      // Normal brands validation continues as before
+      const cfg = DEVICE_CONFIG[device] || {};
+      const hasNoModel = !!cfg["__noModel"];
+      const modelKeys = Object.keys(cfg).filter(k => k !== '__noModel');
+
+      if (!hasNoModel && modelKeys.length > 0 && !model) {
+        alert("Please select a model.");
+        return;
+      }
+      if (hasNoModel && !model) {
+        model = '';
+      }
+
+      let needColor = false;
+      let colorCfg = null;
+      if (model && cfg[model]) {
+        colorCfg = cfg[model];
+      } else if (!model && cfg["__noModel"]) {
+        colorCfg = cfg["__noModel"];
+      }
+
+      if (colorCfg) {
+        const colorKeys = Object.keys(colorCfg).filter(k => k !== '__noColor');
+        if (colorKeys.length > 0 && !color) {
+          needColor = true;
+        }
+      }
+      if (needColor) {
+        alert("Please select a color.");
+        return;
+      }
+
+      localStorage.setItem("device", device);
+      localStorage.setItem("device_model", model || '');
+      localStorage.setItem("device_color", color || '');
+      localStorage.setItem("device_other_name", '');
+      localStorage.setItem("device_connected", 'true');
+
+      try {
+        const { data: { user }, error: userErr } = await client.auth.getUser();
+        if (user && !userErr) {
+          const { error: updErr } = await client
             .from('x45_users')
             .update({
-              contract_accepted: true,
-              contract_at: new Date().toISOString()
+              device,
+              device_model: model || null,
+              device_color: color || null,
+              device_other_name: null,
+              device_connected: true
             })
             .eq('id', user.id);
+          if (updErr && updErr.code !== '42703') {
+            console.warn('DB update error:', updErr.message);
+          }
         }
-      } catch(e){
-        console.warn('Contract update error:', e?.message || e);
+      } catch (err) {
+        console.warn('Skipping DB update:', err?.message);
       }
 
-      // Go to Step 7 — fitness tests dashboard (live path)
       const q = new URLSearchParams({
         coach,
         name,
-        device
+        level,
+        goal,
+        meal_support: meal,
+        device,
+        device_model: model || '',
+        device_color: color || ''
       }).toString();
 
-      window.location.href = 'https://expressfitness.ca/x45-app/step7-fitness-tests.html?' + q;
+      // ✅ Proper redirect to Step 6: Commitment (no localhost)
+      window.location.href = `step6-commitment.html?${q}`;
+    });
+
+    document.getElementById("skipLink").addEventListener("click", () => {
+      const q = new URLSearchParams({
+        coach,
+        name,
+        level,
+        goal,
+        meal_support: meal
+      }).toString();
+
+      // ✅ Skip straight to Step 6: Commitment
+      window.location.href = `step6-commitment.html?${q}`;
     });
   </script>
 </body>
