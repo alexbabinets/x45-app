@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>X45 – Step 6: Commitment</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0a0b0d; --panel:#101216; --ink:#eef2f7; --muted:#9aa0a6;
+      --blue:#2f5f7a; --blueHover:#376e8e; --line:#1b1d22; --border:#1b1c20;
+      --ring: rgba(128,173,214,.25);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:Inter,system-ui,Arial,sans-serif;
+      text-align:center;
+    }
+    .page{
+      max-width:900px;
+      margin:auto;
+      padding:40px 20px 32px;
+    }
+    img.logo{
+      width:180px;
+      margin-bottom:20px;
+    }
+
+    #step-label{
+      font-size:36px;
+      font-weight:900;
+      margin:10px 0 4px;
+    }
+    .sub-heading{
+      font-size:18px;
+      color:#cbd5e1;
+      margin:0 0 8px;
+    }
+    .blue-heading{
+      font-size:22px;
+      font-weight:900;
+      color:#00b3ff;
+      text-decoration:underline;
+      margin:0 0 18px;
+    }
+
+    .coach-image{
+      width:160px;
+      border-radius:12px;
+      margin:12px auto 24px;
+      animation:breathe 3.5s ease-in-out infinite;
+      display:block;
+    }
+    @keyframes breathe{
+      0%{transform:scale(1)}
+      50%{transform:scale(1.03)}
+      100%{transform:scale(1)}
+    }
+
+    .dialogue{
+      font-size:18px;
+      line-height:1.6;
+      margin-bottom:24px;
+      max-width:760px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    .device{
+      color:#00b3ff;
+      font-weight:900;
+    }
+    .note{
+      color:#cbd5e1;
+      font-size:16px;
+      line-height:1.7;
+      max-width:740px;
+      margin:20px auto;
+    }
+
+    .btn{
+      border:1px solid var(--line);
+      background:var(--blue);
+      border-color:transparent;
+      color:#fff;
+      border-radius:12px;
+      padding:12px 28px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-weight:800;
+      font-size:17px;
+      margin-top:24px;
+    }
+    .btn:hover{
+      background:var(--blueHover);
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" class="logo" alt="X45 Logo" />
+
+    <div id="step-label">Your Commitment</div>
+    <div class="sub-heading">You’re almost there — this is the moment that changes everything.</div>
+    <div class="blue-heading">Step 6. Commitment</div>
+
+    <img id="coachImg" class="coach-image" alt="Your coach" />
+    <div class="dialogue" id="coach-dialogue"></div>
+
+    <div class="note">
+      Wearing your <span id="deviceName" class="device">device</span> daily lets X45 automatically track your activity.<br>
+      No manual logs — just move, live, and let technology do the counting.<br><br>
+      <strong>All I need now is your “yes.”</strong><br>
+      Tap below to start your X45 journey today.
+    </div>
+
+    <button class="btn" id="acceptBtn">Accept & Begin</button>
+  </div>
+
+  <script>
+    // ========= Supabase =========
+    const SUPABASE_URL = 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
+    const SUPABASE_KEY =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const coachImages = {
+      Zara: 'https://expressfitness.ca/wp-content/uploads/2025/04/zara.png',
+      Stephanie: 'https://expressfitness.ca/wp-content/uploads/2025/04/step.png',
+      Max: 'https://expressfitness.ca/wp-content/uploads/2025/04/MAX-NEW-1.png'
+    };
+
+    let coach = 'Zara';
+    let name  = 'friend';
+    let device = 'your device';
+
+    const coachImgEl = document.getElementById('coachImg');
+    const coachDialogueEl = document.getElementById('coach-dialogue');
+    const deviceNameEl = document.getElementById('deviceName');
+
+    function updateUI() {
+      coachImgEl.src = coachImages[coach] || coachImages.Zara;
+      deviceNameEl.textContent = device;
+
+      coachDialogueEl.innerHTML =
+        `Great choice, ${name}. Your <span class="device">${device}</span> is a perfect match for X45.<br>
+         We’re officially synced and ready. Now comes the promise — your daily 45.`;
+    }
+
+    // ========= Init: auth + profile =========
+    async function initPage() {
+      try {
+        const { data: { user }, error } = await client.auth.getUser();
+        if (!user || error) {
+          window.location.href = 'signin.html';
+          return;
+        }
+
+        const { data: profile, error: pErr } = await client
+          .from('x45_users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (!pErr && profile) {
+          coach  = profile.coach || coach;
+          name   = profile.first_name || name;
+          device = profile.device || device;
+
+          // keep everything aligned for next pages
+          localStorage.setItem('coach', coach);
+          localStorage.setItem('name', name);
+          localStorage.setItem('device', device);
+        } else {
+          const params = new URLSearchParams(window.location.search);
+          coach  = params.get('coach')  || localStorage.getItem('coach')  || coach;
+          name   = params.get('name')   || localStorage.getItem('name')   || name;
+          device = params.get('device') || localStorage.getItem('device') || device;
+
+          localStorage.setItem('coach', coach);
+          localStorage.setItem('name', name);
+          localStorage.setItem('device', device);
+        }
+      } catch (err) {
+        console.warn('Init error:', err?.message || err);
+        const params = new URLSearchParams(window.location.search);
+        coach  = params.get('coach')  || localStorage.getItem('coach')  || coach;
+        name   = params.get('name')   || localStorage.getItem('name')   || name;
+        device = params.get('device') || localStorage.getItem('device') || device;
+
+        localStorage.setItem('coach', coach);
+        localStorage.setItem('name', name);
+        localStorage.setItem('device', device);
+      }
+
+      updateUI();
+    }
+
+    initPage();
+
+    // ========= Accept & Begin =========
+    document.getElementById('acceptBtn').addEventListener('click', async () => {
+      localStorage.setItem('x45contract', 'accepted');
+
+      try {
+        const { data: { user }, error } = await client.auth.getUser();
+        if (user && !error) {
+          const { error: updErr } = await client
+            .from('x45_users')
+            .update({
+              contract_accepted: true,
+              contract_at: new Date().toISOString(),
+              device: localStorage.getItem('device') || device
+            })
+            .eq('id', user.id);
+
+          if (updErr && updErr.code !== '42703') {
+            console.warn('DB update error:', updErr.message);
+          }
+        }
+      } catch (err) {
+        console.warn('Contract update skipped:', err?.message || err);
+      }
+
+      // NEXT PAGE – live relative path (no localhost)
+      const query = new URLSearchParams({
+        coach,
+        name
+      }).toString();
+
+      window.location.href = `step7-fitness-tests.html?${query}`;
+    });
+  </script>
+</body>
+</html>
