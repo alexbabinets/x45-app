@@ -14,47 +14,127 @@
       --card:#0e1218; --cardBorder:#222832;
       --pill:#121820; --pillBorder:#2a3240;
       --badge:#1a2531;
+
+      --accent-device:#22c55e;   /* green / success */
+      --accent-model:#eab308;    /* yellow / amber */
+      --accent-color:#ec4899;    /* pink / magenta */
     }
     *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Arial,sans-serif;text-align:center}
-    .page{max-width:900px;margin:auto;padding:40px 20px}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--ink);
+      font-family:Inter,system-ui,Arial,sans-serif;
+      text-align:center;
+    }
+    .page{
+      max-width:900px;
+      margin:auto;
+      padding:40px 20px 60px;
+    }
     img.logo{width:180px;margin-bottom:20px}
 
-    #step-label{font-size:36px;font-weight:900;margin:10px 0 4px}
-    .sub-heading{font-size:18px;color:#cbd5e1;margin:0 0 8px}
-    .blue-heading{font-size:22px;font-weight:900;color:#00b3ff;text-decoration:underline;margin:0 0 18px}
-
-    .coach-image{width:160px;border-radius:12px;margin:12px auto 24px;animation:breathe 3.5s ease-in-out infinite;display:block}
-    @keyframes breathe{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
-
-    .dialogue{font-size:18px;line-height:1.6;margin-bottom:24px;max-width:760px;margin-left:auto;margin-right:auto}
-    .selects{display:grid;gap:12px;justify-content:center}
-    select{
-      background:#121419;border:1px solid var(--border);color:#fff;padding:14px 18px;
-      border-radius:10px;font-size:16px;width:100%;max-width:420px;outline:none;
-      margin:0 auto;text-align-last:center;
+    #step-label{
+      font-size:36px;
+      font-weight:900;
+      margin:10px 0 4px;
     }
-    select:focus{box-shadow:0 0 0 5px var(--ring)}
+    .sub-heading{
+      font-size:18px;
+      color:#cbd5e1;
+      margin:0 0 8px;
+    }
+    .blue-heading{
+      font-size:22px;
+      font-weight:900;
+      color:#00b3ff;
+      text-decoration:underline;
+      margin:0 0 18px;
+    }
 
-    /* Other device input (matches style) */
+    .coach-image{
+      width:160px;
+      border-radius:12px;
+      margin:12px auto 24px;
+      animation:breathe 3.5s ease-in-out infinite;
+      display:block;
+    }
+    @keyframes breathe{
+      0%{transform:scale(1)}
+      50%{transform:scale(1.03)}
+      100%{transform:scale(1)}
+    }
+
+    .dialogue{
+      font-size:18px;
+      line-height:1.6;
+      margin-bottom:24px;
+      max-width:760px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+
+    .selects{
+      display:grid;
+      gap:14px;
+      justify-content:center;
+      margin-bottom:10px;
+    }
+
+    select{
+      background:#121419;
+      border:2px solid var(--border);
+      color:#fff;
+      padding:16px 20px;
+      border-radius:16px;
+      font-size:17px;
+      width:100%;
+      max-width:460px;
+      outline:none;
+      margin:0 auto;
+      text-align-last:center;
+      box-shadow:0 0 0 1px #000;
+    }
+    select:focus{
+      box-shadow:0 0 0 4px var(--ring);
+    }
+
+    /* Bigger & colored per control */
+    #deviceSelect{
+      border-color:var(--accent-device);
+      box-shadow:0 0 0 1px rgba(34,197,94,0.5);
+    }
+    #modelSelect{
+      border-color:var(--accent-model);
+      box-shadow:0 0 0 1px rgba(234,179,8,0.45);
+    }
+    #colorSelect{
+      border-color:var(--accent-color);
+      box-shadow:0 0 0 1px rgba(236,72,153,0.5);
+    }
+
+    /* Other device input (matches style and size) */
     .other-wrap{
       display:none;
       width:100%;
-      max-width:420px;
+      max-width:460px;
       margin:0 auto;
     }
     .other-input{
       width:100%;
       background:#121419;
-      border:1px solid var(--border);
+      border:2px solid var(--border);
       color:#fff;
-      padding:14px 18px;
-      border-radius:10px;
-      font-size:16px;
+      padding:16px 20px;
+      border-radius:16px;
+      font-size:17px;
       outline:none;
       text-align:center;
+      box-shadow:0 0 0 1px rgba(148,163,184,0.4);
     }
-    .other-input:focus{box-shadow:0 0 0 5px var(--ring)}
+    .other-input:focus{
+      box-shadow:0 0 0 4px var(--ring);
+    }
     .other-hint{
       font-size:12px;
       color:var(--muted);
@@ -63,34 +143,111 @@
     }
 
     .device-preview{
-      width:160px;
-      max-width:70%;
+      width:180px;
+      max-width:75%;
       border-radius:12px;
       border:1px solid var(--cardBorder);
       background:#000;
       display:none;
-      margin:18px auto 22px;
+      margin:20px auto 22px;
       object-fit:contain;
     }
 
-    .btn{border:1px solid var(--line);background:var(--btn);border-color:transparent;
-      color:#fff;border-radius:12px;padding:12px 28px;cursor:pointer;display:inline-flex;
-      align-items:center;gap:8px;font-weight:800;font-size:17px}
+    .btn{
+      border:1px solid var(--line);
+      background:var(--btn);
+      border-color:transparent;
+      color:#fff;
+      border-radius:14px;
+      padding:14px 32px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-weight:800;
+      font-size:17px;
+      margin-top:10px;
+    }
     .btn:hover{background:var(--btnH)}
-    .skip{display:block;margin-top:16px;font-size:15px;color:#9aa0a6;text-decoration:underline;cursor:pointer}
+    .skip{
+      display:block;
+      margin-top:16px;
+      font-size:15px;
+      color:#9aa0a6;
+      text-decoration:underline;
+      cursor:pointer;
+    }
 
     /* Help panel */
-    .help{margin:20px auto 10px;max-width:760px;text-align:left;background:var(--card);border:1px solid var(--cardBorder);border-radius:14px;padding:14px}
-    .help-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
-    .help-title{font-weight:900;font-size:18px}
-    .badge{font-size:12px;border:1px solid var(--pillBorder);background:var(--badge);color:#cfe6ff;border-radius:999px;padding:6px 10px;font-weight:800}
-    .vids{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
-    .pill{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:999px;text-decoration:none;
-      background:var(--pill);border:1px solid var(--pillBorder);color:#e8f5ff;font-weight:800;font-size:13px}
+    .help{
+      margin:20px auto 10px;
+      max-width:760px;
+      text-align:left;
+      background:var(--card);
+      border:1px solid var(--cardBorder);
+      border-radius:14px;
+      padding:14px;
+    }
+    .help-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:8px;
+    }
+    .help-title{
+      font-weight:900;
+      font-size:18px;
+    }
+    .badge{
+      font-size:12px;
+      border:1px solid var(--pillBorder);
+      background:var(--badge);
+      color:#cfe6ff;
+      border-radius:999px;
+      padding:6px 10px;
+      font-weight:800;
+    }
+    .vids{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin:10px 0;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 12px;
+      border-radius:999px;
+      text-decoration:none;
+      background:var(--pill);
+      border:1px solid var(--pillBorder);
+      color:#e8f5ff;
+      font-weight:800;
+      font-size:13px;
+    }
     .pill:hover{border-color:#3a465a}
-    .steps{margin:10px 0 0;padding-left:18px}
-    .steps li{margin:6px 0;color:#d5deea;font-size:14px}
-    .muted{color:var(--muted);font-size:13px}
+    .steps{
+      margin:10px 0 0;
+      padding-left:18px;
+    }
+    .steps li{
+      margin:6px 0;
+      color:#d5deea;
+      font-size:14px;
+    }
+    .muted{
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    @media (max-width:480px){
+      #step-label{font-size:30px}
+      .dialogue{font-size:16px}
+      select{font-size:16px;padding:14px 16px}
+      .btn{width:100%;justify-content:center}
+    }
   </style>
 </head>
 <body>
@@ -159,7 +316,6 @@
         <div class="help-title" id="helpTitle">How to connect</div>
         <span class="badge" id="helpBadge">Quick Guide</span>
       </div>
-      <!-- Links (YouTube) appear ABOVE the steps -->
       <div class="vids" id="helpVids"></div>
       <ol class="steps" id="helpSteps"></ol>
       <div class="muted" id="helpNote" style="margin-top:8px"></div>
@@ -194,7 +350,7 @@
       `Nice work, ${name}. You’ve locked in your meal plan — consistency starts right there.<br>
        Next, choose your exact wearable below so I know how to sync you properly.`;
 
-    /* ========= EXACT DEVICE CONFIG (mirrored) ========= */
+    /* ========= DEVICE CONFIG ========= */
     const DEVICE_CONFIG = {
       "Apple Watch": {
         "Series 7": {
@@ -558,7 +714,6 @@
       return true;
     }
 
-    /* ========= Tutorials map (YouTube search links so they always open) ========= */
     const YT = (q) => `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
     const TUTORIALS = {
       "Apple Watch": {
@@ -749,7 +904,6 @@
       }
     };
 
-    /* ========= DOM references ========= */
     const deviceSelect = document.getElementById("deviceSelect");
     const modelSelect  = document.getElementById("modelSelect");
     const colorSelect  = document.getElementById("colorSelect");
@@ -896,7 +1050,6 @@
       }
     }
 
-    // When device changes
     deviceSelect.addEventListener("change", ()=>{
       const device = deviceSelect.value;
 
@@ -923,7 +1076,6 @@
       updatePreview();
     });
 
-    // When model changes
     modelSelect.addEventListener("change", ()=>{
       const device = deviceSelect.value;
       const model  = modelSelect.value;
@@ -931,19 +1083,16 @@
       updatePreview();
     });
 
-    // When color changes
     colorSelect.addEventListener("change", ()=>{
       updatePreview();
     });
 
-    // When Other name changes
     otherDeviceInput.addEventListener("input", ()=>{
       const val = otherDeviceInput.value.trim();
       localStorage.setItem("device_other_name", val);
       updatePreview();
     });
 
-    // Prefill selects from localStorage if present
     (function hydrateFromLocalStorage(){
       const storedDevice = localStorage.getItem('device') || '';
       const storedModel  = localStorage.getItem('device_model') || '';
@@ -973,7 +1122,6 @@
       updatePreview();
     })();
 
-    /* ========= Continue / Skip ========= */
     document.getElementById("continueBtn").addEventListener("click", async () => {
       const device = deviceSelect.value;
       let model = modelSelect.value;
@@ -985,7 +1133,6 @@
         return;
       }
 
-      // OTHER: require custom name, no model/color, no image
       if(device === "Other"){
         if(!otherNameRaw){
           alert("Please enter your device name.");
@@ -1035,12 +1182,10 @@
           device_other_name: otherNameRaw
         }).toString();
 
-        // ✅ Proper redirect to Step 6: Commitment (no localhost)
         window.location.href = `step6-commitment.html?${q}`;
         return;
       }
 
-      // Normal brands validation continues as before
       const cfg = DEVICE_CONFIG[device] || {};
       const hasNoModel = !!cfg["__noModel"];
       const modelKeys = Object.keys(cfg).filter(k => k !== '__noModel');
@@ -1110,7 +1255,6 @@
         device_color: color || ''
       }).toString();
 
-      // ✅ Proper redirect to Step 6: Commitment (no localhost)
       window.location.href = `step6-commitment.html?${q}`;
     });
 
@@ -1123,7 +1267,6 @@
         meal_support: meal
       }).toString();
 
-      // ✅ Skip straight to Step 6: Commitment
       window.location.href = `step6-commitment.html?${q}`;
     });
   </script>
