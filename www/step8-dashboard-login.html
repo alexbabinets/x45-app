@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>X45 — Dashboard (REAL VALUES ONLY)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0b0d; --panel:#0f1116; --panel2:#0e0f13; --divider:#1a1c22;
+    --ink:#e7ecf3; --muted:#9aa3ad; --ring:rgba(128,173,214,.22);
+    --btn:#263244; --btnH:#2d3a51; --btnDis:#1b2230;
+    /* exact color map (kept for future use) */
+    --cardio-excellent:#4CAF50; --cardio-good:#3AA6FF; --cardio-above:#7DD3FC; --cardio-average:#F2C12E; --cardio-below:#F59E0B; --cardio-poor:#FF9800; --cardio-verypoor:#FF0000;
+    --push-excellent:#4CAF50; --push-good:#3AA6FF; --push-minimum:#A855F7; --push-belowmin:#FACC15; --push-poor:#FF0000;
+    --squat-excellent:#4CAF50; --squat-good:#3AA6FF; --squat-above:#7DD3FC; --squat-average:#FACC15; --squat-below:#F59E0B; --squat-poor:#E53935; --squat-verypoor:#FF0000;
+    --bf-low:#FB8C00; --bf-excellent:#4CAF50; --bf-good:#3AA6FF; --bf-fair:#FACC15; --bf-poor:#E53935; --bf-danger:#FF0000;
+    /* Footer “dull color” palette */
+    --nav-dashboard:#4c2a3a; /* distinct maroon tone */
+    --nav-dashboard-hover:#5f3348;
+    --nav-tests:#2a3a4c;
+    --nav-tests-hover:#33485f;
+    --nav-workouts:#2b3f38;
+    --nav-workouts-hover:#355046;
+    --nav-meals:#4a3a2a;
+    --nav-meals-hover:#5a4734;
+    --nav-settings:#3b314d;
+    --nav-settings-hover:#4a3d63;
+    --nav-ink:#e8eef7;
+    --nav-ink-dim:#d7e3f2;
+    /* Device */
+    --dev-surface:#0f1116; --dev-border:#232833; --dev-chip:#12161c; --dev-chip-border:#2a2f36;
+    --bar-track:#0b0f14;
+    /* Device Changer */
+    --border: #1a1c22;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  .page{max-width:1160px;margin:18px auto;padding:0 14px 120px;display:flex;flex-direction:column;gap:14px}
+  .brand-bar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+  .brand img{height:22px;display:block}
+  .hello{text-align:center;color:var(--muted);font-weight:900;margin-top:10px;font-size:18px}
+  .coach{display:flex;gap:14px;align-items:center;background:linear-gradient(180deg,#101217,#0d0f13);padding:12px;border-radius:16px;border:1px solid var(--divider)}
+  .coach-portrait{width:78px;height:94px;border-radius:12px;overflow:hidden;background:#0b0d11;border:1px solid var(--divider);box-shadow:0 0 0 6px var(--ring)}
+  .coach-portrait img{width:100%;height:100%;object-fit:cover;object-position:center top}
+  .coach h1{margin:0 0 4px;font-size:18px}
+  .coach p{margin:0;color:var(--muted);font-size:14px}
+  .cta{display:inline-flex;gap:8px;align-items:center;font-weight:800;font-size:13px;padding:10px 14px;border-radius:10px;background:#12141a;border:1px solid var(--divider);color:#dfe8f5;cursor:pointer}
+  .cta.primary{background:var(--btn);border-color:transparent;color:#fff}
+  .cta.primary:hover{background:var(--btnH)}
+  .cta.small{padding:8px 12px;font-size:12px}
+  .cta.blue{background:linear-gradient(180deg, rgba(58,166,255,.20), rgba(58,166,255,.06));border-color:rgba(58,166,255,.35);box-shadow:0 0 0 2px rgba(58,166,255,.18) inset;color:#dff0ff}
+  .cta.amber{background:linear-gradient(180deg, rgba(245,158,11,.20), rgba(245,158,11,.06));border-color:rgba(245,158,11,.35);box-shadow:0 0 0 2px rgba(245,158,11,.18) inset;color:#fff2da}
+  .cta.green{background:linear-gradient(180deg, rgba(34,197,94,.22), rgba(34,197,94,.06));border-color:rgba(34,197,94,.35);box-shadow:0 0 0 2px rgba(34,197,94,.18) inset;color:#e8ffef}
+  .hero{background:linear-gradient(180deg,#101217,#0d0f13);border:1px solid var(--divider);border-radius:20px;padding:18px;text-align:center}
+  .x45-shell{margin:0 auto 8px;width:clamp(170px,26vw,240px);aspect-ratio:1/1;border-radius:50%;position:relative;display:block;background:transparent;border:none;cursor:pointer}
+  .x45-ring-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border-radius:50%;opacity:.85}
+  .x45-mark{position:absolute;inset:0;margin:auto;width:52%;height:auto;object-fit:contain;filter:drop-shadow(0 6px 18px rgba(0,0,0,.6))}
+  .primaryBtn{margin:8px auto 0;display:block;background:var(--btn);border:none;color:#fff;font-weight:900;border-radius:999px;padding:12px 18px;cursor:pointer}
+  .primaryBtn:hover{background:var(--btnH)}
+  .hint{font-size:12px;color:var(--muted);text-align:center;margin-top:6px}
+  .card{background:var(--panel);border:1px solid var(--divider);border-radius:16px;padding:16px}
+  .card.alt{background:var(--panel2)}
+  .card h2{margin:0 0 8px;font-size:18px}
+  .sub{font-size:12px;color:var(--muted)}
+  /* Device Card */
+  .deviceCard{background:var(--dev-surface);border:1px solid var(--dev-border);border-radius:16px;padding:14px}
+  .dev-header{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center}
+  .dev-img{width:105px;height:105px;border-radius:15px;overflow:hidden;border:1px solid #2a2f36;background:#0c0f14;display:flex;align-items:center;justify-content:center;position:relative}
+  .dev-img.real-image{background:#ffffff;border-color:#e5e7eb;}
+  .dev-img::before{content:'';position:absolute;inset:0;border-radius:15px;box-shadow:0 0 0 1px rgba(128,173,214,.1);pointer-events:none}
+  .dev-img.real-image::before{box-shadow:0 0 0 1px rgba(0,0,0,.1);}
+  .dev-img img{width:100%;height:100%;object-fit:contain;display:block;padding:0}
+  .dev-img.real-image img{width:85%;height:85%;object-fit:contain}
+  .dev-title{display:flex;flex-direction:column;gap:4px}
+  .dev-name{font-weight:900;font-size:18px;letter-spacing:.2px}
+  .dev-meta{font-size:12px;color:#cbd5e1}
+  .dev-badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .badge{font-size:12px;border:1px solid var(--dev-chip-border);background:var(--dev-chip);border-radius:999px;padding:6px 10px;font-weight:800;display:inline-flex;gap:6px;align-items:center}
+  .badge.good{border-color:rgba(34,197,94,.25);box-shadow:0 0 0 2px rgba(34,197,94,.15) inset;color:#ccffdd}
+  .badge.warn{border-color:rgba(245,158,11,.25);box-shadow:0 0 0 2px rgba(245,158,11,.15) inset;color:#ffe9c7}
+  .badge.bad{border-color:rgba(239,68,68,.25);box-shadow:0 0 0 2px rgba(239,68,68,.15) inset;color:#ffd9d9}
+  .dev-body{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  @media(max-width:820px){ .dev-body{grid-template-columns:1fr} }
+  .kv{border:1px solid #1f2631;background:#0c1116;border-radius:12px;padding:12px}
+  .kv h3{margin:0 0 6px;font-size:14px;color:#cbd5e1}
+  .kvGrid{display:grid;grid-template-columns:repeat(2,minmax(120px,1fr));gap:8px}
+  .kvItem{display:flex;align-items:center;justify-content:space-between;border:1px solid #1e2330;background:#0b0f14;border-radius:10px;padding:10px 12px}
+  .kvLabel{font-size:13px;color:#b9c3d1}
+  .kvValue{font-weight:900;font-size:18px}
+  .bar{height:12px;border-radius:999px;background:var(--bar-track);overflow:hidden;border:1px solid #1f2430}
+  .bar>span{display:block;height:100%;background:linear-gradient(90deg,#22c55e,#00b3ff);width:0%}
+  .dev-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;justify-content:flex-end}
+  .plugTip{font-size:12px;color:#cbd5e1;margin-top:10px}
+  /* Device Changer */
+  .device-changer{display:none;background:var(--panel);border:1px solid var(--divider);border-radius:14px;padding:24px;margin:20px 0 0 0;}
+  .device-changer.show{display:block;}
+  .selects{display:grid;gap:12px;justify-content:center;}
+  select{background:#121419;border:1px solid var(--divider);color:#fff;padding:14px 18px;border-radius:10px;font-size:16px;width:100%;max-width:420px;outline:none;margin:0 auto;text-align-last:center;}
+  select:focus{box-shadow:0 0 0 5px var(--ring)}
+  /* Footer nav */
+  .footer{
+    position:fixed;bottom:12px;left:50%;transform:translateX(-50%);
+    width:min(740px,94%);display:grid;grid-template-columns:repeat(5,1fr);gap:10px;
+    background:rgba(15,16,20,.88);backdrop-filter:blur(10px);
+    border:1px solid var(--divider);border-radius:14px;padding:10px
+  }
+  .footer a{
+    --bg:#12141a; --bgH:#1a1e26;
+    display:flex;justify-content:center;align-items:center;padding:12px;border-radius:12px;
+    background:var(--bg);border:1px solid rgba(255,255,255,.08);
+    color:var(--nav-ink);font-weight:900;font-size:14px;text-decoration:none;
+    letter-spacing:.2px; transition:transform .08s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease, color .12s ease;
+    box-shadow:0 1px 0 rgba(0,0,0,.35) inset;
+  }
+  /* Order: 1-Dashboard, 2-Tests, 3-Workouts, 4-Meals, 5-Settings */
+  .footer a:nth-child(1){ --bg:var(--nav-dashboard); --bgH:var(--nav-dashboard-hover); color:#ffe6ef; }
+  .footer a:nth-child(2){ --bg:var(--nav-tests); --bgH:var(--nav-tests-hover); color:var(--nav-ink-dim); }
+  .footer a:nth-child(3){ --bg:var(--nav-workouts); --bgH:var(--nav-workouts-hover); color:#e9fff3; }
+  .footer a:nth-child(4){ --bg:var(--nav-meals); --bgH:var(--nav-meals-hover); color:#fff1db; }
+  .footer a:nth-child(5){ --bg:var(--nav-settings); --bgH:var(--nav-settings-hover); color:#efe9ff; }
+  .footer a:hover{
+    transform:translateY(-1px);
+    background:var(--bgH);
+    border-color:rgba(255,255,255,.14);
+    box-shadow:0 6px 16px rgba(0,0,0,.35), 0 0 0 2px rgba(255,255,255,.05) inset;
+  }
+  .footer a:active{ transform:translateY(0); box-shadow:0 2px 8px rgba(0,0,0,.35), 0 0 0 2px rgba(255,255,255,.06) inset; }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="brand-bar">
+      <div></div>
+      <a class="brand" href="#"><img alt="Express Fitness" src="https://expressfitness.ca/wp-content/uploads/2025/09/Black-FULL-Logo-50.png"></a>
+      <div></div>
+    </div>
+    <div id="hello" class="hello">Welcome back 👋</div>
+    <section class="coach">
+      <div class="coach-portrait"><img id="coachImg" alt="Coach"></div>
+      <div>
+        <h1 id="coachTitle">Your coach is here.</h1>
+        <p class="muted">“Tiny wins stack. I’ll help you get the next one.”</p>
+        <button id="chatCoachBtn" class="cta">💬 Chat with Coach</button>
+      </div>
+    </section>
+    <section class="hero" aria-label="Primary action">
+      <button id="x45btn" class="x45-shell" aria-label="Start workout now">
+        <img class="x45-ring-img" src="https://expressfitness.ca/wp-content/uploads/2025/09/black-button-icon-image-pixabay-39-1.png" alt="">
+        <img class="x45-mark" alt="X45" src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png">
+      </button>
+      <button id="workoutNow" class="primaryBtn">Let’s Workout Now</button>
+      <div class="hint">Tap the X45 button or the button above to start.</div>
+    </section>
+    <!-- DEVICE + ACTIVITY -->
+    <section class="deviceCard" id="deviceCard">
+      <div class="dev-header">
+        <div class="dev-img">
+          <img id="devImage" alt="Device image" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTA1IiBoZWlnaHQ9IjEwNSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiByeD0iNy41IiBmaWxsPSIjMWExMjEyIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMC41Ii8+PHRleHQgeD0iNTIuNSIgeT0iNTIuNSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iI2ZmZmZmZiIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE1IiBmb250LXdlaWdodD0iYm9sZCI+TG9hZGluZy4uLjwvdGV4dD48L3N2Zz4=" />
+        </div>
+        <div class="dev-title">
+          <div class="dev-name" id="devName">Not connected</div>
+          <div class="dev-meta" id="devMeta">Last sync — • Battery —</div>
+        </div>
+        <div class="dev-badges">
+          <span id="devStatus" class="badge warn">Status: Not Connected</span>
+          <span id="devBatteryBadge" class="badge">Battery: —</span>
+        </div>
+      </div>
+      <div class="dev-body">
+        <div class="kv">
+          <h3>Today</h3>
+          <div class="kvGrid">
+            <div class="kvItem"><span class="kvLabel">Steps</span><span class="kvValue" id="stepsToday">0</span></div>
+            <div class="kvItem"><span class="kvLabel">Calories</span><span class="kvValue" id="kcalToday">0</span></div>
+            <div class="kvItem"><span class="kvLabel">Distance</span><span class="kvValue" id="distanceToday">0 km</span></div>
+            <div class="kvItem"><span class="kvLabel">Active Minutes</span><span class="kvValue" id="activeMins">0</span></div>
+          </div>
+          <div style="margin-top:10px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <span style="font-size:13px;color:#cbd5e1">Battery</span>
+              <span id="batteryPctText" style="font-size:13px;color:#cbd5e1">—</span>
+            </div>
+            <div class="bar"><span id="batteryBar"></span></div>
+          </div>
+        </div>
+        <div class="kv">
+          <h3>Health</h3>
+          <div class="kvGrid">
+            <div class="kvItem"><span class="kvLabel">HR (current)</span><span class="kvValue" id="hrNow">—</span></div>
+            <div class="kvItem"><span class="kvLabel">Resting HR</span><span class="kvValue" id="hrRest">—</span></div>
+            <div class="kvItem"><span class="kvLabel">Sleep (last night)</span><span class="kvValue" id="sleepLast">—</span></div>
+            <div class="kvItem"><span class="kvLabel">VO₂max</span><span class="kvValue" id="vo2maxVal">—</span></div>
+          </div>
+          <div class="plugTip" id="devTip" style="display:none">
+            <strong>Tip:</strong> Wear your device snugly and keep Bluetooth on for faster syncs.
+          </div>
+        </div>
+      </div>
+      <div class="dev-actions">
+        <button id="btnSync" class="cta blue">↻ Sync Now</button>
+        <button id="btnChange" class="cta amber">Change Device</button>
+        <button id="btnSettings" class="cta green">Open Settings</button>
+      </div>
+      <!-- Inline Device Changer -->
+      <div id="deviceChanger" class="device-changer">
+        <div style="text-align:center; margin-bottom:16px;">
+          <h3 style="margin:0; font-size:20px; color:var(--ink);">Update Your Device</h3>
+          <p style="margin:4px 0 0 0; color:var(--muted); font-size:14px;">Select your wearable, model, and color.</p>
+        </div>
+        <div class="selects">
+          <select id="deviceSelect" aria-label="Choose your device">
+            <option value="">Choose your device</option>
+            <option value="Apple Watch">Apple Watch</option>
+            <option value="Fitbit">Fitbit</option>
+            <option value="Garmin">Garmin</option>
+            <option value="WHOOP">WHOOP</option>
+            <option value="Oura Ring">Oura Ring</option>
+            <option value="Samsung Galaxy Fit">Samsung Galaxy Fit</option>
+            <option value="Polar">Polar</option>
+            <option value="Xiaomi Band">Xiaomi Band</option>
+            <option value="Huawei Watch">Huawei Watch</option>
+            <option value="Amazfit">Amazfit</option>
+            <option value="Letsfit">Letsfit</option>
+            <option value="Yamay">Yamay</option>
+            <option value="Coros">Coros</option>
+            <option value="Lintelek">Lintelek</option>
+            <option value="Other">Other</option>
+          </select>
+          <select id="modelSelect" style="display:none;" aria-label="Choose model">
+            <option value="">Choose model</option>
+          </select>
+          <select id="colorSelect" style="display:none;" aria-label="Choose color">
+            <option value="">Choose color</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:16px;">
+          <button id="applyDeviceBtn" class="cta primary">Apply Changes</button>
+          <button id="cancelDeviceBtn" class="cta">Cancel</button>
+        </div>
+      </div>
+    </section>
+    <!-- Last Workout -->
+    <section class="card"><h2>Last Workout</h2><div id="lastWorkoutMeta" class="sub">—</div></section>
+  </div>
+  <nav class="footer" aria-label="nav">
+    <!-- all LOCAL links now, so this works on localhost and on expressfitness.ca/x45-app -->
+    <a href="step8-dashboard-login.html">Dashboard</a>
+    <a href="tests.html">Tests</a>
+    <a href="lets-workout-now.html">Workouts</a>
+    <a href="meals.html">Meals</a>
+    <a href="settings.html">Settings</a>
+  </nav>
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // SVG fallback icon (used when we don't have a real photo)
+  function generateDeviceIcon(device, model = '', color = '', width = 105, height = 105) {
+    const fullText = [device, model, color].filter(Boolean).join(' ');
+    let svg;
+    const scale = width / 84;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const textColor = '#ffffff';
+    const bgColor = '#232833';
+    let parts = fullText.split(' ');
+    let lines = [parts[0], parts.slice(1).join(' ')].filter(Boolean);
+    const baseFontSize = lines.length > 1 ? 9 : 12;
+    const fontSize = baseFontSize * scale;
+    const spacing = 2 * scale;
+    const lineHeight = fontSize + spacing;
+    let textEls = lines.map((line, i) => {
+      const y = centerY + (i - (lines.length - 1) / 2) * lineHeight;
+      return `<text x="${centerX}" y="${y}" dominant-baseline="middle" text-anchor="middle" fill="${textColor}" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="bold">${line}</text>`;
+    }).join('');
+    const rx = 6 * scale;
+    const stroke = 1.5 * scale;
+    svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" rx="${rx}" fill="${bgColor}" stroke="${textColor}" stroke-width="${stroke}"/>
+      ${textEls}
+    </svg>`;
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+  }
+
+  // EXACT mapping of Device + Model + Color -> Image URL
+  // Keys:
+  //   DEVICE_CONFIG[device][model][color] = url
+  // Special markers:
+  //   "__noModel"  => device has models omitted in UI
+  //   "__noColor"  => model has no color choice in UI
+  const DEVICE_CONFIG = {
+    "Apple Watch": {
+      "Series 7": {
+        "Blue": "https://m.media-amazon.com/images/I/61X6oBjkFNL._AC_SL1500_.jpg",
+        "Midnight": "https://m.media-amazon.com/images/I/71CdiPOxohL._AC_SL1500_.jpg",
+        "Starlight": "https://m.media-amazon.com/images/I/51xh7tngF7L._AC_SL1000_.jpg",
+        "Green": "https://m.media-amazon.com/images/I/71TORNQIJ4L._AC_SL1500_.jpg",
+        "Red": "https://m.media-amazon.com/images/I/71XohCtGXHL._AC_SL1500_.jpg",
+        "Silver": "https://m.media-amazon.com/images/I/51PFo22nfpL._AC_SL1000_.jpg",
+        "Space Black": "https://m.media-amazon.com/images/I/51atwKS6EiL._AC_SL1000_.jpg"
+      },
+      "Series 8": {
+        "Starlight": "https://m.media-amazon.com/images/I/71rimxfInpL._AC_SL1500_.jpg",
+        "Midnight": "https://m.media-amazon.com/images/I/71XMTLtZd5L._AC_SL1500_.jpg",
+        "Red": "https://m.media-amazon.com/images/I/71DfMwITnaL._AC_SL1500_.jpg",
+        "Silver": "https://m.media-amazon.com/images/I/71Hr-vPvJuL._AC_SL1500_.jpg"
+      },
+      "Series 9": {
+        "Red": "https://m.media-amazon.com/images/I/712JCP+XbEL._AC_SL1500_.jpg",
+        "Gold": "https://m.media-amazon.com/images/I/71da0k24mhL._AC_SL1500_.jpg",
+        "Pink": "https://m.media-amazon.com/images/I/61FxhPzi4oL._AC_SL1200_.jpg",
+        "Midnight": "https://m.media-amazon.com/images/I/71aXGgNCE9L._AC_SL1500_.jpg",
+        "Starlight": "https://m.media-amazon.com/images/I/71DORreQX+L._AC_SL1500_.jpg",
+        "Silver": "https://m.media-amazon.com/images/I/71cANOnqpHL._AC_SL1500_.jpg"
+      },
+      "Series 10": {
+        "Black": "https://m.media-amazon.com/images/I/71+ebO-T8NL._AC_SL1500_.jpg",
+        "Silver": "https://m.media-amazon.com/images/I/515bMBmasSL._AC_SL1200_.jpg",
+        "Gold": "https://m.media-amazon.com/images/I/716zbElG8NL._AC_SL1500_.jpg",
+        "Rose Gold": "https://m.media-amazon.com/images/I/61i3ax+W1sL._AC_SL1500_.jpg",
+        "Slate": "https://m.media-amazon.com/images/I/61wLzJ2s5JL._AC_SL1500_.jpg",
+        "Natural": "https://m.media-amazon.com/images/I/81T+JXTBfFL._AC_SL1500_.jpg"
+      },
+      "Ultra": {
+        "Titanium": "https://m.media-amazon.com/images/I/6165pya85SL._AC_SL1500_.jpg",
+        "Space Gray": "https://m.media-amazon.com/images/I/61bRxzilc+L._AC_SL1500_.jpg",
+        "Silver": "https://m.media-amazon.com/images/I/71CEEe2ehuL._AC_SL1500_.jpg",
+        "Natural": "https://m.media-amazon.com/images/I/81Xz6Fx079L._AC_SL1500_.jpg",
+        "Black": "https://m.media-amazon.com/images/I/81MbFmh-M2L._AC_SL1500_.jpg"
+      },
+      "SE": {
+        "Space Gray": "https://m.media-amazon.com/images/I/618HSW6un3L._AC_SL1500_.jpg",
+        "Silver": "https://m.media-amazon.com/images/I/71Ou9Fl-eXL._AC_SL1500_.jpg",
+        "Gold": "https://m.media-amazon.com/images/I/81XIJVqW-2L._AC_SL1500_.jpg",
+        "Midnight": "https://m.media-amazon.com/images/I/71BZ5AXoxmL._AC_SL1500_.jpg",
+        "Starlight": "https://m.media-amazon.com/images/I/61Ni41KYxDL._AC_SL1500_.jpg"
+      }
+    },
+    "Fitbit": {
+      "Inspire 3": {
+        "__noColor": "https://m.media-amazon.com/images/I/61UWlMIuyLL._AC_SL1500_.jpg"
+      },
+      "Charge 6": {
+        "Black": "https://m.media-amazon.com/images/I/61ZtqtvoD2L._AC_SL1500_.jpg",
+        "Silver": "https://m.media-amazon.com/images/I/61wn2jfhBkL._AC_SL1500_.jpg"
+      },
+      "Versa 4": {
+        "Black": "https://m.media-amazon.com/images/I/61jUiN1bCrL._AC_SL1500_.jpg",
+        "Cooper Rose": "https://m.media-amazon.com/images/I/61EDq8HCXgL._AC_SL1500_.jpg",
+        "Platinum": "https://m.media-amazon.com/images/I/61ZYteSkDvL._AC_SL1500_.jpg"
+      },
+      "Sense 2": {
+        "Graphite": "https://m.media-amazon.com/images/I/51GeUyZUB9L._AC_SL1000_.jpg",
+        "Platinum": "https://m.media-amazon.com/images/I/61Q79ulDs6L._AC_SL1500_.jpg",
+        "Pale Gold": "https://m.media-amazon.com/images/I/61c1QC4lF-L._AC_SL1500_.jpg"
+      }
+    },
+    "Garmin": {
+      "Forerunner 265": {
+        "Black": "https://m.media-amazon.com/images/I/71W+S88m5JL._AC_SL1500_.jpg",
+        "Aqua and Black": "https://m.media-amazon.com/images/I/71RKd0UuTTL._AC_SL1500_.jpg",
+        "Whitestone and Tidal Blue": "https://m.media-amazon.com/images/I/71iSHugswGL._AC_SL1500_.jpg"
+      },
+      "Forerunner 265S": {
+        "Black and Amp Yellow": "https://m.media-amazon.com/images/I/71p4pHfN3BL._AC_SL1500_.jpg",
+        "Light Pink and Power Grey": "https://m.media-amazon.com/images/I/71UUm1mOhjL._AC_SL1500_.jpg",
+        "Whitestone and Neo Tropic": "https://m.media-amazon.com/images/I/71-wnp+C-eL._AC_SL1500_.jpg"
+      },
+      "Venu 3": {
+        "Steel Bezel": "https://m.media-amazon.com/images/I/517RF8gjAbL._AC_SL1000_.jpg",
+        "Silver Bezel": "https://m.media-amazon.com/images/I/51zsA4NgoQL._AC_SL1000_.jpg"
+      },
+      "Venu 3S": {
+        "Soft Gold Bezel": "https://m.media-amazon.com/images/I/61EBinZZ7xL._AC_SL1500_.jpg",
+        "Slate Bezel": "https://m.media-amazon.com/images/I/61W9pa-ENwL._AC_SL1500_.jpg"
+      },
+      "Fenix 7": {
+        "Black": "https://m.media-amazon.com/images/I/71js3xxPb7L._AC_SL1500_.jpg",
+        "Fog Gray": "https://m.media-amazon.com/images/I/71hkemCxOLL._AC_SL1500_.jpg"
+      },
+      "Fenix 7S Pro": {
+        "Soft Gold": "https://m.media-amazon.com/images/I/71GqkLYDQaL._AC_SL1500_.jpg"
+      },
+      "Fenix 8 Pro": {
+        "Carbon Grey": "https://m.media-amazon.com/images/I/61vFRwSLaoL._AC_SL1500_.jpg",
+        "Titanium": "https://m.media-amazon.com/images/I/61GpbuABckL._AC_SL1500_.jpg",
+        "Graphite": "https://m.media-amazon.com/images/I/61GpbuABckL._AC_SL1500_.jpg"
+      }
+    },
+    "WHOOP": {
+      "5.0": {
+        "Silver": "https://m.media-amazon.com/images/I/61AMMnmroeL._AC_SL1500_.jpg",
+        "Black": "https://m.media-amazon.com/images/I/61Fe+1-71-L._AC_SL1500_.jpg"
+      }
+    },
+    "Oura Ring": {
+      "Gen 3": {
+        "Silver": "https://m.media-amazon.com/images/I/61FS1+mDc+L._AC_SL1500_.jpg",
+        "Black": "https://m.media-amazon.com/images/I/61tv2SSCDlL._AC_SL1500_.jpg",
+        "Gold": "https://m.media-amazon.com/images/I/61gcIPGWWzL._AC_SL1500_.jpg",
+        "Rose Gold": "https://m.media-amazon.com/images/I/61fEFHjsTDL._AC_SL1500_.jpg",
+        "Brushed Titanium": "https://m.media-amazon.com/images/I/61+bRb7T25L._AC_SL1500_.jpg",
+        "Stealth": "https://m.media-amazon.com/images/I/61pHtQLDz4L._AC_SL1500_.jpg"
+      }
+    },
+    "Samsung Galaxy Fit": {
+      "Fit3": {
+        "Black": "https://m.media-amazon.com/images/I/5163cMsZUsL._AC_SL1500_.jpg",
+        "Pink": "https://m.media-amazon.com/images/I/51wj8Fa+BkL._AC_SL1080_.jpg",
+        "Silver": "https://m.media-amazon.com/images/I/615By15noiL._AC_SL1500_.jpg"
+      }
+    },
+    "Polar": {
+      "Vantage V3": {
+        "Black": "https://m.media-amazon.com/images/I/51Cf-tSvxHL._AC_SL1001_.jpg"
+      },
+      "Vantage V2": {
+        "Silver": "https://m.media-amazon.com/images/I/61xBs2VSztL._AC_SL1080_.jpg"
+      },
+      "Grit X2 Pro": {
+        "Black": "https://m.media-amazon.com/images/I/81hPXOvSJ+L._AC_SL1500_.jpg",
+        "Titan": "https://m.media-amazon.com/images/I/81gwe1pl1qL._AC_SL1500_.jpg",
+        "Stone Gray": "https://m.media-amazon.com/images/I/71goOzCYmNL._AC_SL1500_.jpg",
+        "Stainless Steel": "https://m.media-amazon.com/images/I/718hKkhDeZL._AC_SL1500_.jpg"
+      },
+      "Ignite 3": {
+        "Black": "https://m.media-amazon.com/images/I/61PX3bTEnfL._AC_SL1448_.jpg",
+        "Titanium": "https://m.media-amazon.com/images/I/71r3bl13+oL._AC_SL1500_.jpg",
+        "Gold": "https://m.media-amazon.com/images/I/61SIOGizMxL._AC_SL1448_.jpg"
+      }
+    },
+    "Xiaomi Band": {
+      "Smart Band 9": {
+        "Black": "https://m.media-amazon.com/images/I/61F1N0dIXvL._AC_SL1500_.jpg"
+      },
+      "Smart Band 10": {
+        "Black": "https://m.media-amazon.com/images/I/51XrOqJxTVL._AC_SL1000_.jpg",
+        "Silver": "https://m.media-amazon.com/images/I/613hB4kCooL._AC_SL1500_.jpg"
+      }
+    },
+    "Huawei Watch": {
+      "FIT 4": {
+        "Black": "https://m.media-amazon.com/images/I/516mZ64p7rL._AC_.jpg",
+        "Gray": "https://m.media-amazon.com/images/I/61E1CCsagKL._AC_.jpg",
+        "Purple": "https://m.media-amazon.com/images/I/51Fda3JcQcL._AC_.jpg",
+        "White": "https://m.media-amazon.com/images/I/51sXdVvq0rL._AC_.jpg"
+      },
+      "FIT 4 Pro": {
+        "Green": "https://m.media-amazon.com/images/I/61aSZoTc0vL._AC_.jpg",
+        "Blue": "https://m.media-amazon.com/images/I/5171QkUTuyL._AC_.jpg",
+        "Black": "https://m.media-amazon.com/images/I/51T81iVgl0L._AC_.jpg"
+      },
+      "FIT 3": {
+        "Silver": "https://m.media-amazon.com/images/I/819RHdi5tWL._AC_SL1500_.jpg",
+        "Black": "https://m.media-amazon.com/images/I/71qth-es3nL._AC_SL1500_.jpg",
+        "Pink": "https://m.media-amazon.com/images/I/719ZfUQywVL._AC_SL1500_.jpg"
+      },
+      "FIT 2": {
+        "Black": "https://m.media-amazon.com/images/I/51bUhw-L7-L._AC_SL1000_.jpg",
+        "Gray": "https://m.media-amazon.com/images/I/81pYwvESwWL._AC_SL1500_.jpg"
+      },
+      "FIT 2 Classic": {
+        "Moonlight White": "https://m.media-amazon.com/images/I/61IWla9+NPL._AC_SL1000_.jpg"
+      },
+      "FIT 3 Special Addition": {
+        "Pink": "https://m.media-amazon.com/images/I/612HYjAbOqL._AC_SL1000_.jpg"
+      },
+      "GT 5 Pro": {
+        "Black": "https://m.media-amazon.com/images/I/719aD5y8dCL._AC_SL1500_.jpg",
+        "Titanium": "https://m.media-amazon.com/images/I/717GiZJVToL._AC_SL1500_.jpg",
+        "White Ceramic": "https://m.media-amazon.com/images/I/81pXhyydc8L._AC_SL1500_.jpg"
+      },
+      "GT 5": {
+        "Blue": "https://m.media-amazon.com/images/I/71PdcyM5kcL._AC_SL1500_.jpg",
+        "Black": "https://m.media-amazon.com/images/I/61nliZrLUHL._AC_SL1500_.jpg",
+        "Brown": "https://m.media-amazon.com/images/I/71QCj3gLWFL._AC_SL1500_.jpg",
+        "Gold": "https://m.media-amazon.com/images/I/81t9AFh6XLL._AC_SL1500_.jpg",
+        "White": "https://m.media-amazon.com/images/I/71Wbs8jOhDL._AC_SL1500_.jpg"
+      },
+      "GT 6 Pro": {
+        "Black": "https://m.media-amazon.com/images/I/81NxBXUtaiL._AC_SL1500_.jpg",
+        "Brown": "https://m.media-amazon.com/images/I/71pFj-GCZkL._AC_SL1500_.jpg",
+        "Titanium": "https://m.media-amazon.com/images/I/81e3IzNg-2L._AC_SL1500_.jpg"
+      },
+      "GT 6": {
+        "Gray": "https://m.media-amazon.com/images/I/81TWfUebgIL._AC_SL1500_.jpg",
+        "Purple": "https://m.media-amazon.com/images/I/71Gd1WINOuL._AC_SL1500_.jpg",
+        "White": "https://m.media-amazon.com/images/I/81vtZaqhC4L._AC_SL1500_.jpg",
+        "Black": "https://m.media-amazon.com/images/I/71gtM4ew3OL._AC_SL1500_.jpg",
+        "Green": "https://m.media-amazon.com/images/I/71JbEiw-qnL._AC_SL1500_.jpg"
+      }
+    },
+    "Amazfit": {
+      "Balance": {
+        "Black": "https://m.media-amazon.com/images/I/61ACOwvUwSL._AC_SL1500_.jpg",
+        "Sunset Grey": "https://m.media-amazon.com/images/I/71w8zMUc7oL._AC_SL1500_.jpg"
+      },
+      "Bip 5": {
+        "Charcoal": "https://m.media-amazon.com/images/I/61kCGyZra5L._AC_SL1500_.jpg",
+        "Pink": "https://m.media-amazon.com/images/I/61xOL21rKJL._AC_SL1500_.jpg"
+      },
+      "Bip 6": {
+        "Black": "https://m.media-amazon.com/images/I/61UvVTN0IEL._AC_SL1500_.jpg",
+        "Blush": "https://m.media-amazon.com/images/I/61Z2UcRVdiL._AC_SL1500_.jpg",
+        "Charcoal": "https://m.media-amazon.com/images/I/61bBHUOgqsL._AC_SL1500_.jpg",
+        "Red": "https://m.media-amazon.com/images/I/61a6F-g0bYL._AC_SL1500_.jpg",
+        "Petite Stone": "https://m.media-amazon.com/images/I/618Rd3bbPsL._AC_SL1500_.jpg"
+      },
+      "Active 2": {
+        "Red": "https://m.media-amazon.com/images/I/71rNwQV3ORL._AC_SL1500_.jpg",
+        "Black": "https://m.media-amazon.com/images/I/71mpuO4LqeL._AC_SL1500_.jpg"
+      },
+      "Active 2 Square": {
+        "Black": "https://m.media-amazon.com/images/I/71iNNUyae9L._AC_SL1500_.jpg"
+      },
+      "Active 2 Premium": {
+        "Black": "https://m.media-amazon.com/images/I/71XpjL4qkPL._AC_SL1500_.jpg"
+      }
+    },
+    "Letsfit": {
+      "IW1": {
+        "Black": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-IW1-black_1800x1800.jpg?v=1639552848",
+        "Pink": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-IW1-pink_1800x1800.jpg?v=1639552848",
+        "Gray": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-IW1-gray_1800x1800.jpg?v=1639552991",
+        "Blue": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-IW1-blue_1800x1800.jpg?v=1639553021",
+        "Dark Blue": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-IW1-darkblue_1800x1800.jpg?v=1639553021",
+        "Purple": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-IW1-purple_1800x1800.jpg?v=1639553021"
+      },
+      "EW1": {
+        "Black": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-EW1-Black_1800x1800.jpg?v=1639556748",
+        "Light Blue": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-EW1-blue_1800x1800.jpg?v=1639556723",
+        "Light Green": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-EW1-lightgreen_1800x1800.jpg?v=1639556723",
+        "Pink": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-EW1-Pink_1800x1800.jpg?v=1639556723",
+        "Purple": "https://letsfit.com/cdn/shop/products/Letsfit-SmartWatch-EW1-purple_1800x1800.jpg?v=1639556748"
+      }
+    },
+    "Yamay": {
+      "D3": {
+        "Black": "http://www.yamaytech.com/uploads/20250523/65919dc9e8d50e8a74c017da90c72493.jpg"
+      },
+      "KW1": {
+        "Pink": "http://www.yamaytech.com/uploads/20240826/95c41cf986d5385e60bdcf6011aa67a2.jpg"
+      },
+      "H1": {
+        "Black": "http://www.yamaytech.com/uploads/20231121/c82d096b967d8e201fec05a5142b694f.jpg"
+      },
+      "SW022": {
+        "Black": "http://www.yamaytech.com/uploads/20231121/0a24d4fc2769f2e90549986ad991e76f.png"
+      },
+      "H2": {
+        "Black": "http://www.yamaytech.com/uploads/20231121/0387e0410f7a1cfc4d9d38a030adea14.jpg"
+      },
+      "D1": {
+        "Black": "http://www.yamaytech.com/uploads/20231121/e15b3c0ef25720347b7fd9e92130c813.jpg"
+      },
+      "FC1": {
+        "Black": "http://www.yamaytech.com/uploads/20231121/a32c3228e0265a4c8317b3cac95a53a1.png"
+      },
+      "S3": {
+        "Black": "http://www.yamaytech.com/uploads/20250523/801a056e50e09952f0aed69d962ec637.jpg"
+      },
+      "SW336": {
+        "Black": "http://www.yamaytech.com/uploads/20231121/e5d5e60daff726538de56d17877a92b8.png"
+      }
+    },
+    "Coros": {
+      "PACE 3": {
+        "Black silicon": "https://m.media-amazon.com/images/I/61HE8zhwT7L._AC_SL1500_.jpg",
+        "White silicon": "https://m.media-amazon.com/images/I/61KBRtAjahL._AC_SL1500_.jpg",
+        "White nylon": "https://m.media-amazon.com/images/I/81HCogC9cGL._AC_SL1500_.jpg",
+        "Black nylon": "https://m.media-amazon.com/images/I/81OX6InPf2L._AC_SL1500_.jpg"
+      }
+    },
+    "Lintelek": {
+      "__noModel": {
+        "Purple": "https://i.ebayimg.com/images/g/HXQAAOSwvbRgJF0G/s-l1200.jpg",
+        "Dark Blue": "https://m.media-amazon.com/images/I/61rPZwOSyYL.jpg",
+        "Teal": "https://techzila.co/cdn/shop/products/41RB20hqPVL_800x.jpg?v=1613301810",
+        "Pink": "https://i5.walmartimages.com/seo/Lintelek-Fitness-Tracker-Activity-Tracker-Smart-Watch-Heart-Rate-Monitor-Pedometer-Fitness-Watch_54efe91a-42d4-44ff-84d3-ebf0829f8179.9ec1cb73f773dc21543ac0114285ecc2.jpeg?odnHeight=768&odnWidth=768&odnBg=FFFFFF",
+        "Black": "https://www.refinery29.com/images/11247860.png?format=webp&width=NaN&height=NaN&quality=85"
+      }
+    },
+    "Other": {
+      "__noModel": {
+        "__noColor": ""
+      }
+    }
+  };
+
+  function imgForBrand(device, model = '', color = '') {
+    if (!device || device === 'Not connected') {
+      return generateDeviceIcon('No Device', '', '', 105, 105);
+    }
+    const cfg = DEVICE_CONFIG[device];
+    if (cfg) {
+      let modelKey = model && cfg[model] ? model : null;
+      if (!modelKey && cfg["__noModel"]) {
+        modelKey = "__noModel";
+      }
+      if (modelKey) {
+        const colorCfg = cfg[modelKey];
+        let colorKey = color && colorCfg[color] ? color : null;
+        if (!colorKey && colorCfg["__noColor"]) {
+          colorKey = "__noColor";
+        }
+        // если у модели есть только один цвет и color пустой — берём его
+        if (!colorKey) {
+          const keys = Object.keys(colorCfg);
+          if (keys.length === 1) {
+            colorKey = keys[0];
+          }
+        }
+        if (colorKey && colorCfg[colorKey]) {
+          return colorCfg[colorKey] || generateDeviceIcon(device, model, color, 105, 105);
+        }
+      }
+    }
+    return generateDeviceIcon(device, model, color, 105, 105);
+  }
+
+  (() => {
+    /* ===== helpers ===== */
+    const $ = s => document.querySelector(s);
+    const COACH_IMG = {
+      Zara:'https://expressfitness.ca/wp-content/uploads/2025/04/zara.png',
+      Max:'https://expressfitness.ca/wp-content/uploads/2025/04/MAX-NEW-1.png',
+      Stephanie:'https://expressfitness.ca/wp-content/uploads/2025/04/step.png'
+    };
+
+    function normalizeCoach(raw){ if(!raw) return 'Zara'; const s=String(raw).toLowerCase(); if(s.includes('steph'))return'Stephanie'; if(s.includes('max'))return'Max'; return 'Zara'; }
+    function partOfDay(){ const h=new Date().getHours(); return h<12?'Good morning':(h<18?'Good afternoon':'Good evening'); }
+    function dstr(iso){ const d=new Date(iso); return isNaN(d)?'—':d.toLocaleDateString(); }
+    function fmtTime(iso){ const d=new Date(iso); return isNaN(d)?'—':d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
+    function getNum(v){ return (v==null || String(v).trim()==='') ? NaN : Number(v); }
+
+    function hydrateDeviceUI(payload){
+      const device = payload.device || localStorage.getItem('device') || 'Not connected';
+      const deviceModel = payload.device_model || localStorage.getItem('device_model') || '';
+      const deviceColor = payload.device_color || localStorage.getItem('device_color') || '';
+      const fullName = device === 'Not connected' ? 'Not connected' : [device, deviceModel, deviceColor].filter(Boolean).join(' - ');
+      const connected = !!payload.device_connected;
+      const status = connected ? 'Connected' : 'Not Connected';
+      const battery = (payload.device_battery!=null) ? Number(payload.device_battery) : NaN;
+      const lastSync = payload.device_last_sync || null;
+      const imgSrc = imgForBrand(device, deviceModel, deviceColor);
+      const devImgContainer = document.querySelector('.dev-img');
+      const devImg = $("#devImage");
+      if (imgSrc && !imgSrc.startsWith('data:image/svg+xml')) {
+        devImgContainer.classList.add('real-image');
+      } else {
+        devImgContainer.classList.remove('real-image');
+      }
+      devImg.src = imgSrc;
+      devImg.alt = `Icon for ${fullName}`;
+      $("#devName").textContent = fullName;
+      $("#devMeta").textContent = `Last sync ${lastSync ? (dstr(lastSync)+' • '+fmtTime(lastSync)) : '—'} • Battery ${isNaN(battery)?'—':battery+'%'}`;
+      setBadge($("#devStatus"), status);
+      setBatteryBadge($("#devBatteryBadge"), battery);
+      fillBatteryBar(battery);
+      $("#devTip").style.display = connected ? 'none' : 'block';
+
+      $("#stepsToday").textContent = payload.steps_today ?? 0;
+      $("#kcalToday").textContent = payload.calories_today ?? 0;
+      const dist = payload.distance_today_km;
+      $("#distanceToday").textContent= (dist!=null) ? Number(dist).toFixed(1)+' km' : '0 km';
+      $("#activeMins").textContent = payload.active_minutes ?? 0;
+      $("#hrNow").textContent = payload.hr_current!=null ? (payload.hr_current+' bpm') : '—';
+      $("#hrRest").textContent = payload.hr_resting!=null ? (payload.hr_resting+' bpm') : '—';
+      $("#sleepLast").textContent = payload.sleep_last_night!=null ? (payload.sleep_last_night+' h') : '—';
+      $("#vo2maxVal").textContent = payload.vo2max!=null ? payload.vo2max : '—';
+    }
+
+    function setBadge(el, status){
+      el.classList.remove('good','warn','bad');
+      if (status==='Connected') el.classList.add('good');
+      else if (status==='Syncing' || status==='Not Connected') el.classList.add('warn');
+      else el.classList.add('bad');
+      el.textContent = `Status: ${status}`;
+    }
+    function setBatteryBadge(el, pct){
+      el.classList.remove('good','warn','bad');
+      const p = Number(pct);
+      if (isNaN(p)) { el.textContent = 'Battery: —'; return; }
+      if (p >= 60) el.classList.add('good'); else if (p >= 25) el.classList.add('warn'); else el.classList.add('bad');
+      el.textContent = `Battery: ${p}%`;
+    }
+    function fillBatteryBar(pct){
+      const p = Math.max(0, Math.min(100, Number(pct)||0));
+      $("#batteryBar").style.width = p + '%';
+      $("#batteryPctText").textContent = p ? (p+'%') : '—';
+    }
+
+    /* ===== Supabase client ===== */
+    const SUPABASE_URL='https://ajoimwcrmszhmcjrpxjv.supabase.co';
+    const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqb2ltd2NybXN6aG1janJweGp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5NzYxNzYsImV4cCI6MjA2NzU1MjE3Nn0.4R5iVqe_JKuXZLrGkhBtTFdlHj3xuq99-UhfNbMzWeM';
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } });
+
+    async function loadQS_Device(){
+      const qp = new URLSearchParams(location.search);
+      const coach = normalizeCoach(qp.get('coach') || localStorage.getItem('coach'));
+      const name = (qp.get('name') || localStorage.getItem('name') || 'friend').trim();
+      try { localStorage.setItem('coach',coach); localStorage.setItem('name',name); } catch(_){}
+      const coachImgEl = $('#coachImg');
+      if (coachImgEl) coachImgEl.src = COACH_IMG[coach] || COACH_IMG.Zara;
+      const coachTitleEl = $('#coachTitle');
+      if (coachTitleEl) coachTitleEl.textContent = `${coach} is here.`;
+      const helloEl = $('#hello');
+      if (helloEl) helloEl.textContent = `${partOfDay()}, ${name} 👋`;
+      try{
+        const { data:{ user } } = await sb.auth.getUser();
+        if(user){
+          const sel = await sb.from('x45_users').select(`
+            coach, name, fitness_level, fitness_goal, meal_support,
+            device, device_model, device_color, device_connected, device_battery, device_last_sync,
+            steps_today, calories_today, distance_today_km, active_minutes,
+            hr_current, hr_resting, sleep_last_night, vo2max
+          `).eq('id', user.id).maybeSingle();
+          if(!sel.error && sel.data){
+            Object.entries(sel.data).forEach(([k,v])=>{
+              if(v==null) return;
+              try{ localStorage.setItem(k, typeof v==='string' ? v : String(v)); }catch(_){}
+            });
+          }
+        }
+      }catch(_){}
+
+      hydrateDeviceUI({
+        device: localStorage.getItem('device') || 'Not connected',
+        device_model: localStorage.getItem('device_model') || '',
+        device_color: localStorage.getItem('device_color') || '',
+        device_connected: localStorage.getItem('device_connected') === 'true',
+        device_battery: getNum(localStorage.getItem('device_battery')),
+        device_last_sync: localStorage.getItem('device_last_sync'),
+        steps_today: Number(localStorage.getItem('steps_today')) || 0,
+        calories_today: Number(localStorage.getItem('calories_today')) || 0,
+        distance_today_km: Number(localStorage.getItem('distance_today_km')) || 0,
+        active_minutes: Number(localStorage.getItem('active_minutes')) || 0,
+        hr_current: Number(localStorage.getItem('hr_current')),
+        hr_resting: Number(localStorage.getItem('hr_resting')),
+        sleep_last_night: Number(localStorage.getItem('sleep_last_night')),
+        vo2max: localStorage.getItem('vo2max')
+      });
+    }
+
+    // Device Changer Events
+    const deviceChanger = document.getElementById('deviceChanger');
+    const deviceSelect = document.getElementById('deviceSelect');
+    const modelSelect = document.getElementById('modelSelect');
+    const colorSelect = document.getElementById('colorSelect');
+    const applyDeviceBtn = document.getElementById('applyDeviceBtn');
+    const cancelDeviceBtn = document.getElementById('cancelDeviceBtn');
+
+    function populateModels(device) {
+      modelSelect.innerHTML = '<option value="">Choose model</option>';
+      const cfg = DEVICE_CONFIG[device];
+      if (!cfg) {
+        modelSelect.style.display = 'none';
+        colorSelect.style.display = 'none';
+        return;
+      }
+      const modelKeys = Object.keys(cfg).filter(k => k !== '__noModel');
+      if (cfg["__noModel"] && modelKeys.length === 0) {
+        // нет моделей — сразу к цветам
+        modelSelect.style.display = 'none';
+        populateColors(device, '');
+        return;
+      }
+      modelKeys.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = m;
+        modelSelect.appendChild(opt);
+      });
+      modelSelect.style.display = modelKeys.length ? 'block' : 'none';
+      colorSelect.style.display = 'none';
+      colorSelect.value = '';
+    }
+
+    function populateColors(device, model) {
+      colorSelect.innerHTML = '<option value="">Choose color</option>';
+      const cfg = DEVICE_CONFIG[device];
+      if (!cfg) {
+        colorSelect.style.display = 'none';
+        return;
+      }
+      let modelKey = model && cfg[model] ? model : null;
+      if (!modelKey && cfg["__noModel"]) {
+        modelKey = "__noModel";
+      }
+      if (!modelKey) {
+        colorSelect.style.display = 'none';
+        return;
+      }
+      const colorCfg = cfg[modelKey];
+      const colorKeys = Object.keys(colorCfg);
+      // если только __noColor — выбора нет
+      if (colorKeys.length === 1 && colorKeys[0] === '__noColor') {
+        colorSelect.style.display = 'none';
+        return;
+      }
+      colorKeys.forEach(c => {
+        if (c === '__noColor') return;
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        colorSelect.appendChild(opt);
+      });
+      colorSelect.style.display = colorSelect.options.length > 1 ? 'block' : (colorSelect.options.length === 1 ? 'block' : 'none');
+    }
+
+    deviceSelect.addEventListener('change', (e) => {
+      const dev = e.target.value;
+      modelSelect.value = '';
+      colorSelect.value = '';
+      if (!dev || dev === 'Other') {
+        modelSelect.style.display = 'none';
+        colorSelect.style.display = 'none';
+        return;
+      }
+      populateModels(dev);
+    });
+
+    modelSelect.addEventListener('change', (e) => {
+      const model = e.target.value;
+      const dev = deviceSelect.value;
+      populateColors(dev, model);
+    });
+
+    applyDeviceBtn.addEventListener('click', async () => {
+      const device = deviceSelect.value;
+      let model = modelSelect.value;
+      let color = colorSelect.value;
+
+      if (!device) {
+        alert('Please select a device.');
+        return;
+      }
+
+      const cfg = DEVICE_CONFIG[device] || {};
+      const hasNoModel = !!cfg["__noModel"];
+      const modelKeys = Object.keys(cfg).filter(k => k !== '__noModel');
+
+      if (!hasNoModel && modelKeys.length > 0 && !model) {
+        alert('Please select a model.');
+        return;
+      }
+
+      // если модели нет (Lintelek и т.п.)
+      if (hasNoModel && !model) {
+        model = '';
+      }
+
+      // проверяем, нужен ли цвет
+      let needColor = false;
+      let colorCfg = null;
+      if (model && cfg[model]) {
+        colorCfg = cfg[model];
+      } else if (!model && cfg["__noModel"]) {
+        colorCfg = cfg["__noModel"];
+      }
+      if (colorCfg) {
+        const colorKeys = Object.keys(colorCfg).filter(k => k !== '__noColor');
+        if (colorKeys.length > 0 && !color) {
+          needColor = true;
+        }
+      }
+      if (needColor) {
+        alert('Please select a color.');
+        return;
+      }
+
+      localStorage.setItem('device', device);
+      localStorage.setItem('device_model', model || '');
+      localStorage.setItem('device_color', color || '');
+      localStorage.setItem('device_connected', 'true');
+
+      try {
+        const { data: { user } } = await sb.auth.getUser();
+        if (user) {
+          await sb.from('x45_users').update({
+            device,
+            device_model: model || null,
+            device_color: color || null,
+            device_connected: true
+          }).eq('id', user.id);
+        }
+      } catch (err) {
+        console.warn('DB update error:', err);
+      }
+
+      const updatedPayload = {
+        device,
+        device_model: model || '',
+        device_color: color || '',
+        device_connected: true,
+        device_battery: getNum(localStorage.getItem('device_battery')),
+        device_last_sync: localStorage.getItem('device_last_sync'),
+        steps_today: Number(localStorage.getItem('steps_today')) || 0,
+        calories_today: Number(localStorage.getItem('calories_today')) || 0,
+        distance_today_km: Number(localStorage.getItem('distance_today_km')) || 0,
+        active_minutes: Number(localStorage.getItem('active_minutes')) || 0,
+        hr_current: Number(localStorage.getItem('hr_current')),
+        hr_resting: Number(localStorage.getItem('hr_resting')),
+        sleep_last_night: Number(localStorage.getItem('sleep_last_night')),
+        vo2max: localStorage.getItem('vo2max') || null
+      };
+      hydrateDeviceUI(updatedPayload);
+      deviceChanger.classList.remove('show');
+    });
+
+    cancelDeviceBtn.addEventListener('click', () => {
+      deviceChanger.classList.remove('show');
+    });
+
+    // Device actions
+    $('#btnSettings').onclick = ()=>{
+      const device = localStorage.getItem('device') || 'other';
+      location.assign(`device-settings.html?device=${encodeURIComponent(device)}`);
+    };
+
+    $('#btnSync').onclick = async ()=>{
+      setBadge($('#devStatus'), 'Syncing');
+      setTimeout(async ()=>{
+        const current = {
+          device: localStorage.getItem('device') || 'Other',
+          device_model: localStorage.getItem('device_model') || '',
+          device_color: localStorage.getItem('device_color') || '',
+          device_connected: true,
+          device_battery: Math.max(5, Math.min(100, Number(localStorage.getItem('device_battery')||72))),
+          device_last_sync: new Date().toISOString(),
+          steps_today: (Number($('#stepsToday').textContent)||0)+Math.floor(Math.random()*50+10),
+          calories_today: (Number($('#kcalToday').textContent)||0)+Math.floor(Math.random()*20+5),
+          distance_today_km: ((Math.random()*0.4)+0.1 + Number((($('#distanceToday').textContent||'0').split(' ')[0])||0)).toFixed(2),
+          active_minutes: (Number($('#activeMins').textContent)||0)+5,
+          hr_current: 70+Math.floor(Math.random()*30),
+          hr_resting: 60+Math.floor(Math.random()*10),
+          sleep_last_night: Number($('#sleepLast').textContent)||7.0,
+          vo2max: $('#vo2maxVal').textContent==='—' ? 40 : $('#vo2maxVal').textContent
+        };
+        Object.entries(current).forEach(([k,v])=>{ try{ localStorage.setItem(k, String(v)); }catch(_){}});
+
+        try{
+          const { data:{ user } } = await sb.auth.getUser();
+          if(user){
+            await sb.from('x45_users').update(current).eq('id', user.id);
+          }
+        }catch(_){}
+
+        hydrateDeviceUI(current);
+        setBadge($('#devStatus'), 'Connected');
+      }, 800);
+    };
+
+    // Top-level actions – now RELATIVE so it works on live + localhost
+    const targetWorkout = 'lets-workout-now.html';
+    $('#x45btn').onclick = $('#workoutNow').onclick = ()=> location.assign(targetWorkout);
+    $('#chatCoachBtn').onclick = ()=> location.assign('chat.html');
+
+    // Load
+    loadQS_Device();
+  })();
+</script>
+</body>
+</html>
