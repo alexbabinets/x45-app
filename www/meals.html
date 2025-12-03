@@ -1536,6 +1536,62 @@
       const t = base + activityBump();
       return Math.min(4000, Math.max(1400, t));
     };
+    function rescaleMealSplit(meal, newSplit) {
+      const targetKcal = meal.baseKcal * (meal.portion || 1);
+      const kcalP = Math.round(targetKcal * (newSplit.p / 100));
+      const kcalC = Math.round(targetKcal * (newSplit.c / 100));
+      const kcalF = Math.round(targetKcal * (newSplit.f / 100));
+      const proPart = meal.parts.find(p => p.p > p.c && p.p > p.f);
+      const carbPart = meal.parts.find(p => p.c > p.p && p.c > p.f);
+      const fatPart = meal.parts.find(p => p.f > p.p && p.f > p.c);
+      if (proPart) {
+        proPart.grams = Math.max(1, Math.round(kcalP / 4));
+        proPart.kcal = kcalP;
+        proPart.p = proPart.grams;
+        proPart.c = 0;
+        proPart.f = 0;
+        proPart.prettyUnits = `${proPart.grams} g ${proPart.label}`;
+      }
+      if (carbPart) {
+        carbPart.grams = Math.max(1, Math.round(kcalC / 4));
+        carbPart.kcal = kcalC;
+        carbPart.c = carbPart.grams;
+        carbPart.p = 0;
+        carbPart.f = 0;
+        carbPart.prettyUnits = `${carbPart.grams} g ${carbPart.label}`;
+      }
+      if (fatPart) {
+        fatPart.grams = Math.max(1, Math.round(kcalF / 9));
+        fatPart.kcal = kcalF;
+        fatPart.f = fatPart.grams;
+        fatPart.p = 0;
+        fatPart.c = 0;
+        fatPart.prettyUnits = `${fatPart.grams} g ${fatPart.label}`;
+      }
+    }
+    function rescaleMealPortion(meal, newPortion) {
+      const oldPortion = meal.portion || 1;
+      const scale = newPortion / oldPortion;
+      meal.portion = newPortion;
+      meal.parts.forEach(p => {
+        p.grams = Math.max(1, Math.round(p.grams * scale));
+        p.kcal = Math.round(p.kcal * scale);
+        if (p.p >= p.c && p.p >= p.f) {
+          p.p = p.grams;
+          p.c = 0;
+          p.f = 0;
+        } else if (p.c >= p.p && p.c >= p.f) {
+          p.c = p.grams;
+          p.p = 0;
+          p.f = 0;
+        } else if (p.f >= p.p && p.f >= p.c) {
+          p.f = p.grams;
+          p.p = 0;
+          p.c = 0;
+        }
+        p.prettyUnits = `${p.grams} g ${p.label}`;
+      });
+    }
     // ========= DONUT DRAW =========
     function drawDonut(canvas, p, c, f) {
       if (!canvas) return;
@@ -1594,40 +1650,6 @@
         prettyUnits: `${grams} g ${capWords(label)}`
       };
     }
-    function rescaleMeal(meal, split, totalKcal) {
-      const {p, c, f} = split;
-      const kcalP = Math.round(totalKcal * (p / 100));
-      const kcalC = Math.round(totalKcal * (c / 100));
-      const kcalF = Math.round(totalKcal * (f / 100));
-      let proPart = meal.parts.find(part => part.p > part.c && part.p > part.f);
-      let carbPart = meal.parts.find(part => part.c > part.p && part.c > part.f);
-      let fatPart = meal.parts.find(part => part.f > part.p && part.f > part.c);
-      if (proPart) {
-        proPart.kcal = Math.max(1, kcalP);
-        proPart.grams = kcalP > 0 ? Math.max(1, Math.round(kcalP / 4)) : 0;
-        proPart.p = proPart.grams;
-        proPart.c = 0;
-        proPart.f = 0;
-      }
-      if (carbPart) {
-        carbPart.kcal = Math.max(1, kcalC);
-        carbPart.grams = kcalC > 0 ? Math.max(1, Math.round(kcalC / 4)) : 0;
-        carbPart.c = carbPart.grams;
-        carbPart.p = 0;
-        carbPart.f = 0;
-      }
-      if (fatPart) {
-        fatPart.kcal = Math.max(1, kcalF);
-        fatPart.grams = kcalF > 0 ? Math.max(1, Math.round(kcalF / 9)) : 0;
-        fatPart.f = fatPart.grams;
-        fatPart.p = 0;
-        fatPart.c = 0;
-      }
-      meal.parts.forEach(part => {
-        part.prettyUnits = `${part.grams} g ${part.label}`;
-      });
-      meal.split = { ...split };
-    }
     function titleFromParts(pool, pro, carb) {
       const P = pro ? capWords(pro) : null;
       const C = carb ? capWords(carb) : null;
@@ -1674,7 +1696,7 @@
         parts.push(makeIngredient(fLabel, grams, kcalF, 0, 0, grams));
       }
       const title = titleFromParts(pool, pLabel, cLabel);
-      const meal = {
+      return {
         name: pool,
         title,
         baseKcal,
@@ -1682,8 +1704,6 @@
         split: { ...split },
         parts
       };
-      rescaleMeal(meal, split, baseKcal);
-      return meal;
     }
     function generateDay(totalKcal, split, dietKey, seed) {
       const rng = mulberry32(seed);
@@ -1721,6 +1741,9 @@
       $('#pctPro').textContent = state.split.p;
       $('#pctCarb').textContent = state.split.c;
       $('#pctFat').textContent = state.split.f;
+      $('#lblPro').textContent = state.split.p + '%';
+      $('#lblCarb').textContent = state.split.c + '%';
+      $('#lblFat').textContent = state.split.f + '%';
       requestAnimationFrame(() =>
         drawDonut($('#todayDonut'), state.split.p, state.split.c, state.split.f)
       );
@@ -1799,11 +1822,9 @@
         requestAnimationFrame(() => drawDonut(c, m.split.p, m.split.c, m.split.f));
         const ul = block.querySelector('#plist-' + idx);
         m.parts.forEach(p => {
-          if (p.grams > 0) {
-            const li = document.createElement('li');
-            li.innerHTML = `<strong>${p.label}</strong> — ${p.prettyUnits} <em>(${p.kcal} kcal)</em>`;
-            ul.appendChild(li);
-          }
+          const li = document.createElement('li');
+          li.innerHTML = `<strong>${p.label}</strong> — ${p.prettyUnits} <em>(${p.kcal} kcal)</em>`;
+          ul.appendChild(li);
         });
       });
       recalcTotals();
@@ -1856,7 +1877,7 @@
         .map(cb => cb.getAttribute('data-fav-apply'));
       if (checked.length && favMeals[checked[0]]) {
         state.meals[idx] = JSON.parse(JSON.stringify(favMeals[checked[0]]));
-        $('#useFavoritesModal').style.display = 'none';
+        $('#useFavoritesModal').style.display = 'closed';
         renderMeals();
       }
       $('#useFavoritesModal').style.display = 'none';
@@ -1866,8 +1887,8 @@
       const map = {};
       state.meals.forEach(m =>
         m.parts.forEach(p => {
-          if (p.grams > 0 && !map[p.key]) map[p.key] = { name: p.label, grams: 0 };
-          if (p.grams > 0) map[p.key].grams += p.grams;
+          if (!map[p.key]) map[p.key] = { name: p.label, grams: 0 };
+          map[p.key].grams += p.grams || 0;
         })
       );
       const ul = document.createElement('ul');
@@ -1941,6 +1962,9 @@
       slPro.value = state.split.p;
       slCarb.value = state.split.c;
       slFat.value = state.split.f;
+      $('#lblPro').textContent = state.split.p + '%';
+      $('#lblCarb').textContent = state.split.c + '%';
+      $('#lblFat').textContent = state.split.f + '%';
       $('#pctPro').textContent = state.split.p;
       $('#pctCarb').textContent = state.split.c;
       $('#pctFat').textContent = state.split.f;
@@ -1949,8 +1973,19 @@
       );
     }
     function applyGlobalToMeals() {
-      state.meals.forEach(m => {
-        rescaleMeal(m, state.split, m.baseKcal * (m.portion || 1));
+      const dietKey = getDietKey();
+      state.meals = state.meals.map((m, i) => {
+        const portion = m.portion || 1;
+        const base = m.baseKcal || Math.round(adjustedCalories() * MEAL_SHARE[i]);
+        const newMeal = composeMeal(
+          mulberry32(Date.now() + i),
+          POOLS[i],
+          Math.round(base * portion),
+          state.split,
+          dietKey
+        );
+        newMeal.portion = portion;
+        return newMeal;
       });
       renderMeals();
     }
@@ -1984,12 +2019,7 @@
         if (type === 'c') c = val;
         if (type === 'f') f = val;
         m.split = normalizeSplit(p, c, f);
-        $('#mp-' + idx).textContent = m.split.p;
-        $('#mc-' + idx).textContent = m.split.c;
-        $('#mf-' + idx).textContent = m.split.f;
-        const baseKcal = m.baseKcal || (adjustedCalories() * MEAL_SHARE[idx]);
-        const portion = m.portion || 1;
-        rescaleMeal(m, m.split, baseKcal * portion);
+        rescaleMealSplit(m, m.split);
         renderMeals();
       }
       if (t.hasAttribute('data-port')) {
@@ -1997,25 +2027,22 @@
         const m = state.meals[idx];
         if (!m) return;
         const portion = parseFloat(t.value);
-        m.portion = portion;
-        $('#pv-' + idx).textContent = portion.toFixed(1) + '×';
-        const baseKcal = m.baseKcal || (adjustedCalories() * MEAL_SHARE[idx]);
-        rescaleMeal(m, m.split, baseKcal * portion);
+        rescaleMealPortion(m, portion);
         renderMeals();
       }
     });
     // ========= MEALS BUTTONS =========
     async function aiSwap(idx) {
       try {
-        const barWrap = document.querySelector(`.swapProgress[data-i="${idx}"]`);
+        const barWrap = document.querySelector(\`.swapProgress[data-i="\${idx}"]\`);
         if (barWrap) barWrap.style.display = 'block';
         const res = await fetch(
-          `${SUPABASE_URL}/functions/v1/x45_meals`,
+          \`\${SUPABASE_URL}/functions/v1/x45_meals\`,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${SUPABASE_ANON}`
+              'Authorization': \`Bearer \${SUPABASE_ANON}\`
             },
             body: JSON.stringify({
               mode: 'swap',
@@ -2032,13 +2059,12 @@
           const m = json.meal;
           state.meals[idx] = {
             name: POOLS[idx],
-            title: m.title || `${POOLS[idx]} (AI)`,
+            title: m.title || \`\${POOLS[idx]} (AI)\`,
             baseKcal: m.baseKcal || Math.round(adjustedCalories() * MEAL_SHARE[idx]),
             portion: m.portion || 1,
             split: m.split || state.split,
             parts: m.parts || []
           };
-          rescaleMeal(state.meals[idx], state.meals[idx].split, state.meals[idx].baseKcal * (state.meals[idx].portion || 1));
         } else {
           throw new Error('Bad payload');
         }
@@ -2051,11 +2077,11 @@
           mulberry32(Date.now() + idx),
           POOLS[idx],
           m.baseKcal || Math.round(adjustedCalories() * MEAL_SHARE[idx]),
-          m.split || state.split,
+          state.split,
           dietKey
         );
       } finally {
-        const barWrap = document.querySelector(`.swapProgress[data-i="${idx}"]`);
+        const barWrap = document.querySelector(\`.swapProgress[data-i="\${idx}"]\`);
         if (barWrap) barWrap.style.display = 'none';
         renderMeals();
       }
@@ -2071,7 +2097,7 @@
           mulberry32(Date.now() + idx),
           POOLS[idx],
           m.baseKcal || Math.round(adjustedCalories() * MEAL_SHARE[idx]),
-          m.split || state.split,
+          state.split,
           dietKey
         );
         renderMeals();
@@ -2154,12 +2180,12 @@
       label.textContent = 'Generating with AI…';
       try {
         const res = await fetch(
-          `${SUPABASE_URL}/functions/v1/x45_meals`,
+          \`\${SUPABASE_URL}/functions/v1/x45_meals\`,
           {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${SUPABASE_ANON}`
+              'Authorization': \`Bearer \${SUPABASE_ANON}\`
             },
             body: JSON.stringify({
               mode: 'day',
@@ -2180,9 +2206,6 @@
           split: m.split || state.split,
           parts: m.parts || []
         }));
-        state.meals.forEach((m, i) => {
-          rescaleMeal(m, m.split, m.baseKcal * (m.portion || 1));
-        });
         bar.classList.remove('indet');
         bar.style.width = '90%';
         label.textContent = 'AI plan ready ✔';
@@ -2241,7 +2264,7 @@
       reader.onload = ev => {
         uploadImg.src = ev.target.result;
         uploadWrap.style.display = 'block';
-        $('#uploadArea').style.display = 'none';
+        $('#uploadArea').style.display = 'block';
         fakeScanMeal();
       };
       reader.readAsDataURL(file);
@@ -2277,19 +2300,18 @@
           makeIngredient('Healthy fats', Math.round(f), f * 9, 0, 0, f)
         ]
       };
-      rescaleMeal(meal, meal.split, kcal);
       state.scannedMeal = meal;
       $('#scannedMealName').textContent = meal.title;
-      $('#sCal').textContent = `Calories: ${kcal}`;
-      $('#sPro').textContent = `Protein: ${p} g`;
-      $('#sCarb').textContent = `Carbs: ${c} g`;
-      $('#sFat').textContent = `Fat: ${f} g`;
+      $('#sCal').textContent = \`Calories: \${kcal}\`;
+      $('#sPro').textContent = \`Protein: \${p} g\`;
+      $('#sCarb').textContent = \`Carbs: \${c} g\`;
+      $('#sFat').textContent = \`Fat: \${f} g\`;
       $('#scannedCenter').textContent = kcal;
       requestAnimationFrame(() =>
         drawDonut($('#scannedDonut'), meal.split.p, meal.split.c, meal.split.f)
       );
       $('#scannedTotals').textContent =
-        `Total: ${kcal} kcal • P ${p} g • C ${c} g • F ${f} g`;
+        \`Total: \${kcal} kcal • P \${p} g • C \${c} g • F \${f} g\`;
       const score = Math.max(1, Math.min(10,
         10 - (Math.abs(meal.split.p - 30) +
               Math.abs(meal.split.c - 45) +
@@ -2306,11 +2328,9 @@
       const ul = $('#scannedParts');
       ul.innerHTML = '';
       meal.parts.forEach(p => {
-        if (p.grams > 0) {
-          const li = document.createElement('li');
-          li.innerHTML = `<strong>${p.label}</strong> — ${p.prettyUnits} <em>(${p.kcal} kcal)</em>`;
-          ul.appendChild(li);
-        }
+        const li = document.createElement('li');
+        li.innerHTML = \`<strong>\${p.label}</strong> — \${p.prettyUnits} <em>(\${p.kcal} kcal)</em>\`;
+        ul.appendChild(li);
       });
       scanProg.style.display = 'none';
       scannedWrap.style.display = 'block';
@@ -2363,19 +2383,19 @@
       state.activity.steps = row.steps_today || state.activity.steps;
       state.activity.active_mins = row.active_minutes || state.activity.active_mins;
       $('#hello').textContent =
-        `${greet()}, ${state.name} — let’s dial in your meals.`;
+        \`\${greet()}, \${state.name} — let’s dial in your meals.\`;
       $('#coachImg').src = COACH_IMG[state.coach] || COACH_IMG.Zara;
-      $('#coachTitle').textContent = `${state.coach} is here.`;
+      $('#coachTitle').textContent = \`\${state.coach} is here.\`;
       $('#goalSelect').value = state.goal;
       $('#supportSelect').value = state.support;
       $('#dietLine').innerHTML =
-        `Diet: <span class="dietValue">${state.settings.diet || 'any'}</span> • Allergies: ${(state.settings.allergies || []).join(', ') || '—'} • Likes: ${(state.settings.favorites || []).join(', ') || '—'} • Dislikes: ${(state.settings.dislikes || []).join(', ') || '—'}`;
+        \`Diet: <span class="dietValue">\${state.settings.diet || 'any'}</span> • Allergies: \${(state.settings.allergies || []).join(', ') || '—'} • Likes: \${(state.settings.favorites || []).join(', ') || '—'} • Dislikes: \${(state.settings.dislikes || []).join(', ') || '—'}\`;
       setTopSliders();
       applySupportMode();
     }
     // ========= INIT =========
     (async function init() {
-      $('#hello').textContent = `${greet()}, friend — let’s dial in your meals.`;
+      $('#hello').textContent = \`\${greet()}, friend — let’s dial in your meals.\`;
       $('#coachImg').src = COACH_IMG.Zara;
       const row = await loadUser();
       hydrateFromRow(row);
