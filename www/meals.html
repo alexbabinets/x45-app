@@ -23,7 +23,7 @@
   --health-10:#10b981; --health-8-9:#34d399; --health-6-7:#6ee7b7; --health-4-5:#9ca3af; --health-2-3:#f59e0b; --health-0-1:#ef4444;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;font-size:14px}
+html,body{font-size:14px;margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
 .page{max-width:1160px;margin:18px auto;padding:0 14px 160px;display:flex;flex-direction:column;gap:14px}
 .brand{display:flex;justify-content:center;margin-top:6px}
 .brand img{height:60px;filter:drop-shadow(0 8px 28px rgba(0,0,0,.45))}
@@ -174,6 +174,12 @@ input[type="file"].input { padding: 6px; }
 .portionList{margin:8px 0 0;padding-left:18px;color:#e7ecf3}
 .portionList li{margin:3px 0}
 .portionList em{color:#9aa3ad;font-style:normal}
+
+@media (max-width:600px){
+  html,body{font-size:13px;}
+  .footer a,.footer span.nav-disabled{font-size:11px;padding:6px 8px;}
+}
+
 </style>
 </head>
 <body>
