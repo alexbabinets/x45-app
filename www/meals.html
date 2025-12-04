@@ -23,7 +23,7 @@
   --health-10:#10b981; --health-8-9:#34d399; --health-6-7:#6ee7b7; --health-4-5:#9ca3af; --health-2-3:#f59e0b; --health-0-1:#ef4444;
 }
 *{box-sizing:border-box}
-html,body{font-size:14px;margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
 .page{max-width:1160px;margin:18px auto;padding:0 14px 160px;display:flex;flex-direction:column;gap:14px}
 .brand{display:flex;justify-content:center;margin-top:6px}
 .brand img{height:60px;filter:drop-shadow(0 8px 28px rgba(0,0,0,.45))}
@@ -175,11 +175,61 @@ input[type="file"].input { padding: 6px; }
 .portionList li{margin:3px 0}
 .portionList em{color:#9aa3ad;font-style:normal}
 
-@media (max-width:600px){
-  html,body{font-size:13px;}
-  .footer a,.footer span.nav-disabled{font-size:11px;padding:6px 8px;}
-}
 
+/* Mobile portrait optimizations */
+@media (max-width: 480px){
+  body{
+    font-size:14px;
+  }
+  .page{
+    margin:8px auto;
+    padding:0 10px 120px;
+    gap:10px;
+  }
+  .topbar{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:6px;
+  }
+  h1{
+    font-size:18px;
+  }
+  .card{
+    padding:12px;
+  }
+  .card h2{
+    font-size:16px;
+  }
+  .macroRow{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:10px;
+  }
+  .macroDonut{
+    width:200px;
+    height:200px;
+  }
+  .macroDonut svg{
+    width:200px;
+    height:200px;
+  }
+  .macroCenter{
+    font-size:22px;
+  }
+  .mealsGrid{
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+  .mealHeader{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:6px;
+  }
+  .mealActions{
+    flex-wrap:wrap;
+    justify-content:flex-start;
+  }
+}
 </style>
 </head>
 <body>
