@@ -54,7 +54,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,syste
 .card h2{margin:0 0 8px;font-size:18px}
 .sub{font-size:12px;color:var(--muted)}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.inline{display:flex;gap:8px;align-items:center}
 select.input, input[type="text"].input{
   appearance:none;background:#0f1319;color:#e7ecf3;border:1px solid #29313b;border-radius:10px;padding:10px 12px;font-size:14px;min-width:220px
 }
@@ -80,7 +80,7 @@ select.input, input[type="text"].input{
 .slider.fat,.mealSlider.fat{ background:linear-gradient(90deg, rgba(245,158,11,.30), rgba(245,158,11,.10));border-color:rgba(245,158,11,.38)}
 .meal{border:1px solid #263245;background:linear-gradient(180deg,#10141b,#0e1016);border-radius:16px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 .meal+.meal{margin-top:10px}
-.mealHead{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.mealHead{display:flex;justify-content:space-between;align-items:center}
 .mealBadge{background:#151b24;border:1px solid #2b3443;color:#cfe0ff;padding:6px 10px;border-radius:999px;font-weight:900;font-size:12px}
 .mealName{font-weight:900;font-size:18px}
 .portion{display:flex;align-items:center;gap:8px}
@@ -174,6 +174,38 @@ input[type="file"].input { padding: 6px; }
 .portionList{margin:8px 0 0;padding-left:18px;color:#e7ecf3}
 .portionList li{margin:3px 0}
 .portionList em{color:#9aa3ad;font-style:normal}
+
+/* Mobile-friendly meal donuts – match global donut layout */
+@media (max-width: 768px){
+  .mealDonut{
+    position:relative;
+    width:min(42vw, 160px);
+    height:min(42vw, 160px);
+    border-radius:24px;
+    background:radial-gradient(circle at 30% 20%,#0f172a,#020617 70%);
+    box-shadow:0 0 0 1px rgba(15,23,42,.6),0 14px 30px rgba(15,23,42,.9);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:10px;
+    margin:12px auto 4px;
+  }
+  .mealDonut canvas{
+    width:100%;
+    height:100%;
+  }
+  .mealDonut .center{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    font-weight:900;
+    font-size:22px;
+    line-height:1.1;
+  }
+}
 </style>
 </head>
 <body>
