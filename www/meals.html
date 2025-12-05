@@ -67,10 +67,18 @@ select.input, input[type="text"].input{
 .todayGrid{display:grid;grid-template-columns:300px 1fr;gap:16px}
 @media(max-width:980px){ .todayGrid{grid-template-columns:1fr} }
 .donutWrap{display:flex;gap:16px;align-items:center;justify-content:center}
-.donut{position:relative;width:min(260px,70vw);height:min(260px,70vw);border-radius:50%;display:flex;align-items:center;justify-content:center}
-.donut canvas{width:100%;height:100%}
-.donut .center{position:absolute;text-align:center;font-weight:900;font-size:28px}
+.donut{position:relative;width:220px;height:220px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.donut canvas{width:220px;height:220px}
+.donut .center{position:absolute;text-align:center;font-weight:900;font-size:26px}
 .donut .center small{display:block;font-weight:800;font-size:12px;color:#cbd5e1}
+
+/* Mobile tweaks: keep donuts nicely sized on portrait screens */
+@media (max-width:480px){
+  .donutWrap{flex-direction:column;gap:10px}
+  .donut{width:190px;height:190px}
+  .donut canvas{width:190px;height:190px}
+  .donut .center{font-size:24px}
+}
 .slRow{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
 .slider,.mealSlider{appearance:none;width:100%;height:10px;border-radius:999px;background:#0d1218;border:1px solid #1f2631;outline:none}
 .slider::-webkit-slider-thumb,.mealSlider::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:#e6eef9;border:2px solid #284060;cursor:pointer}
@@ -174,62 +182,6 @@ input[type="file"].input { padding: 6px; }
 .portionList{margin:8px 0 0;padding-left:18px;color:#e7ecf3}
 .portionList li{margin:3px 0}
 .portionList em{color:#9aa3ad;font-style:normal}
-
-
-/* Mobile portrait optimizations */
-@media (max-width: 480px){
-  body{
-    font-size:14px;
-  }
-  .page{
-    margin:8px auto;
-    padding:0 10px 120px;
-    gap:10px;
-  }
-  .topbar{
-    flex-direction:column;
-    align-items:flex-start;
-    gap:6px;
-  }
-  h1{
-    font-size:18px;
-  }
-  .card{
-    padding:12px;
-  }
-  .card h2{
-    font-size:16px;
-  }
-  .macroRow{
-    flex-direction:column;
-    align-items:flex-start;
-    gap:10px;
-  }
-  .macroDonut{
-    width:200px;
-    height:200px;
-  }
-  .macroDonut svg{
-    width:200px;
-    height:200px;
-  }
-  .macroCenter{
-    font-size:22px;
-  }
-  .mealsGrid{
-    grid-template-columns:1fr;
-    gap:12px;
-  }
-  .mealHeader{
-    flex-direction:column;
-    align-items:flex-start;
-    gap:6px;
-  }
-  .mealActions{
-    flex-wrap:wrap;
-    justify-content:flex-start;
-  }
-}
 </style>
 </head>
 <body>
