@@ -67,8 +67,7 @@ select.input, input[type="text"].input{
 .todayGrid{display:grid;grid-template-columns:300px 1fr;gap:16px}
 @media(max-width:980px){ .todayGrid{grid-template-columns:1fr} }
 .donutWrap{display:flex;gap:16px;align-items:center;justify-content:center}
-.donut,
-.mealDonut{
+.donut{
   position:relative;
   width:260px;
   height:260px;
@@ -77,10 +76,19 @@ select.input, input[type="text"].input{
   align-items:center;
   justify-content:center;
 }
+.mealDonut{
+  position:relative;
+  width:150px;
+  height:150px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 .donut canvas,
 .mealDonut canvas{
-  width:260px;
-  height:260px;
+  width:100%;
+  height:100%;
 }
 .donut .center,
 .mealDonut .center{
@@ -100,10 +108,13 @@ select.input, input[type="text"].input{
 /* Mobile tweaks: keep donuts nicely sized on portrait screens */
 @media (max-width:480px){
   .donutWrap{flex-direction:column;gap:10px}
-  .donut,
+  .donut{
+    width:min(260px,80vw);
+    height:min(260px,80vw);
+  }
   .mealDonut{
-    width:min(260px,70vw);
-    height:min(260px,70vw);
+    width:min(150px,50vw);
+    height:min(150px,50vw);
   }
   .donut canvas,
   .mealDonut canvas{
@@ -116,7 +127,6 @@ select.input, input[type="text"].input{
   }
 }
 
-}
 .slRow{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
 .slider,.mealSlider{appearance:none;width:100%;height:10px;border-radius:999px;background:#0d1218;border:1px solid #1f2631;outline:none}
 .slider::-webkit-slider-thumb,.mealSlider::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:#e6eef9;border:2px solid #284060;cursor:pointer}
