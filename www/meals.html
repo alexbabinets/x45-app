@@ -67,32 +67,10 @@ select.input, input[type="text"].input{
 .todayGrid{display:grid;grid-template-columns:300px 1fr;gap:16px}
 @media(max-width:980px){ .todayGrid{grid-template-columns:1fr} }
 .donutWrap{display:flex;gap:16px;align-items:center;justify-content:center}
-.donut{
-  position:relative;
-  width:clamp(160px, 55vw, 240px);
-  height:clamp(160px, 55vw, 240px);
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  margin:0 auto;
-}
-.donut canvas{
-  width:100%;
-  height:100%;
-}
-.donut .center{
-  position:absolute;
-  text-align:center;
-  font-weight:900;
-  font-size:clamp(20px, 5vw, 28px);
-}
-.donut .center small{
-  display:block;
-  font-weight:800;
-  font-size:11px;
-  color:#cbd5e1;
-}
+.donut{position:relative;width:240px;height:240px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.donut canvas{width:240px;height:240px}
+.donut .center{position:absolute;text-align:center;font-weight:900;font-size:28px}
+.donut .center small{display:block;font-weight:800;font-size:12px;color:#cbd5e1}
 .slRow{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
 .slider,.mealSlider{appearance:none;width:100%;height:10px;border-radius:999px;background:#0d1218;border:1px solid #1f2631;outline:none}
 .slider::-webkit-slider-thumb,.mealSlider::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:#e6eef9;border:2px solid #284060;cursor:pointer}
@@ -107,20 +85,8 @@ select.input, input[type="text"].input{
 .mealName{font-weight:900;font-size:18px}
 .portion{display:flex;align-items:center;gap:8px}
 .portion input{width:200px}
-.mealDonut{
-  position:relative;
-  width:clamp(110px, 40vw, 140px);
-  height:clamp(110px, 40vw, 140px);
-  border-radius:50%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  margin:0 auto;
-}
-.mealDonut canvas{
-  width:88%;
-  height:88%;
-}
+.mealDonut{ position:relative; width:min(150px,42vw); height:min(150px,42vw); border-radius:12px; background:#0c1015; border:1px solid #1b2330; display:flex; align-items:center; justify-content:center; padding:6px }
+.mealDonut canvas{ width:108px; height:108px }
 .mealDonut .center{ position:absolute; text-align:center; font-weight:900; font-size:14px }
 .mealDonut .center small{ display:block; font-weight:600; color:#9aa3ad; margin-top:2px; font-size:11px }
 .mealMacros{ display:grid; grid-template-columns:auto 1fr auto; gap:8px 10px; align-items:center; }
@@ -347,7 +313,7 @@ input[type="file"].input { padding: 6px; }
       <div style="margin-bottom:16px; text-align:center;">
         <img id="scannedMealImg" class="uploadImg" alt="Scanned meal photo" style="max-width:300px;height:auto;display:none;">
       </div>
-      <div style="display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:center">
+      <div style="display:grid;grid-template-columns:1fr;justify-items:center;gap:14px;align-items:center">
         <div class="mealDonut">
           <canvas id="scannedDonut"></canvas>
           <div class="center" id="scannedCenter">—<small>kcal</small></div>
@@ -746,7 +712,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <button class="cta small" data-swap-ai="${idx}">AI Swap</button>
           </div>
         </div>
-        <div class="grid" style="display:grid;grid-template-columns:130px 1fr;gap:14px;align-items:center;margin-top:10px">
+        <div class="grid mealDonutBlock" style="display:grid;grid-template-columns:1fr;justify-items:center;gap:14px;align-items:center;margin-top:10px">
           <div class="mealDonut">
             <canvas class="mdonut" data-i="${idx}"></canvas>
             <div class="center">${kcalNow}<small>kcal</small></div>
