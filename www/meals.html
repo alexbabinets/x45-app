@@ -174,38 +174,6 @@ input[type="file"].input { padding: 6px; }
 .portionList{margin:8px 0 0;padding-left:18px;color:#e7ecf3}
 .portionList li{margin:3px 0}
 .portionList em{color:#9aa3ad;font-style:normal}
-
-/* Mobile-friendly meal donuts – match global donut layout */
-@media (max-width: 768px){
-  .mealDonut{
-    position:relative;
-    width:min(42vw, 160px);
-    height:min(42vw, 160px);
-    border-radius:24px;
-    background:radial-gradient(circle at 30% 20%,#0f172a,#020617 70%);
-    box-shadow:0 0 0 1px rgba(15,23,42,.6),0 14px 30px rgba(15,23,42,.9);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:10px;
-    margin:12px auto 4px;
-  }
-  .mealDonut canvas{
-    width:100%;
-    height:100%;
-  }
-  .mealDonut .center{
-    position:absolute;
-    inset:0;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    font-weight:900;
-    font-size:22px;
-    line-height:1.1;
-  }
-}
 </style>
 </head>
 <body>
@@ -744,7 +712,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <button class="cta small" data-swap-ai="${idx}">AI Swap</button>
           </div>
         </div>
-        <div class="grid" style="display:grid;grid-template-columns:130px 1fr;gap:14px;align-items:center;margin-top:10px">
+        <div class="mealLayout" style="display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:10px">
           <div class="mealDonut">
             <canvas class="mdonut" data-i="${idx}"></canvas>
             <div class="center">${kcalNow}<small>kcal</small></div>
