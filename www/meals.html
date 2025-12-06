@@ -82,6 +82,35 @@ select.input, input[type="text"].input{
 .meal+.meal{margin-top:10px}
 .mealHead{display:flex;justify-content:space-between;align-items:center}
 .mealBadge{background:#151b24;border:1px solid #2b3443;color:#cfe0ff;padding:6px 10px;border-radius:999px;font-weight:900;font-size:12px}
+    .mealsHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .mealsHeader h2{
+      margin:0;
+    }
+
+    @media (max-width:768px){
+      .mealsHeader{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+      .mealsHeader .mealBadge{
+        margin-left:0;
+      }
+      .mealHead{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:4px;
+      }
+      .mealHead .mealBadge{
+        margin-top:2px;
+      }
+    }
+
 .mealName{font-weight:900;font-size:18px}
 .portion{display:flex;align-items:center;gap:8px}
 .portion input{width:200px}
@@ -174,55 +203,6 @@ input[type="file"].input { padding: 6px; }
 .portionList{margin:8px 0 0;padding-left:18px;color:#e7ecf3}
 .portionList li{margin:3px 0}
 .portionList em{color:#9aa3ad;font-style:normal}
-
-  /* Layout helpers */
-  .mealsHeader{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:8px;
-    margin-bottom:10px;
-  }
-  .mealsHeader h2{
-    margin:0;
-  }
-
-  /* Mobile portrait adjustments: stack everything in one column */
-  @media (max-width:600px){
-    .mealsHeader{
-      flex-direction:column;
-      align-items:flex-start;
-    }
-    .mealHead{
-      flex-direction:column;
-      align-items:flex-start;
-      gap:6px;
-    }
-    .mealHeadMain{
-      width:100%;
-    }
-    .mealActions{
-      width:100%;
-      justify-content:flex-start;
-      flex-wrap:wrap;
-      row-gap:6px;
-    }
-    .mealTitle{
-      max-width:100%;
-      word-break:break-word;
-    }
-    /* Any meal donut grids: stack donut above macros/text and center */
-    div[style*="grid-template-columns:120px minmax(0,1fr)"],
-    div[style*="grid-template-columns:120px 1fr"],
-    div[style*="grid-template-columns:130px minmax(0,1fr)"],
-    div[style*="grid-template-columns:130px 1fr"]{
-      grid-template-columns:1fr !important;
-      justify-items:center;
-    }
-    .mealDonut{
-      margin:0 auto 8px auto;
-    }
-  }
 </style>
 </head>
 <body>
