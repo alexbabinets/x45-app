@@ -1,476 +1,1105 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>X45 — Meals (AI)</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-  <style>
-    :root{
-      --bg:#0a0b0d; --panel:#0f1116; --panel2:#0e0f13; --divider:#1a1c22;
-      --ink:#e7ecf3; --muted:#9aa3ad; --ring:rgba(128,173,214,.22);
-      --btn:#263244; --btnH:#2d3a51;
-      --c-kcal:#ef4444; --c-pro:#22c55e; --c-carb:#3b82f6; --c-fat:#f59e0b;
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{
-      margin:0;
-      background:var(--bg);
-      color:var(--ink);
-      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-    }
-    .page{max-width:1160px;margin:16px auto 120px;padding:0 14px;display:flex;flex-direction:column;gap:14px}
-    .brand{display:flex;justify-content:center;margin-top:6px}
-    .brand img{height:60px;filter:drop-shadow(0 8px 28px rgba(0,0,0,.45))}
-    h1,h2{font-weight:800}
-    .card{background:var(--panel);border:1px solid var(--divider);border-radius:16px;padding:16px}
-    .sub{font-size:12px;color:var(--muted)}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
-    .pill{
-      padding:6px 10px;border-radius:999px;font-size:12px;
-      font-weight:900;border:1px solid rgba(255,255,255,.08);
-      display:inline-flex;gap:6px;align-items:center;
-    }
-    .pill.kcal{background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.35);color:#ffdfe0}
-    .pill.pro{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.35);color:#dbffe8}
-    .pill.carb{background:rgba(59,130,246,.18);border-color:rgba(59,130,246,.35);color:#dff0ff}
-    .pill.fat{background:rgba(245,158,11,.18);border-color:rgba(245,158,11,.35);color:#fff1d9}
-    .todayGrid{display:grid;grid-template-columns:260px 1fr;gap:16px}
-    @media(max-width:900px){.todayGrid{grid-template-columns:1fr}}
-    .donutWrap{display:flex;justify-content:center;align-items:center}
-    .donut{position:relative;width:220px;height:220px;border-radius:50%;display:flex;align-items:center;justify-content:center}
-    .donut canvas{width:220px;height:220px}
-    .donut .center{position:absolute;text-align:center;font-weight:900;font-size:26px}
-    .donut .center small{display:block;font-weight:800;font-size:12px;color:#cbd5e1}
-    .slRow{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;margin-top:6px}
-    .slider,.mealSlider{
-      appearance:none;width:100%;height:10px;border-radius:999px;
-      background:#0d1218;border:1px solid #1f2631;outline:none;
-    }
-    .slider::-webkit-slider-thumb,
-    .mealSlider::-webkit-slider-thumb{
-      appearance:none;width:18px;height:18px;border-radius:50%;
-      background:#e6eef9;border:2px solid #284060;cursor:pointer;
-    }
-    .slider::-moz-range-thumb,
-    .mealSlider::-moz-range-thumb{
-      width:18px;height:18px;border-radius:50%;
-      background:#e6eef9;border:2px solid #284060;cursor:pointer;
-    }
-    .slider.pro,.mealSlider.pro{background:linear-gradient(90deg,rgba(34,197,94,.28),rgba(34,197,94,.10));border-color:rgba(34,197,94,.35)}
-    .slider.carb,.mealSlider.carb{background:linear-gradient(90deg,rgba(59,130,246,.28),rgba(59,130,246,.10));border-color:rgba(59,130,246,.35)}
-    .slider.fat,.mealSlider.fat{background:linear-gradient(90deg,rgba(245,158,11,.30),rgba(245,158,11,.10));border-color:rgba(245,158,11,.38)}
-    .mealsHeader{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px}
-    .mealBadge{background:#151b24;border:1px solid #2b3443;color:#cfe0ff;padding:6px 10px;border-radius:999px;font-weight:900;font-size:12px}
-    .meal{border:1px solid #263245;background:linear-gradient(180deg,#10141b,#0e1016);border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-    .mealHead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
-    .mealHeadMain{display:flex;flex-direction:column;gap:2px;min-width:0}
-    .mealName{font-weight:900;font-size:18px}
-    .mealTitle{font-size:13px;color:#cbd5e1}
-    .mealActions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
-    .cta{
-      display:inline-flex;gap:6px;align-items:center;font-weight:800;font-size:12px;
-      padding:7px 11px;border-radius:999px;border:1px solid var(--divider);
-      background:#0f1116;color:#dbe9ff;cursor:pointer;
-    }
-    .cta.primary{background:var(--btn);border-color:transparent;color:#fff}
-    .portion{display:flex;align-items:center;gap:6px;margin-top:6px}
-    .portion input[type="range"]{width:150px}
-    .mealBody{display:grid;grid-template-columns:130px minmax(0,1fr);gap:12px;align-items:center;margin-top:8px}
-    .mealDonut{position:relative;width:120px;height:120px;border-radius:12px;background:#0c1015;border:1px solid #1b2330;display:flex;align-items:center;justify-content:center;padding:6px}
-    .mealDonut canvas{width:108px;height:108px}
-    .mealDonut .center{position:absolute;text-align:center;font-weight:900;font-size:14px}
-    .mealDonut .center small{display:block;font-weight:600;color:#9aa3ad;margin-top:2px;font-size:11px}
-    .mealMacros{display:grid;grid-template-columns:auto 1fr auto;gap:8px 10px;align-items:center;margin-top:6px}
-    .mealLabel{color:#cbd5e1;font-size:12px}
-    .portionList{margin:8px 0 0;padding-left:18px;color:#e7ecf3;font-size:13px}
-    .portionList li{margin:3px 0}
-    .portionList em{color:#9aa3ad;font-style:normal}
-    @media(max-width:700px){
-      .todayGrid{grid-template-columns:1fr}
-      .mealBody{grid-template-columns:1fr;justify-items:center}
-      .mealsHeader{flex-direction:column;align-items:flex-start}
-      .mealHead{flex-direction:column;align-items:flex-start}
-      .mealActions{justify-content:flex-start}
-      .mealDonut{margin-bottom:6px}
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>X45 — Meals (AI)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0b0d; --panel:#0f1116; --panel2:#0e0f13; --divider:#1a1c22;
+  --ink:#e7ecf3; --muted:#9aa3ad; --ring:rgba(128,173,214,.22);
+  --btn:#263244; --btnH:#32415a;
+  --accent:#3ea6ff; --accentSoft:rgba(62,166,255,.15);
+  --protein:#ec4899; --carbs:#22c55e; --fat:#eab308;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  background:radial-gradient(circle at top,#111827 0,#020617 52%,#000 100%);
+  color:var(--ink);
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  padding:16px;
+}
+.app-shell{
+  width:100%;
+  max-width:980px;
+  background:linear-gradient(145deg,rgba(15,17,22,.96),rgba(6,8,12,.98));
+  border-radius:24px;
+  border:1px solid rgba(148,163,184,.35);
+  box-shadow:0 24px 80px rgba(15,23,42,.75);
+  padding:16px 14px 18px;
+}
+header{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:flex-start;
+  margin-bottom:14px;
+}
+.header-main{
+  flex:1 1 220px;
+}
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:11px;
+  padding:4px 9px;
+  border-radius:999px;
+  background:rgba(15,118,220,.12);
+  color:#bfdbfe;
+  border:1px solid rgba(59,130,246,.35);
+  margin-bottom:6px;
+}
+.badge-dot{
+  width:7px;height:7px;border-radius:999px;
+  background:radial-gradient(circle at 30% 30%,#4ade80,#16a34a);
+  box-shadow:0 0 10px rgba(74,222,128,.8);
+}
+h1{
+  font-size:17px;
+  letter-spacing:.03em;
+  text-transform:uppercase;
+  margin-bottom:2px;
+}
+.sub{
+  font-size:12px;
+  color:var(--muted);
+}
+.header-right{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  align-items:flex-end;
+  min-width:190px;
+}
+.chip-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  justify-content:flex-end;
+}
+.chip{
+  font-size:10px;
+  padding:4px 8px;
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.35);
+  color:var(--muted);
+  background:rgba(15,23,42,.9);
+}
+.header-kpi{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  font-size:11px;
+  color:var(--muted);
+}
+.header-kpi strong{color:var(--ink);}
+.header-kpi span.label{
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-size:9px;
+  color:#64748b;
+}
+
+/* layout */
+.main-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.1fr) minmax(0,1.1fr);
+  gap:12px;
+}
+@media (max-width:880px){
+  .main-grid{
+    grid-template-columns:1fr;
+  }
+  header{
+    flex-direction:column;
+  }
+  .header-right{
+    align-items:flex-start;
+  }
+  .header-kpi{
+    justify-content:flex-start;
+    flex-wrap:wrap;
+  }
+}
+
+/* totals panel */
+.panel{
+  background:radial-gradient(circle at top left,#020617 0, #020617 26%, #020617 40%, #000 100%);
+  border-radius:18px;
+  border:1px solid rgba(148,163,184,.35);
+  padding:12px 10px 12px;
+  position:relative;
+  overflow:hidden;
+}
+.panel::before{
+  content:"";
+  position:absolute;
+  inset:-40%;
+  background:radial-gradient(circle at top left,rgba(59,130,246,.18),transparent 55%);
+  opacity:.35;
+  pointer-events:none;
+}
+.panel-inner{position:relative;z-index:1;}
+
+.panel-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+  margin-bottom:10px;
+}
+.panel-title-wrap{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.panel-eyebrow{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+  color:#64748b;
+}
+.panel-title{
+  font-size:14px;
+  font-weight:600;
+}
+.panel-meta{
+  font-size:11px;
+  color:var(--muted);
+}
+.panel-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.btn-ghost{
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.45);
+  padding:3px 9px;
+  font-size:11px;
+  background:rgba(15,23,42,.9);
+  color:var(--muted);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+}
+.btn-ghost span.dot{
+  width:7px;height:7px;border-radius:999px;
+  background:radial-gradient(circle at 30% 30%,#22c55e,#16a34a);
+}
+.btn-ghost:hover{
+  border-color:rgba(148,163,184,.9);
+  color:var(--ink);
+}
+
+/* donut + totals */
+.totals-layout{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:8px;
+  align-items:center;
+}
+@media (max-width:480px){
+  .totals-layout{
+    grid-template-columns:1fr;
+    justify-items:flex-start;
+  }
+}
+.donut-wrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.donut{
+  --p:33;
+  --c:33;
+  --f:34;
+  width:116px;
+  height:116px;
+  border-radius:50%;
+  background:
+    conic-gradient(
+      var(--protein) 0 calc(var(--p)*1%),
+      var(--carbs) calc(var(--p)*1%) calc((var(--p) + var(--c))*1%),
+      var(--fat) calc((var(--p) + var(--c))*1%) 100%
+    );
+  position:relative;
+  box-shadow:0 0 0 1px rgba(15,23,42,1),0 18px 40px rgba(15,23,42,.9);
+}
+.donut::after{
+  content:"";
+  position:absolute;
+  inset:18px;
+  border-radius:50%;
+  background:radial-gradient(circle at top,#020617 0,#020617 45%,#020617 100%);
+  box-shadow:inset 0 0 0 1px rgba(15,23,42,.9);
+}
+.donut-center{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:11px;
+  font-weight:600;
+  z-index:1;
+}
+.donut-center span{
+  text-align:center;
+  line-height:1.3;
+}
+.donut-center span small{
+  display:block;
+  font-size:9px;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:#64748b;
+}
+
+.totals-text{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.totals-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px 14px;
+  font-size:12px;
+}
+.totals-row span.label{
+  text-transform:uppercase;
+  letter-spacing:.18em;
+  font-size:9px;
+  color:#64748b;
+}
+.totals-row strong{
+  font-weight:600;
+}
+.macros-line{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  font-size:11px;
+}
+.badge-macro{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 9px;
+  border-radius:999px;
+  background:rgba(15,23,42,.9);
+  border:1px solid rgba(148,163,184,.4);
+}
+.m-dot{
+  width:8px;
+  height:8px;
+  border-radius:999px;
+}
+.m-dot.protein{background:var(--protein);box-shadow:0 0 8px rgba(236,72,153,.8);}
+.m-dot.carbs{background:var(--carbs);box-shadow:0 0 8px rgba(34,197,94,.8);}
+.m-dot.fat{background:var(--fat);box-shadow:0 0 8px rgba(234,179,8,.8);}
+
+/* meals list */
+.meals-panel{
+  background:radial-gradient(circle at top,#020617 0,#020617 38%,#000 100%);
+  border-radius:18px;
+  border:1px solid rgba(148,163,184,.35);
+  padding:10px 9px 10px;
+}
+.meals-header{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  align-items:flex-end;
+  margin-bottom:8px;
+}
+.meals-title-wrap{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.meals-title{
+  font-size:14px;
+  font-weight:600;
+}
+.meals-sub{
+  font-size:11px;
+  color:var(--muted);
+}
+.meals-header-meta{
+  text-align:right;
+  font-size:11px;
+  color:var(--muted);
+}
+.meals-header-meta span.label{
+  display:block;
+  text-transform:uppercase;
+  letter-spacing:.16em;
+  font-size:9px;
+  color:#64748b;
+}
+
+.meals-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.meal-card{
+  border-radius:14px;
+  border:1px solid rgba(51,65,85,.8);
+  background:
+    linear-gradient(135deg,rgba(15,23,42,.96),rgba(15,23,42,.98)),
+    radial-gradient(circle at top left,rgba(37,99,235,.22),transparent 55%);
+  padding:8px 9px 9px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.meal-header{
+  display:flex;
+  justify-content:space-between;
+  gap:6px;
+}
+.meal-title-block{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.meal-name{
+  font-size:13px;
+  font-weight:600;
+}
+.meal-meta{
+  font-size:11px;
+  color:var(--muted);
+}
+.meal-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px;
+  justify-content:flex-end;
+}
+.meal-btn{
+  border-radius:999px;
+  border:1px solid rgba(148,163,184,.35);
+  font-size:10px;
+  padding:3px 7px;
+  background:rgba(15,23,42,.9);
+  color:var(--muted);
+  cursor:pointer;
+}
+.meal-btn.primary{
+  border-color:rgba(96,165,250,.8);
+  color:#e0f2fe;
+}
+.meal-btn:hover{
+  border-color:rgba(148,163,184,.9);
+  color:var(--ink);
+}
+
+/* meal stats */
+.meal-stats{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 14px;
+  font-size:11px;
+  color:var(--muted);
+}
+.meal-stats strong{color:var(--ink);}
+.meal-stats span.label{
+  text-transform:uppercase;
+  letter-spacing:.14em;
+  font-size:9px;
+  color:#64748b;
+}
+
+/* sliders */
+.sliders-block{
+  border-radius:12px;
+  border:1px solid rgba(30,64,175,.85);
+  background:linear-gradient(135deg,rgba(15,23,42,.98),rgba(15,23,42,.96));
+  padding:7px 8px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.slider-row{
+  display:grid;
+  grid-template-columns:90px 1fr 52px;
+  align-items:center;
+  gap:6px;
+  font-size:11px;
+}
+@media (max-width:520px){
+  .slider-row{
+    grid-template-columns:minmax(0,1.1fr) minmax(0,2fr);
+    grid-template-rows:auto auto;
+  }
+  .slider-row .slider-label{
+    grid-column:1/3;
+  }
+  .slider-row .slider-output{
+    justify-self:flex-end;
+  }
+}
+.slider-label{
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+}
+.slider-label span.top{
+  text-transform:uppercase;
+  letter-spacing:.16em;
+  font-size:9px;
+  color:#64748b;
+}
+.slider-label span.bottom{
+  font-size:11px;
+}
+.slider-track-wrap{
+  position:relative;
+  height:22px;
+  display:flex;
+  align-items:center;
+}
+.slider-track-wrap input[type=range]{
+  -webkit-appearance:none;
+  appearance:none;
+  width:100%;
+  background:transparent;
+}
+input[type=range]:focus{outline:none;}
+input[type=range]::-webkit-slider-runnable-track{
+  height:4px;
+  border-radius:999px;
+  background:linear-gradient(90deg,rgba(56,189,248,.85),rgba(59,130,246,.9));
+}
+input[type=range]::-moz-range-track{
+  height:4px;
+  border-radius:999px;
+  background:linear-gradient(90deg,rgba(56,189,248,.85),rgba(59,130,246,.9));
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  appearance:none;
+  width:16px;
+  height:16px;
+  border-radius:999px;
+  background:#e5f2ff;
+  border:2px solid #2563eb;
+  box-shadow:0 0 0 4px rgba(59,130,246,.25);
+  margin-top:-6px;
+}
+input[type=range]::-moz-range-thumb{
+  width:15px;height:15px;border-radius:999px;
+  background:#e5f2ff;
+  border:2px solid #2563eb;
+  box-shadow:0 0 0 4px rgba(59,130,246,.25);
+}
+input[type=range]:disabled::-webkit-slider-thumb,
+input[type=range]:disabled::-moz-range-thumb{
+  background:#94a3b8;
+  border-color:#64748b;
+  box-shadow:none;
+}
+.slider-output{
+  text-align:right;
+  font-size:11px;
+  color:var(--muted);
+}
+.slider-output strong{color:var(--ink);}
+
+/* fine print */
+.fine-print{
+  margin-top:10px;
+  font-size:10px;
+  color:#64748b;
+  line-height:1.5;
+}
+.fine-print strong{color:#cbd5f5;}
+</style>
 </head>
 <body>
-  <div class="page">
-    <div class="brand">
-      <img src="https://expressfitness.ca/wp-content/uploads/2025/06/X45-LOGO-CUT-OUT-TM.png" alt="X45"/>
-    </div>
-
-    <section class="card">
-      <h2>Today</h2>
-      <div class="sub" id="todayMeta">Total target: 2000 kcal</div>
-      <div class="pills">
-        <span class="pill kcal" id="pCal">Calories: 2000</span>
-        <span class="pill pro" id="pPro">Protein: 200 g</span>
-        <span class="pill carb" id="pCarb">Carbs: 200 g</span>
-        <span class="pill fat" id="pFat">Fat: 44 g</span>
+<div class="app-shell">
+  <header>
+    <div class="header-main">
+      <div class="badge">
+        <div class="badge-dot"></div>
+        <span>AI‑Generated daily plan • X45</span>
       </div>
+      <h1>Meals &amp; Portions</h1>
+      <div class="sub">Adjust your meals for today by <strong>tuning macros</strong> instead of rebuilding the whole menu.</div>
+    </div>
+    <div class="header-right">
+      <div class="chip-row">
+        <div class="chip">30‑day trial • Cancel anytime</div>
+        <div class="chip">Device‑aware timing</div>
+        <div class="chip">Coach reads this data</div>
+      </div>
+      <div class="header-kpi">
+        <span class="label">Today</span>
+        <span><strong id="summary-calories">1,980</strong> kcal</span>
+        <span>• P <strong id="summary-protein">120 g</strong></span>
+        <span>• C <strong id="summary-carbs">210 g</strong></span>
+        <span>• F <strong id="summary-fat">55 g</strong></span>
+      </div>
+    </div>
+  </header>
 
-      <div class="todayGrid" style="margin-top:10px">
-        <div class="donutWrap">
-          <div class="donut">
-            <canvas id="todayDonut"></canvas>
-            <div class="center"><span id="calsCenter">2000</span><small>kcal</small></div>
+  <div class="main-grid">
+    <!-- TOTALS -->
+    <section class="panel">
+      <div class="panel-inner">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <div class="panel-eyebrow">Daily overview</div>
+            <div class="panel-title">Total macros &amp; calories</div>
+            <div class="panel-meta">Everything you change in meals below instantly reshapes this ring.</div>
+          </div>
+          <div class="panel-actions">
+            <button class="btn-ghost" type="button">
+              <span class="dot"></span>
+              Live sync on
+            </button>
           </div>
         </div>
-        <div>
-          <div class="row sub" style="margin-bottom:6px">
-            <span style="display:inline-flex;align-items:center;gap:6px">
-              <span style="width:12px;height:12px;background:var(--c-pro);display:inline-block;border-radius:3px"></span>
-              Protein — <b id="pctPro">40</b>%
-            </span>
-            <span style="display:inline-flex;align-items:center;gap:6px">
-              <span style="width:12px;height:12px;background:var(--c-carb);display:inline-block;border-radius:3px"></span>
-              Carbs — <b id="pctCarb">40</b>%
-            </span>
-            <span style="display:inline-flex;align-items:center;gap:6px">
-              <span style="width:12px;height:12px;background:var(--c-fat);display:inline-block;border-radius:3px"></span>
-              Fat — <b id="pctFat">20</b>%
-            </span>
+        <div class="totals-layout">
+          <div class="donut-wrap">
+            <div class="donut" id="macro-donut">
+              <div class="donut-center">
+                <span>
+                  <span id="donut-kcal">1,980</span>
+                  <small>total kcal</small>
+                </span>
+              </div>
+            </div>
           </div>
-
-          <div class="slRow">
-            <span class="sub">Protein</span>
-            <input id="slPro" type="range" min="0" max="100" step="1" value="40" class="slider pro">
-            <span id="lblPro" class="sub">40%</span>
-          </div>
-          <div class="slRow">
-            <span class="sub">Carbs</span>
-            <input id="slCarb" type="range" min="0" max="100" step="1" value="40" class="slider carb">
-            <span id="lblCarb" class="sub">40%</span>
-          </div>
-          <div class="slRow">
-            <span class="sub">Fat</span>
-            <input id="slFat" type="range" min="0" max="100" step="1" value="20" class="slider fat">
-            <span id="lblFat" class="sub">20%</span>
+          <div class="totals-text">
+            <div class="totals-row">
+              <span class="label">Today's target</span>
+              <span><strong><span id="total-calories-text">1,980</span> kcal</strong> from all meals</span>
+            </div>
+            <div class="macros-line">
+              <span class="badge-macro">
+                <span class="m-dot protein"></span>
+                <span>Protein: <strong id="total-protein">120 g</strong></span>
+              </span>
+              <span class="badge-macro">
+                <span class="m-dot carbs"></span>
+                <span>Carbs: <strong id="total-carbs">210 g</strong></span>
+              </span>
+              <span class="badge-macro">
+                <span class="m-dot fat"></span>
+                <span>Fats: <strong id="total-fat">55 g</strong></span>
+              </span>
+            </div>
+            <div class="totals-row" style="margin-top:4px;">
+              <span class="label">Macro split</span>
+              <span>Protein <strong id="split-protein">0%</strong> • Carbs <strong id="split-carbs">0%</strong> • Fats <strong id="split-fat">0%</strong></span>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="card">
-      <div class="mealsHeader">
-        <h2>Meals & Portions</h2>
-        <span class="mealBadge" id="totalsBadge">Total: 2000 kcal • P 200 g • C 200 g • F 44 g</span>
+    <!-- MEALS -->
+    <section class="meals-panel">
+      <div class="meals-header">
+        <div class="meals-title-wrap">
+          <div class="meals-title">Meals for today</div>
+          <div class="meals-sub">Move only sliders. Names, timings and buttons stay as they are.</div>
+        </div>
+        <div class="meals-header-meta">
+          <span class="label">How it works</span>
+          <span>Portions scale the whole plate • Macro sliders <strong>add P/C/F</strong> on top</span>
+        </div>
       </div>
-      <div id="meals"></div>
+
+      <div class="meals-list" id="meals-list">
+        <!-- Breakfast -->
+        <article class="meal-card" data-meal-id="breakfast"
+          data-base-protein="32" data-base-carbs="55" data-base-fat="14">
+          <div class="meal-header">
+            <div class="meal-title-block">
+              <div class="meal-name">Breakfast — Oat bowl + eggs</div>
+              <div class="meal-meta">Steel‑cut oats, berries, 2 eggs, a bit of nuts.</div>
+            </div>
+            <div class="meal-actions">
+              <button class="meal-btn" type="button">★ Favorite</button>
+              <button class="meal-btn" type="button">Save</button>
+              <button class="meal-btn" type="button">Use</button>
+              <button class="meal-btn" type="button">Swap</button>
+              <button class="meal-btn primary" type="button">AI Swap</button>
+            </div>
+          </div>
+
+          <div class="meal-stats">
+            <span><span class="label">Calories</span> <strong><span class="meal-kcal">0</span> kcal</strong></span>
+            <span><span class="label">Macros</span>
+              P <strong><span class="meal-protein">0</span> g</strong> •
+              C <strong><span class="meal-carbs">0</span> g</strong> •
+              F <strong><span class="meal-fat">0</span> g</strong>
+            </span>
+          </div>
+
+          <div class="sliders-block">
+            <div class="slider-row">
+              <div class="slider-label slider-label-portion">
+                <span class="top">Portion size</span>
+                <span class="bottom">Scale entire plate</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="50" max="150" step="10"
+                  value="100" class="slider-portion">
+              </div>
+              <div class="slider-output">
+                <span><strong><span class="portion-output">100</span>%</strong></span>
+              </div>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label">
+                <span class="top">Protein</span>
+                <span class="bottom">Extra grams to add</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="0" max="30" step="2"
+                  value="0" class="slider-protein">
+              </div>
+              <div class="slider-output">
+                +<strong><span class="protein-output">0</span> g</strong>
+              </div>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label">
+                <span class="top">Carbs</span>
+                <span class="bottom">Extra grams to add</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="0" max="40" step="5"
+                  value="0" class="slider-carbs">
+              </div>
+              <div class="slider-output">
+                +<strong><span class="carbs-output">0</span> g</strong>
+              </div>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label">
+                <span class="top">Fats</span>
+                <span class="bottom">Extra grams to add</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="0" max="20" step="2"
+                  value="0" class="slider-fat">
+              </div>
+              <div class="slider-output">
+                +<strong><span class="fat-output">0</span> g</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Lunch -->
+        <article class="meal-card" data-meal-id="lunch"
+          data-base-protein="40" data-base-carbs="60" data-base-fat="18">
+          <div class="meal-header">
+            <div class="meal-title-block">
+              <div class="meal-name">Lunch — Chicken, rice &amp; salad</div>
+              <div class="meal-meta">Grilled chicken, basmati rice, leafy greens, olive oil.</div>
+            </div>
+            <div class="meal-actions">
+              <button class="meal-btn" type="button">★ Favorite</button>
+              <button class="meal-btn" type="button">Save</button>
+              <button class="meal-btn" type="button">Use</button>
+              <button class="meal-btn" type="button">Swap</button>
+              <button class="meal-btn primary" type="button">AI Swap</button>
+            </div>
+          </div>
+
+          <div class="meal-stats">
+            <span><span class="label">Calories</span> <strong><span class="meal-kcal">0</span> kcal</strong></span>
+            <span><span class="label">Macros</span>
+              P <strong><span class="meal-protein">0</span> g</strong> •
+              C <strong><span class="meal-carbs">0</span> g</strong> •
+              F <strong><span class="meal-fat">0</span> g</strong>
+            </span>
+          </div>
+
+          <div class="sliders-block">
+            <div class="slider-row">
+              <div class="slider-label slider-label-portion">
+                <span class="top">Portion size</span>
+                <span class="bottom">Scale entire plate</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="50" max="150" step="10"
+                  value="100" class="slider-portion">
+              </div>
+              <div class="slider-output">
+                <span><strong><span class="portion-output">100</span>%</strong></span>
+              </div>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label">
+                <span class="top">Protein</span>
+                <span class="bottom">Extra grams to add</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="0" max="40" step="2"
+                  value="0" class="slider-protein">
+              </div>
+              <div class="slider-output">
+                +<strong><span class="protein-output">0</span> g</strong>
+              </div>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label">
+                <span class="top">Carbs</span>
+                <span class="bottom">Extra grams to add</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="0" max="50" step="5"
+                  value="0" class="slider-carbs">
+              </div>
+              <div class="slider-output">
+                +<strong><span class="carbs-output">0</span> g</strong>
+              </div>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label">
+                <span class="top">Fats</span>
+                <span class="bottom">Extra grams to add</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="0" max="25" step="1"
+                  value="0" class="slider-fat">
+              </div>
+              <div class="slider-output">
+                +<strong><span class="fat-output">0</span> g</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Dinner -->
+        <article class="meal-card" data-meal-id="dinner"
+          data-base-protein="36" data-base-carbs="50" data-base-fat="17">
+          <div class="meal-header">
+            <div class="meal-title-block">
+              <div class="meal-name">Dinner — Fish &amp; vegetables</div>
+              <div class="meal-meta">Baked fish, potatoes or quinoa, mixed veggies, olive oil.</div>
+            </div>
+            <div class="meal-actions">
+              <button class="meal-btn" type="button">★ Favorite</button>
+              <button class="meal-btn" type="button">Save</button>
+              <button class="meal-btn" type="button">Use</button>
+              <button class="meal-btn" type="button">Swap</button>
+              <button class="meal-btn primary" type="button">AI Swap</button>
+            </div>
+          </div>
+
+          <div class="meal-stats">
+            <span><span class="label">Calories</span> <strong><span class="meal-kcal">0</span> kcal</strong></span>
+            <span><span class="label">Macros</span>
+              P <strong><span class="meal-protein">0</span> g</strong> •
+              C <strong><span class="meal-carbs">0</span> g</strong> •
+              F <strong><span class="meal-fat">0</span> g</strong>
+            </span>
+          </div>
+
+          <div class="sliders-block">
+            <div class="slider-row">
+              <div class="slider-label slider-label-portion">
+                <span class="top">Portion size</span>
+                <span class="bottom">Scale entire plate</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="50" max="150" step="10"
+                  value="100" class="slider-portion">
+              </div>
+              <div class="slider-output">
+                <span><strong><span class="portion-output">100</span>%</strong></span>
+              </div>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label">
+                <span class="top">Protein</span>
+                <span class="bottom">Extra grams to add</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="0" max="30" step="2"
+                  value="0" class="slider-protein">
+              </div>
+              <div class="slider-output">
+                +<strong><span class="protein-output">0</span> g</strong>
+              </div>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label">
+                <span class="top">Carbs</span>
+                <span class="bottom">Extra grams to add</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="0" max="45" step="5"
+                  value="0" class="slider-carbs">
+              </div>
+              <div class="slider-output">
+                +<strong><span class="carbs-output">0</span> g</strong>
+              </div>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label">
+                <span class="top">Fats</span>
+                <span class="bottom">Extra grams to add</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="0" max="20" step="1"
+                  value="0" class="slider-fat">
+              </div>
+              <div class="slider-output">
+                +<strong><span class="fat-output">0</span> g</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- Snack -->
+        <article class="meal-card" data-meal-id="snack"
+          data-base-protein="12" data-base-carbs="45" data-base-fat="6">
+          <div class="meal-header">
+            <div class="meal-title-block">
+              <div class="meal-name">Snack — Fruit + yogurt</div>
+              <div class="meal-meta">Plain yogurt or kefir with fruit or a simple bar.</div>
+            </div>
+            <div class="meal-actions">
+              <button class="meal-btn" type="button">★ Favorite</button>
+              <button class="meal-btn" type="button">Save</button>
+              <button class="meal-btn" type="button">Use</button>
+              <button class="meal-btn" type="button">Swap</button>
+              <button class="meal-btn primary" type="button">AI Swap</button>
+            </div>
+          </div>
+
+          <div class="meal-stats">
+            <span><span class="label">Calories</span> <strong><span class="meal-kcal">0</span> kcal</strong></span>
+            <span><span class="label">Macros</span>
+              P <strong><span class="meal-protein">0</span> g</strong> •
+              C <strong><span class="meal-carbs">0</span> g</strong> •
+              F <strong><span class="meal-fat">0</span> g</strong>
+            </span>
+          </div>
+
+          <div class="sliders-block">
+            <div class="slider-row">
+              <div class="slider-label slider-label-portion">
+                <span class="top">Portion size</span>
+                <span class="bottom">Scale entire plate</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="50" max="150" step="10"
+                  value="100" class="slider-portion">
+              </div>
+              <div class="slider-output">
+                <span><strong><span class="portion-output">100</span>%</strong></span>
+              </div>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label">
+                <span class="top">Protein</span>
+                <span class="bottom">Extra grams to add</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="0" max="20" step="2"
+                  value="0" class="slider-protein">
+              </div>
+              <div class="slider-output">
+                +<strong><span class="protein-output">0</span> g</strong>
+              </div>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label">
+                <span class="top">Carbs</span>
+                <span class="bottom">Extra grams to add</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="0" max="35" step="5"
+                  value="0" class="slider-carbs">
+              </div>
+              <div class="slider-output">
+                +<strong><span class="carbs-output">0</span> g</strong>
+              </div>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-label">
+                <span class="top">Fats</span>
+                <span class="bottom">Extra grams to add</span>
+              </div>
+              <div class="slider-track-wrap">
+                <input type="range" min="0" max="15" step="1"
+                  value="0" class="slider-fat">
+              </div>
+              <div class="slider-output">
+                +<strong><span class="fat-output">0</span> g</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+      </div>
     </section>
   </div>
 
-  <script>
-    const TOTAL_KCAL = 2000;
+  <p class="fine-print">
+    <strong>Important:</strong> sliders do not change what is written on the plate — only how much protein, carbs and fats you are getting from each meal.
+    Your coach in X45 reads these final numbers when giving daily instructions.
+  </p>
+</div>
 
-    const state = {
-      split: { p: 40, c: 40, f: 20 },
-      meals: []
-    };
+<script>
+(function(){
+  const KCAL_P = 4;
+  const KCAL_C = 4;
+  const KCAL_F = 9;
 
-    const presetMeals = [
-      {
-        name: "Breakfast",
-        title: "Greek yogurt, berries & oats",
-        baseKcal: 500,
-        parts: [
-          { label: "Greek yogurt", grams: 170, kcal: 150, p: 15, c: 10, f: 5 },
-          { label: "Oats", grams: 40, kcal: 150, p: 5, c: 26, f: 3 },
-          { label: "Berries", grams: 80, kcal: 60, p: 1, c: 14, f: 0 },
-          { label: "Almonds", grams: 15, kcal: 90, p: 3, c: 3, f: 8 }
-        ]
-      },
-      {
-        name: "Lunch",
-        title: "Chicken, rice & veggies",
-        baseKcal: 650,
-        parts: [
-          { label: "Chicken breast", grams: 150, kcal: 240, p: 45, c: 0, f: 5 },
-          { label: "Cooked rice", grams: 150, kcal: 210, p: 4, c: 45, f: 2 },
-          { label: "Mixed vegetables", grams: 120, kcal: 60, p: 3, c: 12, f: 0 },
-          { label: "Olive oil", grams: 10, kcal: 90, p: 0, c: 0, f: 10 }
-        ]
-      },
-      {
-        name: "Snack",
-        title: "Protein shake & fruit",
-        baseKcal: 300,
-        parts: [
-          { label: "Whey shake", grams: 35, kcal: 140, p: 28, c: 3, f: 2 },
-          { label: "Banana", grams: 110, kcal: 100, p: 1, c: 26, f: 0 },
-          { label: "Peanut butter", grams: 15, kcal: 90, p: 4, c: 3, f: 8 }
-        ]
-      },
-      {
-        name: "Dinner",
-        title: "Salmon, potatoes & salad",
-        baseKcal: 550,
-        parts: [
-          { label: "Baked salmon", grams: 150, kcal: 280, p: 30, c: 0, f: 18 },
-          { label: "Potatoes", grams: 160, kcal: 140, p: 4, c: 32, f: 0 },
-          { label: "Salad & dressing", grams: 80, kcal: 80, p: 2, c: 6, f: 5 },
-          { label: "Olive oil", grams: 8, kcal: 72, p: 0, c: 0, f: 8 }
-        ]
-      }
-    ];
+  function formatNumber(num){
+    return Math.round(num);
+  }
 
-    function initState() {
-      const totalBase = presetMeals.reduce((sum,m)=>sum+m.baseKcal,0);
-      state.meals = presetMeals.map(m => ({
-        ...m,
-        portion: m.baseKcal / (totalBase || 1), // normalize to 0–1 portion (will scale)
-        split: { ...state.split }
-      }));
-    }
+  function updateAll(){
+    const mealCards = document.querySelectorAll('.meal-card');
+    let totalP = 0, totalC = 0, totalF = 0, totalKcal = 0;
 
-    function normalizeSplit(p,c,f){
-      let sum = p + c + f;
-      if(!sum) return {p:40,c:40,f:20};
-      return {
-        p: Math.round(p / sum * 100),
-        c: Math.round(c / sum * 100),
-        f: Math.max(0,100 - Math.round(p / sum * 100) - Math.round(c / sum * 100))
-      };
-    }
+    mealCards.forEach(card => {
+      const baseP = parseFloat(card.dataset.baseProtein) || 0;
+      const baseC = parseFloat(card.dataset.baseCarbs) || 0;
+      const baseF = parseFloat(card.dataset.baseFat) || 0;
 
-    function getMealMacros(meal){
-      const mealKcal = Math.round(TOTAL_KCAL * (meal.baseKcal / presetMeals.reduce((s,m)=>s+m.baseKcal,0)) * meal.portion);
-      const p = Math.round(mealKcal * meal.split.p / 100 / 4);
-      const c = Math.round(mealKcal * meal.split.c / 100 / 4);
-      const f = Math.round(mealKcal * meal.split.f / 100 / 9);
-      return { kcal: mealKcal, p, c, f };
-    }
+      const portionSlider = card.querySelector('.slider-portion');
+      const portionFactor = portionSlider ? (parseFloat(portionSlider.value) || 100) / 100 : 1;
 
-    function updateTotals(){
-      let p = 0, c = 0, f = 0, kcal = 0;
-      state.meals.forEach(m => {
-        const mm = getMealMacros(m);
-        p += mm.p; c += mm.c; f += mm.f; kcal += mm.kcal;
-      });
-      document.getElementById("pCal").textContent = "Calories: " + kcal;
-      document.getElementById("pPro").textContent = "Protein: " + p + " g";
-      document.getElementById("pCarb").textContent = "Carbs: " + c + " g";
-      document.getElementById("pFat").textContent = "Fat: " + f + " g";
-      document.getElementById("calsCenter").textContent = kcal;
-      document.getElementById("totalsBadge").textContent =
-        "Total: " + kcal + " kcal • P " + p + " g • C " + c + " g • F " + f + " g";
-      drawDonut(document.getElementById("todayDonut"), state.split);
-    }
+      const pExtraSlider = card.querySelector('.slider-protein');
+      const cExtraSlider = card.querySelector('.slider-carbs');
+      const fExtraSlider = card.querySelector('.slider-fat');
 
-    function drawDonut(canvas, split){
-      if(!canvas) return;
-      const ctx = canvas.getContext("2d");
-      const r = canvas.width / 2;
-      const cx = r, cy = r;
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      const innerR = r * 0.6;
+      const pExtra = pExtraSlider ? parseFloat(pExtraSlider.value) || 0 : 0;
+      const cExtra = cExtraSlider ? parseFloat(cExtraSlider.value) || 0 : 0;
+      const fExtra = fExtraSlider ? parseFloat(fExtraSlider.value) || 0 : 0;
 
-      const arcs = [
-        {color:getComputedStyle(document.documentElement).getPropertyValue("--c-pro") || "#22c55e", value:split.p},
-        {color:getComputedStyle(document.documentElement).getPropertyValue("--c-carb") || "#3b82f6", value:split.c},
-        {color:getComputedStyle(document.documentElement).getPropertyValue("--c-fat") || "#f59e0b", value:split.f},
-      ];
+      const mealP = (baseP + pExtra) * portionFactor;
+      const mealC = (baseC + cExtra) * portionFactor;
+      const mealF = (baseF + fExtra) * portionFactor;
+      const mealKcal = mealP * KCAL_P + mealC * KCAL_C + mealF * KCAL_F;
 
-      let start = -Math.PI/2;
-      const sum = arcs.reduce((s,a)=>s+a.value,0) || 1;
+      totalP += mealP;
+      totalC += mealC;
+      totalF += mealF;
+      totalKcal += mealKcal;
 
-      arcs.forEach(a => {
-        const angle = (a.value / sum) * Math.PI*2;
-        ctx.beginPath();
-        ctx.arc(cx,cy,r,start,start+angle);
-        ctx.strokeStyle = a.color;
-        ctx.lineWidth = r - innerR;
-        ctx.stroke();
-        start += angle;
-      });
+      const kcalEl = card.querySelector('.meal-kcal');
+      const pEl = card.querySelector('.meal-protein');
+      const cEl = card.querySelector('.meal-carbs');
+      const fEl = card.querySelector('.meal-fat');
 
-      ctx.beginPath();
-      ctx.arc(cx,cy,innerR,0,Math.PI*2);
-      ctx.fillStyle = "#050608";
-      ctx.fill();
-    }
+      if(kcalEl) kcalEl.textContent = formatNumber(mealKcal);
+      if(pEl) pEl.textContent = formatNumber(mealP);
+      if(cEl) cEl.textContent = formatNumber(mealC);
+      if(fEl) fEl.textContent = formatNumber(mealF);
 
-    function renderMeals(){
-      const wrap = document.getElementById("meals");
-      wrap.innerHTML = "";
-      state.meals.forEach((m,idx) => {
-        const macros = getMealMacros(m);
-        const mealEl = document.createElement("div");
-        mealEl.className = "meal";
-        mealEl.dataset.index = idx;
+      const portionOut = card.querySelector('.portion-output');
+      if(portionOut) portionOut.textContent = formatNumber(portionFactor*100);
 
-        mealEl.innerHTML = `
-          <div class="mealHead">
-            <div class="mealHeadMain">
-              <div class="mealName">${m.name}</div>
-              <div class="mealTitle">${m.title}</div>
-            </div>
-            <div class="mealActions">
-              <button class="cta primary" data-action="fav">★ Save</button>
-              <button class="cta" data-action="use">Use</button>
-              <button class="cta" data-action="swap">Swap</button>
-              <button class="cta" data-action="aiswap">AI Swap</button>
-            </div>
-          </div>
-          <div class="portion">
-            <span class="sub">Portion</span>
-            <input type="range" min="0.5" max="1.5" step="0.05" value="${m.portion.toFixed(2)}" data-port />
-            <span class="sub"><span data-port-val>${m.portion.toFixed(2)}</span>x</span>
-          </div>
-          <div class="mealBody">
-            <div class="mealDonut">
-              <canvas width="120" height="120"></canvas>
-              <div class="center">${macros.kcal}<small>kcal</small></div>
-            </div>
-            <div>
-              <div class="mealMacros">
-                <span class="mealLabel">Protein</span>
-                <input type="range" min="0" max="100" step="1" value="${m.split.p}" class="mealSlider pro" data-type="p" />
-                <span class="mealLabel"><span data-meal-p>${m.split.p}</span>%</span>
-
-                <span class="mealLabel">Carbs</span>
-                <input type="range" min="0" max="100" step="1" value="${m.split.c}" class="mealSlider carb" data-type="c" />
-                <span class="mealLabel"><span data-meal-c>${m.split.c}</span>%</span>
-
-                <span class="mealLabel">Fat</span>
-                <input type="range" min="0" max="100" step="1" value="${m.split.f}" class="mealSlider fat" data-type="f" />
-                <span class="mealLabel"><span data-meal-f>${m.split.f}</span>%</span>
-              </div>
-              <ul class="portionList">
-                ${m.parts.map(p => `<li>${p.label} — <strong>${p.grams} g</strong> <em>(${p.kcal} kcal)</em></li>`).join("")}
-              </ul>
-            </div>
-          </div>
-        `;
-
-        // draw meal donut
-        const canvas = mealEl.querySelector("canvas");
-        drawDonut(canvas, m.split);
-
-        wrap.appendChild(mealEl);
-      });
-    }
-
-    function syncGlobalFromState(){
-      document.getElementById("slPro").value = state.split.p;
-      document.getElementById("slCarb").value = state.split.c;
-      document.getElementById("slFat").value = state.split.f;
-      document.getElementById("lblPro").textContent = state.split.p + "%";
-      document.getElementById("lblCarb").textContent = state.split.c + "%";
-      document.getElementById("lblFat").textContent = state.split.f + "%";
-      document.getElementById("pctPro").textContent = state.split.p;
-      document.getElementById("pctCarb").textContent = state.split.c;
-      document.getElementById("pctFat").textContent = state.split.f;
-    }
-
-    function handleGlobalSliderChange(type, value){
-      let {p,c,f} = state.split;
-      value = Number(value);
-      if(type === "p") p = value;
-      if(type === "c") c = value;
-      if(type === "f") f = value;
-      const norm = normalizeSplit(p,c,f);
-      state.split = norm;
-      // apply to all meals WITHOUT changing ingredients
-      state.meals.forEach(m => m.split = {...norm});
-      syncGlobalFromState();
-      renderMeals();
-      updateTotals();
-    }
-
-    function attachGlobalHandlers(){
-      document.getElementById("slPro").addEventListener("input", e => handleGlobalSliderChange("p", e.target.value));
-      document.getElementById("slCarb").addEventListener("input", e => handleGlobalSliderChange("c", e.target.value));
-      document.getElementById("slFat").addEventListener("input", e => handleGlobalSliderChange("f", e.target.value));
-    }
-
-    function attachMealsHandlers(){
-      const wrap = document.getElementById("meals");
-
-      wrap.addEventListener("input", e => {
-        const mealEl = e.target.closest(".meal");
-        if(!mealEl) return;
-        const idx = Number(mealEl.dataset.index);
-        const meal = state.meals[idx];
-
-        // Portion slider
-        if(e.target.matches("input[data-port]")){
-          meal.portion = Number(e.target.value);
-          mealEl.querySelector("[data-port-val]").textContent = meal.portion.toFixed(2);
-          // re-render donut & totals, but DO NOT change ingredients
-          const macros = getMealMacros(meal);
-          mealEl.querySelector(".mealDonut .center").innerHTML = macros.kcal + "<small>kcal</small>";
-          const canvas = mealEl.querySelector("canvas");
-          drawDonut(canvas, meal.split);
-          updateTotals();
-        }
-
-        // Meal macro sliders
-        if(e.target.classList.contains("mealSlider")){
-          const type = e.target.dataset.type;
-          let p = meal.split.p, c = meal.split.c, f = meal.split.f;
-          const val = Number(e.target.value);
-          if(type === "p") p = val;
-          if(type === "c") c = val;
-          if(type === "f") f = val;
-          const norm = normalizeSplit(p,c,f);
-          meal.split = norm;
-
-          // update labels for this meal
-          mealEl.querySelector("[data-meal-p]").textContent = norm.p;
-          mealEl.querySelector("[data-meal-c]").textContent = norm.c;
-          mealEl.querySelector("[data-meal-f]").textContent = norm.f;
-
-          // sync inputs for this meal
-          mealEl.querySelector('input[data-type="p"]').value = norm.p;
-          mealEl.querySelector('input[data-type="c"]').value = norm.c;
-          mealEl.querySelector('input[data-type="f"]').value = norm.f;
-
-          // recompute donut & totals; ingredients stay the same
-          const macros = getMealMacros(meal);
-          mealEl.querySelector(".mealDonut .center").innerHTML = macros.kcal + "<small>kcal</small>";
-          const canvas = mealEl.querySelector("canvas");
-          drawDonut(canvas, meal.split);
-
-          // also update global split as weighted average of meals
-          const agg = state.meals.reduce((acc,m) => {
-            acc.p += m.split.p; acc.c += m.split.c; acc.f += m.split.f; return acc;
-          }, {p:0,c:0,f:0});
-          const avg = {
-            p: Math.round(agg.p / state.meals.length),
-            c: Math.round(agg.c / state.meals.length),
-            f: Math.max(0,100 - Math.round(agg.p / state.meals.length) - Math.round(agg.c / state.meals.length))
-          };
-          state.split = avg;
-          syncGlobalFromState();
-          updateTotals();
-        }
-      });
-
-      wrap.addEventListener("click", e => {
-        const btn = e.target.closest(".cta");
-        if(!btn) return;
-        const action = btn.dataset.action;
-        if(!action) return;
-        e.preventDefault();
-        alert("This button (“" + action + "”) will be wired later. Sliders already work and keep meals the same.");
-      });
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      initState();
-      renderMeals();
-      syncGlobalFromState();
-      updateTotals();
-      attachGlobalHandlers();
-      attachMealsHandlers();
+      const pExtraOut = card.querySelector('.protein-output');
+      const cExtraOut = card.querySelector('.carbs-output');
+      const fExtraOut = card.querySelector('.fat-output');
+      if(pExtraOut) pExtraOut.textContent = formatNumber(pExtra);
+      if(cExtraOut) cExtraOut.textContent = formatNumber(cExtra);
+      if(fExtraOut) fExtraOut.textContent = formatNumber(fExtra);
     });
-  </script>
+
+    // Update totals
+    const totalProteinEl = document.getElementById('total-protein');
+    const totalCarbsEl = document.getElementById('total-carbs');
+    const totalFatEl = document.getElementById('total-fat');
+    const totalCaloriesTextEl = document.getElementById('total-calories-text');
+    const donutKcalEl = document.getElementById('donut-kcal');
+    const summaryCaloriesEl = document.getElementById('summary-calories');
+    const summaryProteinEl = document.getElementById('summary-protein');
+    const summaryCarbsEl = document.getElementById('summary-carbs');
+    const summaryFatEl = document.getElementById('summary-fat');
+
+    if(totalProteinEl) totalProteinEl.textContent = formatNumber(totalP) + ' g';
+    if(totalCarbsEl) totalCarbsEl.textContent = formatNumber(totalC) + ' g';
+    if(totalFatEl) totalFatEl.textContent = formatNumber(totalF) + ' g';
+    if(totalCaloriesTextEl) totalCaloriesTextEl.textContent = formatNumber(totalKcal);
+    if(donutKcalEl) donutKcalEl.textContent = formatNumber(totalKcal);
+
+    if(summaryCaloriesEl) summaryCaloriesEl.textContent = formatNumber(totalKcal);
+    if(summaryProteinEl) summaryProteinEl.textContent = formatNumber(totalP) + ' g';
+    if(summaryCarbsEl) summaryCarbsEl.textContent = formatNumber(totalC) + ' g';
+    if(summaryFatEl) summaryFatEl.textContent = formatNumber(totalF) + ' g';
+
+    const macrosTotal = totalP + totalC + totalF;
+    let pPerc = 0, cPerc = 0, fPerc = 0;
+    if(macrosTotal > 0){
+      pPerc = (totalP / macrosTotal) * 100;
+      cPerc = (totalC / macrosTotal) * 100;
+      fPerc = 100 - pPerc - cPerc;
+    }
+
+    const splitP = document.getElementById('split-protein');
+    const splitC = document.getElementById('split-carbs');
+    const splitF = document.getElementById('split-fat');
+    if(splitP) splitP.textContent = formatNumber(pPerc) + '%';
+    if(splitC) splitC.textContent = formatNumber(cPerc) + '%';
+    if(splitF) splitF.textContent = formatNumber(fPerc) + '%';
+
+    const donut = document.getElementById('macro-donut');
+    if(donut){
+      donut.style.setProperty('--p', pPerc || 0);
+      donut.style.setProperty('--c', cPerc || 0);
+      donut.style.setProperty('--f', fPerc || 0);
+    }
+  }
+
+  function attachListeners(){
+    const container = document.getElementById('meals-list');
+    if(!container) return;
+    container.addEventListener('input', function(e){
+      const target = e.target;
+      if(target.matches('.slider-portion') ||
+         target.matches('.slider-protein') ||
+         target.matches('.slider-carbs') ||
+         target.matches('.slider-fat')){
+        updateAll();
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    attachListeners();
+    updateAll();
+  });
+})();
+</script>
 </body>
 </html>
