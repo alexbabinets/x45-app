@@ -27,7 +27,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,syste
 .page{max-width:1160px;margin:18px auto;padding:0 14px 160px;display:flex;flex-direction:column;gap:14px}
 .brand{display:flex;justify-content:center;margin-top:6px}
 .brand img{height:60px;filter:drop-shadow(0 8px 28px rgba(0,0,0,.45))}
-.topbar{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
+.topbar{display:flex;align-items:center;justify-content:space-between}
 .hello{color:var(--muted);font-weight:900}
 .coach{ display:flex; gap:14px; align-items:center; background:linear-gradient(180deg,#12121b,#0e0e15);
   padding:16px;border-radius:18px;border:1px solid var(--divider); position:relative }
@@ -80,12 +80,9 @@ select.input, input[type="text"].input{
 .slider.fat,.mealSlider.fat{ background:linear-gradient(90deg, rgba(245,158,11,.30), rgba(245,158,11,.10));border-color:rgba(245,158,11,.38)}
 .meal{border:1px solid #263245;background:linear-gradient(180deg,#10141b,#0e1016);border-radius:16px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 .meal+.meal{margin-top:10px}
-.mealHead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-    @media (max-width:600px){.mealHead{flex-direction:column;align-items:flex-start}.mealHead .inline{flex-wrap:wrap;row-gap:6px}}
+.mealHead{display:flex;justify-content:space-between;align-items:center}
 .mealBadge{background:#151b24;border:1px solid #2b3443;color:#cfe0ff;padding:6px 10px;border-radius:999px;font-weight:900;font-size:12px}
-.mealName{font-weight:900;font-size:17px;line-height:1.25}
-    .mealLabel{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
-    .mealTitle{font-weight:900;font-size:17px}
+.mealName{font-weight:900;font-size:18px}
 .portion{display:flex;align-items:center;gap:8px}
 .portion input{width:200px}
 .mealDonut{ position:relative; width:120px; height:120px; border-radius:12px; background:#0c1015; border:1px solid #1b2330; display:flex; align-items:center; justify-content:center; padding:6px }
@@ -166,9 +163,7 @@ input[type="file"].input { padding: 6px; }
 .scanProgress{display:none;margin:20px 0}
 .mealScanned{display:none}
 .mealScanned .mealHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-.mealName{font-weight:900;font-size:17px;line-height:1.25}
-    .mealLabel{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
-    .mealTitle{font-weight:900;font-size:17px}
+.mealName{font-weight:900;font-size:18px}
 .mealBadge{background:#151b24;border:1px solid #2b3443;color:#cfe0ff;padding:6px 10px;border-radius:999px;font-weight:900;font-size:12px}
 .mealDonut{position:relative;width:120px;height:120px;border-radius:12px;background:#0c1015;border:1px solid #1b2330;display:flex;align-items:center;justify-content:center;padding:6px}
 .mealDonut canvas{width:108px;height:108px}
@@ -180,39 +175,54 @@ input[type="file"].input { padding: 6px; }
 .portionList li{margin:3px 0}
 .portionList em{color:#9aa3ad;font-style:normal}
 
-/* ==== MOBILE DONUT OVERRIDE (MEALS) ==== */
-.mealDonutShell{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  margin:14px auto 8px;
-}
-
-.mealDonut{
-  position:relative;
-  width:min(140px, 65vw);
-  height:min(140px, 65vw);
-}
-
-.mealDonutRing{
-  position:absolute;
-  inset:0;
-  border-radius:50%;
-}
-
-.mealDonutCenter{
-  position:absolute;
-  inset:22%;
-  border-radius:50%;
-}
-
-@media (max-width:480px){
-  .mealDonutShell{
-    padding-top:8px;
-    padding-bottom:4px;
+  /* Layout helpers */
+  .mealsHeader{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:10px;
   }
-}
+  .mealsHeader h2{
+    margin:0;
+  }
 
+  /* Mobile portrait adjustments: stack everything in one column */
+  @media (max-width:600px){
+    .mealsHeader{
+      flex-direction:column;
+      align-items:flex-start;
+    }
+    .mealHead{
+      flex-direction:column;
+      align-items:flex-start;
+      gap:6px;
+    }
+    .mealHeadMain{
+      width:100%;
+    }
+    .mealActions{
+      width:100%;
+      justify-content:flex-start;
+      flex-wrap:wrap;
+      row-gap:6px;
+    }
+    .mealTitle{
+      max-width:100%;
+      word-break:break-word;
+    }
+    /* Any meal donut grids: stack donut above macros/text and center */
+    div[style*="grid-template-columns:120px minmax(0,1fr)"],
+    div[style*="grid-template-columns:120px 1fr"],
+    div[style*="grid-template-columns:130px minmax(0,1fr)"],
+    div[style*="grid-template-columns:130px 1fr"]{
+      grid-template-columns:1fr !important;
+      justify-items:center;
+    }
+    .mealDonut{
+      margin:0 auto 8px auto;
+    }
+  }
 </style>
 </head>
 <body>
@@ -319,7 +329,7 @@ input[type="file"].input { padding: 6px; }
     </div>
   </section>
   <section class="card">
-    <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px">
+    <div class="mealsHeader">
       <h2>Meals & Portions</h2>
       <span class="mealBadge" id="totalsBadge">Total: — kcal • P — g • C — g • F — g</span>
     </div>
@@ -742,7 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
       block.dataset.index = String(idx);
       block.innerHTML = `
         <div class="mealHead">
-          <div class="mealName"><span class="mealLabel">${m.name}</span><br><span class="mealTitle">${m.title}</span></div>
+          <div class="mealName">${m.name} — ${m.title}</div>
           <div class="inline">
             <button class="icon fav" data-fav-toggle="${idx}" aria-pressed="false" title="Favorite"><span class="star">★</span></button>
             <button class="cta small" data-open-save="${idx}" title="Save to favorites folder">Save</button>
