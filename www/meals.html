@@ -174,6 +174,55 @@ input[type="file"].input { padding: 6px; }
 .portionList{margin:8px 0 0;padding-left:18px;color:#e7ecf3}
 .portionList li{margin:3px 0}
 .portionList em{color:#9aa3ad;font-style:normal}
+
+  /* Layout helpers */
+  .mealsHeader{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .mealsHeader h2{
+    margin:0;
+  }
+
+  /* Mobile portrait adjustments: stack everything in one column */
+  @media (max-width:600px){
+    .mealsHeader{
+      flex-direction:column;
+      align-items:flex-start;
+    }
+    .mealHead{
+      flex-direction:column;
+      align-items:flex-start;
+      gap:6px;
+    }
+    .mealHeadMain{
+      width:100%;
+    }
+    .mealActions{
+      width:100%;
+      justify-content:flex-start;
+      flex-wrap:wrap;
+      row-gap:6px;
+    }
+    .mealTitle{
+      max-width:100%;
+      word-break:break-word;
+    }
+    /* Any meal donut grids: stack donut above macros/text and center */
+    div[style*="grid-template-columns:120px minmax(0,1fr)"],
+    div[style*="grid-template-columns:120px 1fr"],
+    div[style*="grid-template-columns:130px minmax(0,1fr)"],
+    div[style*="grid-template-columns:130px 1fr"]{
+      grid-template-columns:1fr !important;
+      justify-items:center;
+    }
+    .mealDonut{
+      margin:0 auto 8px auto;
+    }
+  }
 </style>
 </head>
 <body>
@@ -280,7 +329,7 @@ input[type="file"].input { padding: 6px; }
     </div>
   </section>
   <section class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between">
+    <div class="mealsHeader">
       <h2>Meals & Portions</h2>
       <span class="mealBadge" id="totalsBadge">Total: — kcal • P — g • C — g • F — g</span>
     </div>
@@ -1891,114 +1940,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   init();
 })();
-});
-
-
-// === Per-meal macro sliders ===
-// Allow each meal's P/C/F sliders to adjust that meal's macro split and redraw its donut
-document.addEventListener('input', function(e){
-  const t = e.target;
-  if (!t.classList || !t.classList.contains('mealSlider')) return;
-
-  const shell = t.closest('.sliders');
-  if (!shell) return;
-
-  const idxRaw = shell.getAttribute('data-i');
-  const idx = idxRaw ? parseInt(idxRaw, 10) : NaN;
-  if (!Number.isFinite(idx) || !window.state || !Array.isArray(window.state.meals) || !window.state.meals[idx]) return;
-
-  const meal = window.state.meals[idx];
-  const macroType = t.getAttribute('data-type'); // 'p' | 'c' | 'f'
-  if (!macroType || !['p','c','f'].includes(macroType)) return;
-
-  let v = Number(t.value);
-  if (!Number.isFinite(v)) v = 0;
-  v = Math.max(0, Math.min(100, v));
-
-  const keys = ['p','c','f'];
-  const oldSplit = meal.split || { p: 33, c: 33, f: 34 };
-  const others = keys.filter(k => k !== macroType);
-  const baseOthersSum = others.reduce((sum, k) => sum + (oldSplit[k] || 0), 0);
-
-  const rest = Math.max(0, 100 - v);
-  const newSplit = { ...oldSplit, [macroType]: v };
-
-  if (baseOthersSum <= 0) {
-    // If something went wrong with previous values, split the remainder evenly
-    const even = Math.round(rest / others.length);
-    others.forEach(k => { newSplit[k] = even; });
-  } else {
-    let distributed = 0;
-    others.forEach((k, i) => {
-      let val;
-      if (i === others.length - 1) {
-        val = rest - distributed;
-      } else {
-        val = Math.round(rest * (oldSplit[k] || 0) / baseOthersSum);
-        distributed += val;
-      }
-      newSplit[k] = val;
-    });
-  }
-
-  // Fix possible rounding drift so total is exactly 100
-  const sum = keys.reduce((s, k) => s + (newSplit[k] || 0), 0);
-  const diff = 100 - sum;
-  newSplit[macroType] = Math.max(0, Math.min(100, (newSplit[macroType] || 0) + diff));
-
-  // Save back to state
-  meal.split = newSplit;
-
-  // Update small % labels near sliders
-  const mp = document.getElementById('mp-' + idx);
-  const mc = document.getElementById('mc-' + idx);
-  const mf = document.getElementById('mf-' + idx);
-  if (mp) mp.textContent = newSplit.p;
-  if (mc) mc.textContent = newSplit.c;
-  if (mf) mf.textContent = newSplit.f;
-
-  const card = shell.closest('.meal') || shell.closest('.card');
-
-  // Recompute approximate grams per macro for this meal
-  if (card && meal.parts && Array.isArray(meal.parts)) {
-    const totalKcal = meal.parts.reduce((s, p) => s + (p.kcal || 0), 0);
-    if (totalKcal > 0) {
-      const fracP = (newSplit.p || 0) / 100;
-      const fracC = (newSplit.c || 0) / 100;
-      const fracF = (newSplit.f || 0) / 100;
-
-      const gp = totalKcal * fracP / 4; // 4 kcal/g
-      const gc = totalKcal * fracC / 4; // 4 kcal/g
-      const gf = totalKcal * fracF / 9; // 9 kcal/g
-
-      const proPill = card.querySelector('.pill.pro');
-      const carbPill = card.querySelector('.pill.carb');
-      const fatPill = card.querySelector('.pill.fat');
-
-      if (proPill) {
-        const spans = proPill.querySelectorAll('span');
-        if (spans[1]) spans[1].textContent = Math.round(gp);
-      }
-      if (carbPill) {
-        const spans = carbPill.querySelectorAll('span');
-        if (spans[1]) spans[1].textContent = Math.round(gc);
-      }
-      if (fatPill) {
-        const spans = fatPill.querySelectorAll('span');
-        if (spans[1]) spans[1].textContent = Math.round(gf);
-      }
-    }
-  }
-
-  // Redraw this meal's donut so it matches the new split
-  if (card) {
-    const donut = card.querySelector('.mdonut');
-    if (donut && typeof drawDonut === 'function') {
-      requestAnimationFrame(function(){
-        drawDonut(donut, newSplit.p || 0, newSplit.c || 0, newSplit.f || 0);
-      });
-    }
-  }
 });
 </script>
 </body>
