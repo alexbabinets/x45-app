@@ -179,6 +179,40 @@ input[type="file"].input { padding: 6px; }
 .portionList{margin:8px 0 0;padding-left:18px;color:#e7ecf3}
 .portionList li{margin:3px 0}
 .portionList em{color:#9aa3ad;font-style:normal}
+
+/* ==== MOBILE DONUT OVERRIDE (MEALS) ==== */
+.mealDonutShell{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  margin:14px auto 8px;
+}
+
+.mealDonut{
+  position:relative;
+  width:min(140px, 65vw);
+  height:min(140px, 65vw);
+}
+
+.mealDonutRing{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+}
+
+.mealDonutCenter{
+  position:absolute;
+  inset:22%;
+  border-radius:50%;
+}
+
+@media (max-width:480px){
+  .mealDonutShell{
+    padding-top:8px;
+    padding-bottom:4px;
+  }
+}
+
 </style>
 </head>
 <body>
