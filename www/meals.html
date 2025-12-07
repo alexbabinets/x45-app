@@ -1187,6 +1187,76 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     return `1 serving of ${capWords(l)}`;
   }
+  function adjustMealToSplit(meal){
+    if (!meal || !Array.isArray(meal.parts) || !meal.parts.length || !meal.split) return;
+    const parts = meal.parts;
+    // Use current total kcal of the meal as anchor
+    let totalKcal = 0;
+    parts.forEach(p=>{
+      const pk = (p.p||0)*4, ck = (p.c||0)*4, fk = (p.f||0)*9;
+      totalKcal += p.kcal && p.kcal>0 ? p.kcal : (pk+ck+fk);
+    });
+    if (!totalKcal || !isFinite(totalKcal) || totalKcal<=0) return;
+
+    const split = meal.split;
+    const targetPk = totalKcal * (split.p/100);
+    const targetCk = totalKcal * (split.c/100);
+    const targetFk = totalKcal * (split.f/100);
+
+    const catK = { pro:0, carb:0, fat:0 };
+    parts.forEach(p=>{
+      const P = p.p||0, C = p.c||0, F = p.f||0;
+      const k = (P*4)+(C*4)+(F*9);
+      const mx = Math.max(P,C,F);
+      let cat = 'pro';
+      if (mx===C) cat='carb'; else if (mx===F) cat='fat';
+      catK[cat] += k;
+    });
+
+    const desiredK = { pro:targetPk, carb:targetCk, fat:targetFk };
+
+    parts.forEach(p=>{
+      const P = p.p||0, C = p.c||0, F = p.f||0;
+      const mx = Math.max(P,C,F);
+      let cat = 'pro';
+      if (mx===C) cat='carb'; else if (mx===F) cat='fat';
+      const curK = catK[cat] || 0;
+      let factor = 1;
+      if (curK>0 && desiredK[cat]>0){
+        factor = desiredK[cat] / curK;
+      } else if (desiredK[cat]<=0){
+        factor = 0.6; // shrink this macro family a bit if slider pulls away
+      }
+      factor = Math.max(0.25, Math.min(3, factor)); // keep within sane bounds
+      p.p = Math.round(P * factor);
+      p.c = Math.round(C * factor);
+      p.f = Math.round(F * factor);
+      const kcal = (p.p*4)+(p.c*4)+(p.f*9);
+      p.kcal = Math.max(1, Math.round(kcal));
+      const baseG = p.grams && p.grams>0 ? p.grams : Math.max(1, Math.round(kcal/4));
+      p.grams = Math.max(1, Math.round(baseG * factor));
+      p.prettyUnits = getHumanPortion(p.label || p.name || '', p.grams);
+    });
+
+    // Light normalize so total kcal stays close to original
+    let newTotal = 0;
+    parts.forEach(p=>{ newTotal += p.kcal||0; });
+    if (newTotal>0){
+      const kFac = totalKcal / newTotal;
+      const clamp = (v)=>Math.max(0, v);
+      parts.forEach(p=>{
+        p.p = clamp(Math.round((p.p||0)*kFac));
+        p.c = clamp(Math.round((p.c||0)*kFac));
+        p.f = clamp(Math.round((p.f||0)*kFac));
+        const kcal = (p.p*4)+(p.c*4)+(p.f*9);
+        p.kcal = Math.max(1, Math.round(kcal));
+        const baseG = p.grams && p.grams>0 ? p.grams : Math.max(1, Math.round(kcal/4));
+        p.grams = Math.max(1, Math.round(baseG * kFac));
+        p.prettyUnits = getHumanPortion(p.label || p.name || '', p.grams);
+      });
+    }
+  }
+
   function humanizeMeal(meal) {
     if (!meal.parts) return meal;
     meal.parts = meal.parts.map(p => ({
@@ -1593,12 +1663,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (type==='p') next.p = val; else if (type==='c') next.c = val; else next.f = val;
       const n = normalizeSplit(next.p, next.c, next.f);
       m.split = n;
+      // adjust ingredients in this meal to respect new split (more protein → more protein foods, etc.)
+      adjustMealToSplit(m);
       // reflect on labels quickly
       const mp = $('#mp-'+idx), mc = $('#mc-'+idx), mf = $('#mf-'+idx);
       if (mp) mp.textContent = m.split.p;
       if (mc) mc.textContent = m.split.c;
       if (mf) mf.textContent = m.split.f;
-      // no recompose — keep ingredients, just update this meal's split & redraw
+      // sync global donut/sliders to new per-meal balance and rerender
+      updateGlobalFromMeals(true);
       renderMeals();
       return;
     }
