@@ -223,6 +223,20 @@ input[type="file"].input { padding: 6px; }
       margin:0 auto 8px auto;
     }
   }
+
+  @media (max-width:600px){
+    .footer{
+      grid-template-columns:repeat(3,1fr);
+      row-gap:8px;
+      padding:8px;
+    }
+    .footer a,
+    .footer span.nav-disabled{
+      font-size:12px;
+      padding:10px 8px;
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -1584,14 +1598,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (mp) mp.textContent = m.split.p;
       if (mc) mc.textContent = m.split.c;
       if (mf) mf.textContent = m.split.f;
-      // recompose this meal (respect portion)
-      const pool = ['Breakfast','Lunch','Snack','Dinner'][idx];
-      const portion = Number(m.portion||1);
-      const newMeal = composeMeal(mulberry32(Math.floor(Math.random()*1e9)), pool, Math.round(m.baseKcal * portion), m.split, state.settings.diet||'any', (state.settings.dislikes||[]), (state.settings.allergies||[]));
-      newMeal.portion = portion;
-      state.meals[idx] = newMeal;
-      // NEW: drive globals from meals so sliders "feel each other"
-      updateGlobalFromMeals(true);
+      // no recompose — keep ingredients, just update this meal's split & redraw
       renderMeals();
       return;
     }
