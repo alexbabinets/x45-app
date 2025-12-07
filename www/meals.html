@@ -669,22 +669,23 @@ document.addEventListener('DOMContentLoaded', () => {
       carbs:['rice','quinoa','oats','buckwheat','sweet potato','berries','leafy salad','broccoli','pita','couscous'],
       fats:['olive oil','avocado','almonds','walnuts','tahini','ghee']
     },
-    kosher: {
-      proteins:['chicken breast','beef (kosher)','eggs','salmon','tuna (canned)','tofu','turkey (kosher)'],
-      carbs:['rice','quinoa','oats','buckwheat','sweet potato','berries','leafy salad','broccoli','pita','matzo'],
-      fats:['olive oil','avocado','almonds','walnuts','tahini','coconut oil']
-    }
+kosher: {
+  proteins:['chicken breast','beef (kosher)','eggs','salmon','tuna (canned)','tofu','turkey (kosher)'],
+  carbs:['rice','quinoa','oats','buckwheat','sweet potato','berries','leafy salad','broccoli','pita','matzo'],
+  fats:['olive oil','avocado','almonds','walnuts','tahini','coconut oil']
+},
+diabetic1: {
+  proteins:['chicken breast','turkey','salmon','eggs','tofu','tempeh','Greek yogurt','cottage cheese'],
+  carbs:['quinoa','oats','brown rice','sweet potato','lentils','beans','berries','leafy salad','broccoli'],
+  fats:['olive oil','avocado','almonds','walnuts','chia seeds','flax seeds']
+},
+diabetic2: {
+  proteins:['white fish','chicken breast','egg whites','shrimp','tofu','lentils'],
+  carbs:['steel-cut oats','buckwheat','berries','apple','pear','leafy salad','zucchini','green beans','cauliflower rice'],
+  fats:['olive oil','avocado','pumpkin seeds','sunflower seeds','peanut butter (no sugar)','tahini']
+}
 
-    diabetic1: {
-      proteins:['chicken breast','turkey','salmon','eggs','tofu','tempeh','greek yogurt (plain)','cottage cheese (low-fat)','lentils','black beans'],
-      carbs:['quinoa','oats','buckwheat','sweet potato','berries','leafy salad','broccoli','cauliflower rice','zucchini noodles','green beans'],
-      fats:['olive oil','avocado','almonds (small handful)','walnuts (small handful)','chia seeds','pumpkin seeds','peanut butter (natural)','sunflower seeds']
-    },
-    diabetic2: {
-      proteins:['white fish','turkey breast','egg whites','tempeh','seitan','plain skyr yogurt','shrimp','tuna (in water)','edamame','chickpeas'],
-      carbs:['barley','farro','brown rice (small portion)','lentils','beans','berries','apples','pears','non-starchy vegetables mix','leafy salad'],
-      fats:['olive oil','avocado','flax seeds','chia seeds','pumpkin seeds','olive tapenade','small handful nuts mix']
-    }  };
+  };
   const COOKING_METHODS = ['Grilled', 'Baked', 'Stir-Fried', 'Roasted', 'Sautéed', 'Poached', 'Steamed', 'Raw', 'Pan-Seared', 'Smoked', 'Boiled', 'Simmered', 'Slow-Cooked', 'Air-Fried', 'Sous-Vide'];
   function getDiet(key){
     const base = DIETS[key] || DIETS.any;
@@ -713,7 +714,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   window.state = state;
   // FIXED calories per your directive
-  const GOAL_KCAL = { lose_weight:1600, build_muscle:3100, performance:2700, health:2400 };
+  const GOAL_KCAL = { lose_weight:1600, build_muscle:3100, performance:3000, health:2700 };
   const MIN_KCAL = 1400, MAX_KCAL = 4000;
   const activityBump = () => Math.round(0.02*(state.activity.steps||0) + 2*(state.activity.active_mins||0));
   function adjustedCalories(){
@@ -1693,11 +1694,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const m = state.meals[idx];
       if (!m) return;
       const portion = parseFloat(t.value);
+      if (!portion || portion <= 0) return;
       const pv = $('#pv-'+idx); if (pv) pv.textContent = portion.toFixed(1)+'×';
-      const oldPortion = Number(m.portion || 1);
-      const factor = portion / (oldPortion || 1);
-      const curKcal = m.parts.reduce((sum, p) => sum + (p.kcal||0), 0);
-      const targetKcal = curKcal * factor;
+      const baseKcal = m.baseKcal || m.parts.reduce((sum,p)=>sum + (p.kcal||0), 0);
+      const targetKcal = baseKcal * portion;
       scaleMeal(m, targetKcal);
       m.portion = portion;
       updateGlobalFromMeals(true); // portion changes affect weighting → update global
