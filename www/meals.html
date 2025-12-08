@@ -273,6 +273,10 @@ input[type="file"].input { padding: 6px; }
       </select>
       <button id="btnSaveGoal" class="cta primary">Save Goal</button>
     </div>
+    <div id="goalProgress" style="display:none;margin-top:8px">
+      <div class="progress-container"><div class="progress-bar" id="goalBar"></div></div>
+      <div class="progress-label" id="goalLabel">Updating your plan…</div>
+    </div>
     <div class="row" style="margin-top:10px">
       <label class="sub" style="min-width:60px">Support</label>
       <select id="supportSelect" class="input">
@@ -1775,7 +1779,8 @@ diabetic2: {
       showAIAlert(true);
       state.isLoading = false; // allow fallback to update indicator smoothly
       localRegenMeals(persistSplit);
-      stop();
+      stopMain();
+      stopGoal();
       return;
     }
     if (persistSplit) {
@@ -1786,7 +1791,8 @@ diabetic2: {
     state.isLoading = false;
     setTopSliders();
     renderMeals();
-    stop(); // finish bar exactly when content is ready
+    stopMain(); // finish bar exactly when content is ready
+    stopGoal();
   }
   async function aiSwap(idx){
     if (state.isLoading) return;
