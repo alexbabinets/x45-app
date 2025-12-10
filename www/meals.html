@@ -401,6 +401,10 @@ input[type="file"].input { padding: 6px; }
           </div>
           <div class="sub" style="margin-top:8px">Based on balance, nutrient density, and your goals.</div>
           <ul class="portionList" id="scannedParts"></ul>
+          <div class="sub" style="margin-top:12px;font-weight:600;">What’s good about this meal</div>
+          <ul class="portionList" id="goodPointsList"></ul>
+          <div class="sub" style="margin-top:12px;font-weight:600;">Where you can improve</div>
+          <ul class="portionList" id="badPointsList"></ul>
         </div>
       </div>
       <div class="row" style="margin-top:20px">
@@ -409,6 +413,11 @@ input[type="file"].input { padding: 6px; }
         <button id="btnBuildPlan" class="cta">Switch to Build Plan</button>
       </div>
     </div>
+  </section>
+  <section class="card" id="loggedMealsCard" style="margin-top:16px;display:none;">
+    <h2>Today’s Logged Meals</h2>
+    <div class="sub">Every time you log a scanned meal, it will appear here and be saved to your history.</div>
+    <div id="loggedMealsList"></div>
   </section>
   </div>
 </div>
@@ -714,11 +723,13 @@ diabetic2: {
     meals: [],
     settings: { diet: 'any', allergies: [], favorites: [], dislikes: [] },
     isLoading: false,
-    scannedMeal: null
+    scannedMeal: null,
+    loggedMeals: [],
+    lastUploadPreview: null
   };
   window.state = state;
   // FIXED calories per your directive
-  const GOAL_KCAL = { lose_weight:1600, build_muscle:3100, performance:3000, health:2700 };
+  const GOAL_KCAL = { lose_weight:1600, build_muscle:3100, performance:2700, health:2400 };
   const MIN_KCAL = 1400, MAX_KCAL = 4000;
   const activityBump = () => Math.round(0.02*(state.activity.steps||0) + 2*(state.activity.active_mins||0));
   function adjustedCalories(){
@@ -842,25 +853,97 @@ diabetic2: {
   }
   function updateScannedTotals(meal){
     if (!meal) return;
-    let kcal=0,gp=0,gc=0,gf=0;
-    meal.parts.forEach(p=>{ kcal+=p.kcal; gp+=p.p; gc+=p.c; gf+=p.f; });
+    let kcal = 0, gp = 0, gc = 0, gf = 0;
+    (meal.parts || []).forEach(p => {
+      kcal += p.kcal || 0;
+      gp   += p.p || 0;
+      gc   += p.c || 0;
+      gf   += p.f || 0;
+    });
+
+    // Basic macro badge + donut
     $('#sCal').textContent = `Calories: ${kcal}`;
     $('#sPro').textContent = `Protein: ${gp} g`;
     $('#sCarb').textContent = `Carbs: ${gc} g`;
     $('#sFat').textContent = `Fat: ${gf} g`;
     $('#scannedCenter').textContent = kcal;
-    requestAnimationFrame(()=>drawDonut($('#scannedDonut'), meal.split.p, meal.split.c, meal.split.f));
+    requestAnimationFrame(() => drawDonut($('#scannedDonut'), meal.split.p, meal.split.c, meal.split.f));
     const badge = `Total: ${kcal} kcal • P ${gp} g • C ${gc} g • F ${gf} g`;
     $('#scannedTotals').textContent = badge;
-    // Health score logic (simple: based on balance and density)
-    const balance = Math.min(10, 10 - Math.abs(meal.split.p - 30) / 3 - Math.abs(meal.split.c - 40) / 3 - Math.abs(meal.split.f - 30) / 3);
-    const density = Math.min(5, (gp / Math.max(1, kcal / 4)) * 10); // rough protein density
-    const score = Math.round(Math.max(1, balance + density / 2));
-    const colors = {10:'--health-10',9:'--health-8-9',8:'--health-8-9',7:'--health-6-7',6:'--health-6-7',5:'--health-4-5',4:'--health-4-5',3:'--health-2-3',2:'--health-2-3',1:'--health-0-1'};
-    const color = cssVar(colors[score] || '--health-0-1');
+
+    // Health score + coaching bullets
+    const pPct = (meal.split && typeof meal.split.p === 'number') ? meal.split.p : 0;
+    const cPct = (meal.split && typeof meal.split.c === 'number') ? meal.split.c : 0;
+    const fPct = (meal.split && typeof meal.split.f === 'number') ? meal.split.f : 0;
+
+    // Balance around 30/40/30, penalize large deviations
+    const balancePenalty = (Math.abs(pPct - 30) + Math.abs(cPct - 40) + Math.abs(fPct - 30)) / 15;
+    const balanceScore = Math.max(0, 10 - balancePenalty);
+
+    // Very rough protein density signal: more protein per kcal is better
+    const densityScore = Math.min(5, (gp / Math.max(1, kcal / 10)));
+
+    let score = Math.round(Math.min(10, Math.max(1, balanceScore + densityScore / 2)));
+
+    const SCORE_COLORS = {
+      10:'--health-10',
+      9:'--health-8-9',
+      8:'--health-8-9',
+      7:'--health-6-7',
+      6:'--health-4-5',
+      5:'--health-4-5',
+      4:'--health-2-3',
+      3:'--health-2-3',
+      2:'--health-0-1',
+      1:'--health-0-1'
+    };
+    const color = cssVar(SCORE_COLORS[score] || '--health-0-1');
     $('#healthScore').textContent = score;
     $('#healthBar').style.background = color;
     $('#healthBar').style.width = `${score * 10}%`;
+
+    // Good / bad teaching points
+    const good = [];
+    const bad = [];
+
+    if (gp >= 20) good.push('Solid protein portion to keep you full and support muscle.');
+    else bad.push('Protein is on the low side — add some lean protein to this meal.');
+
+    if (cPct <= 50) good.push('Carb balance looks reasonable, not overloaded with sugars.');
+    else bad.push('Carbohydrates are quite high — watch out for sugary drinks and refined carbs.');
+
+    if (fPct <= 35) good.push('Fats stay within a comfortable range.');
+    else bad.push('Fats are high — sauces, oils, cheese and fried foods add up quickly.');
+
+    if (kcal <= 800) good.push('Total calories are acceptable for one main meal.');
+    else bad.push('Calories are high for a single meal — consider shrinking portion size.');
+
+    const hasVeg = (meal.parts || []).some(p =>
+      /salad|greens|lettuce|vegetable|broccoli|spinach|tomato|cucumber|pepper|carrot|bean|peas|fruit|berry/i.test(p.label || '')
+    );
+    if (hasVeg) good.push('Nice amount of vegetables or fruit — great for fiber and vitamins.');
+    else bad.push('Almost no vegetables here — add some salad or cooked veggies on the side.');
+
+    const goodUl = $('#goodPointsList');
+    const badUl  = $('#badPointsList');
+    if (goodUl && badUl) {
+      goodUl.innerHTML = '';
+      badUl.innerHTML = '';
+      good.forEach(t => {
+        const li = document.createElement('li');
+        li.textContent = t;
+        goodUl.appendChild(li);
+      });
+      bad.forEach(t => {
+        const li = document.createElement('li');
+        li.textContent = t;
+        badUl.appendChild(li);
+      });
+    }
+
+    // Keep a copy of the evaluation so logging can reuse it
+    state.scannedEvaluation = { kcal, gp, gc, gf, pPct, cPct, fPct, score, goodPoints: good, badPoints: bad };
+  }
   }
   function renderScannedParts(meal){
     const ul = $('#scannedParts'); ul.innerHTML='';
@@ -1885,14 +1968,17 @@ diabetic2: {
       $('#uploadMode').style.display = 'none';
       $('#hello').textContent = `${greet()}, ${state.name} — let’s dial in your meals.`;
       $('#coachLine').textContent = BUILD_COACH_LINES[Math.floor(Math.random()*BUILD_COACH_LINES.length)];
+      $('#btnOpenSettings').style.display = 'inline-flex';
       localRegenMeals();
       idle(()=>aiRegenMeals());
     } else {
       $('#buildMode').style.display = 'none';
       $('#uploadMode').style.display = 'block';
-      $('#hello').textContent = `${greet()}, ${state.name} — let's scan your meal.`;
+      $('#hello').textContent = `${greet()}, ${state.name} — let’s scan your meal.`;
       $('#coachLine').textContent = UPLOAD_COACH_LINES[Math.floor(Math.random()*UPLOAD_COACH_LINES.length)];
+      $('#btnOpenSettings').style.display = 'none';
     }
+  }
   }
   /* ---------- Mock scan data (simulate AI) ---------- */
   const MOCK_MEALS = [
@@ -1935,28 +2021,75 @@ diabetic2: {
     showScanned(meal);
     stop();
   }
-  async function logMeal(meal){
-    // Simulate logging to a meals_log table or append to daily
-    if (!state.uid) return;
-    const logEntry = {
-      user_id: state.uid,
-      meal_title: meal.title,
-      timestamp: new Date().toISOString(),
-      calories: meal.parts.reduce((sum, p) => sum + p.kcal, 0),
-      protein_g: meal.parts.reduce((sum, p) => sum + p.p, 0),
-      carbs_g: meal.parts.reduce((sum, p) => sum + p.c, 0),
-      fats_g: meal.parts.reduce((sum, p) => sum + p.f, 0),
-      health_score: parseInt($('#healthScore').textContent),
-      image_url: '' // In real impl, upload to storage
-    };
-    const { error } = await sb.from('meals_log').insert(logEntry); // Assume table exists
-    if (error) console.warn('Log error', error);
+  function addLoggedMealToList(entry){
+    state.loggedMeals.push(entry);
+    const card = document.createElement('div');
+    card.className = 'meal';
+    const time = new Date(entry.scanned_at || entry.created_at || Date.now())
+      .toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    card.innerHTML = `
+      <div class="mealHead">
+        <div>
+          <div class="mealName">${entry.meal_name || entry.title || 'Logged meal'}</div>
+          <div class="sub">Logged at ${time}</div>
+        </div>
+        <span class="mealBadge">Total: ${entry.calories || entry.kcal || 0} kcal</span>
+      </div>
+      <div class="pills" style="margin-top:8px">
+        <span class="pill kcal">Score: ${entry.health_score}/10</span>
+        <span class="pill protein">P: ${entry.protein_g || 0} g</span>
+        <span class="pill carbs">C: ${entry.carbs_g || 0} g</span>
+        <span class="pill fats">F: ${entry.fats_g || 0} g</span>
+      </div>`;
+    const list = $('#loggedMealsList');
+    if (list) {
+      list.appendChild(card);
+      $('#loggedMealsCard').style.display = 'block';
+    }
   }
+
+  async function logMeal(meal){
+    if (!state.uid) return;
+
+    // Reuse latest evaluation if available; fall back to a minimal one
+    const ev = state.scannedEvaluation || { kcal:0, gp:0, gc:0, gf:0, score: parseInt($('#healthScore').textContent) || 0, goodPoints: [], badPoints: [] };
+    if (!ev.kcal) {
+      (meal.parts || []).forEach(p => {
+        ev.kcal += p.kcal || 0;
+        ev.gp   += p.p || 0;
+        ev.gc   += p.c || 0;
+        ev.gf   += p.f || 0;
+      });
+    }
+
+    const logEntry = {
+      meal_name: meal.title || 'Scanned meal',
+      scanned_at: new Date().toISOString(),
+      image_url: state.lastUploadPreview || '',
+      calories: Math.round(ev.kcal),
+      protein_g: Math.round(ev.gp),
+      carbs_g: Math.round(ev.gc),
+      fats_g: Math.round(ev.gf),
+      health_score: Math.min(10, Math.max(1, ev.score || parseInt($('#healthScore').textContent) || 0)),
+      good_points: (ev.goodPoints || []).join('\n'),
+      bad_points: (ev.badPoints || []).join('\n'),
+      raw_ai_json: meal
+    };
+
+    const { data: inserted, error } = await sb.from('x45_meal_scans').insert(logEntry).select().single();
+    if (error) {
+      console.warn('Log error', error);
+      return;
+    }
+    addLoggedMealToList(inserted || logEntry);
+  }
+
   $('#mealPhoto').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
+      state.lastUploadPreview = ev.target.result;
       $('#uploadImg').src = ev.target.result;
       $('#uploadImgWrap').style.display = 'block';
       $('#scannedMealImg').src = ev.target.result;
