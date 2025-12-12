@@ -237,19 +237,6 @@ input[type="file"].input { padding: 6px; }
     }
   }
 
-
-  /* ---- Upload Meal: history list ---- */
-  .scanHistory{ display:flex; flex-direction:column; gap:12px; }
-  .scanItem{ display:flex; gap:12px; align-items:flex-start; padding:12px; border:1px solid rgba(255,255,255,.08); border-radius:14px; background:rgba(255,255,255,.03); }
-  .scanThumb{ width:66px; height:66px; border-radius:12px; overflow:hidden; flex:0 0 auto; background:rgba(255,255,255,.05); display:flex; align-items:center; justify-content:center; }
-  .scanThumb img{ width:100%; height:100%; object-fit:cover; display:block; }
-  .scanMeta{ flex:1; min-width:0; }
-  .scanTitle{ font-weight:800; letter-spacing:.2px; font-size:15px; margin:0 0 6px; }
-  .scanLine{ opacity:.92; font-size:13px; line-height:1.35; }
-  .scanScore{ margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; }
-  .scanChip{ font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.04); }
-  .scanChip strong{ font-weight:900; }
-
 </style>
 </head>
 <body>
@@ -373,18 +360,10 @@ input[type="file"].input { padding: 6px; }
     <h2>Upload Your Meal Photo</h2>
     <div class="sub">Snap a clear photo of your plate and upload it. We'll scan and analyze the nutrition.</div>
     <div class="uploadArea" id="uploadArea">
-      <div class="row" style="justify-content:center;gap:10px;flex-wrap:wrap">
-        <label for="mealPhotoLibrary" class="cta primary" style="font-size:16px;padding:12px 18px;cursor:pointer">
-          🖼️ Upload from Library
-        </label>
-        <label for="mealPhotoCamera" class="cta primary" style="font-size:16px;padding:12px 18px;cursor:pointer">
-          📸 Take Photo Now
-        </label>
-      </div>
-
-      <input type="file" id="mealPhotoLibrary" class="input" accept="image/*" style="display:none">
-      <input type="file" id="mealPhotoCamera" class="input" accept="image/*" capture="environment" style="display:none">
-
+      <label for="mealPhoto" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
+        📸 Take Photo or Upload Image
+      </label>
+      <input type="file" id="mealPhoto" class="input" accept="image/*" style="display:none">
       <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
@@ -430,12 +409,6 @@ input[type="file"].input { padding: 6px; }
         <button id="btnBuildPlan" class="cta">Switch to Build Plan</button>
       </div>
     </div>
-  </section>
-  <section class="card" id="scanHistoryCard" style="margin-top:16px">
-    <h2>Scanned Meals (Today)</h2>
-    <div class="sub">Your scanned meals stay on this page and are saved to your account for the dashboard.</div>
-    <div id="scanHistoryEmpty" class="sub" style="opacity:.9;margin-top:10px">No scanned meals logged yet.</div>
-    <div id="scanHistoryList" class="scanHistory" style="margin-top:12px"></div>
   </section>
   </div>
 </div>
@@ -1910,7 +1883,8 @@ diabetic2: {
     if (mode === 'build_plan') {
       $('#buildMode').style.display = 'block';
       $('#uploadMode').style.display = 'none';
-      if ($('#btnOpenSettings')) $('#btnOpenSettings').style.display = 'inline-flex';
+      // Meal Settings applies to Build Plan only
+      $('#btnOpenSettings').style.display = 'inline-flex';
       $('#hello').textContent = `${greet()}, ${state.name} — let’s dial in your meals.`;
       $('#coachLine').textContent = BUILD_COACH_LINES[Math.floor(Math.random()*BUILD_COACH_LINES.length)];
       localRegenMeals();
@@ -1918,239 +1892,96 @@ diabetic2: {
     } else {
       $('#buildMode').style.display = 'none';
       $('#uploadMode').style.display = 'block';
+      // Hide Meal Settings in Upload Meal mode
+      $('#btnOpenSettings').style.display = 'none';
       $('#hello').textContent = `${greet()}, ${state.name} — let's scan your meal.`;
       $('#coachLine').textContent = UPLOAD_COACH_LINES[Math.floor(Math.random()*UPLOAD_COACH_LINES.length)];
-      if ($('#btnOpenSettings')) $('#btnOpenSettings').style.display = 'none';
     }
   }
-  /* ---------- Mock scan data (simulate AI) ---------- */
-  const MOCK_MEALS = [
-    { title: 'Grilled Chicken Salad', split: {p:35, c:45, f:20}, parts: [
-      {label: 'Grilled Chicken Breast', prettyUnits: '1 medium grilled chicken breast (120g)', kcal: 200, p:35, c:0, f:5},
-      {label: 'Mixed Greens', prettyUnits: '2 cups fresh leafy greens salad (60g)', kcal: 20, p:2, c:4, f:0},
-      {label: 'Cherry Tomatoes', prettyUnits: 'handful cherry tomatoes (50g)', kcal: 10, p:0, c:2, f:0},
-      {label: 'Olive Oil Dressing', prettyUnits: '1 tbsp extra virgin olive oil (14g)', kcal: 120, p:0, c:0, f:14}
-    ]},
-    { title: 'Grilled Chicken Salad Bowl', split: {p:40, c:30, f:30}, parts: [
-      {label: 'Grilled Chicken Breast', prettyUnits: '1 medium grilled chicken breast (120g)', kcal: 200, p:35, c:0, f:5},
-      {label: 'Romaine Lettuce', prettyUnits: '2 cups fresh leafy greens salad (60g)', kcal: 20, p:2, c:4, f:0},
-      {label: 'Cherry Tomatoes', prettyUnits: 'handful cherry tomatoes (50g)', kcal: 10, p:0, c:2, f:0},
-      {label: 'Red Onion', prettyUnits: '¼ red onion, sliced (20g)', kcal: 8, p:0, c:2, f:0},
-      {label: 'Cucumber', prettyUnits: '½ cucumber, sliced (100g)', kcal: 15, p:1, c:3, f:0},
-      {label: 'Feta Cheese', prettyUnits: '1 oz feta cheese crumbled (28g)', kcal: 75, p:4, c:1, f:6},
-      {label: 'Olive Oil Dressing', prettyUnits: '1 tbsp extra virgin olive oil (14g)', kcal: 120, p:0, c:0, f:14}
-    ]},
-    { title: 'Avocado Toast', split: {p:15, c:50, f:35}, parts: [
-      {label: 'Whole Grain Toast', prettyUnits: '1 slice whole grain toast (50g)', kcal: 80, p:3, c:15, f:1},
-      {label: 'Smashed Avocado', prettyUnits: '½ ripe avocado, sliced (70g)', kcal: 120, p:2, c:6, f:11},
-      {label: 'Poached Egg', prettyUnits: '1 large egg (60g)', kcal: 70, p:6, c:1, f:5}
-    ]},
-    { title: 'Keto Burger', split: {p:40, c:10, f:50}, parts: [
-      {label: 'Beef Patty', prettyUnits: '1 medium grilled steak (150g)', kcal: 250, p:30, c:0, f:15},
-      {label: 'Lettuce Wrap', prettyUnits: '1 cup lettuce wrap (100g)', kcal: 15, p:1, c:3, f:0},
-      {label: 'Cheddar Cheese', prettyUnits: '1 slice cheddar (28g)', kcal: 110, p:7, c:1, f:9},
-      {label: 'Mayo', prettyUnits: '1 tbsp mayonnaise (15g)', kcal: 100, p:0, c:0, f:11}
-    ]}
+  /* ---------- Mock scan data (simulate AI) ----------
+     IMPORTANT: This local fallback MUST stay generic (no specific dish labels),
+     because we do not do real image recognition in the browser.
+     It creates a coherent, educational breakdown without pretending we "saw" the photo.
+  */
+  const MOCK_PROFILES = [
+    {
+      title: 'Uploaded Meal — Balanced Plate',
+      split: {p:30, c:40, f:30},
+      parts: [
+        {label:'Main protein (estimated)', prettyUnits:'e.g., chicken / eggs / fish / tofu (1 serving)', kcal: 220, p:32, c:2, f:8},
+        {label:'Main carbs (estimated)', prettyUnits:'e.g., rice / potatoes / oats / bread (1 serving)', kcal: 210, p:5, c:42, f:3},
+        {label:'Added fats (estimated)', prettyUnits:'e.g., olive oil / cheese / nuts (small portion)', kcal: 120, p:2, c:2, f:12},
+        {label:'Veg / fruit (estimated)', prettyUnits:'e.g., salad / berries / vegetables (1–2 cups)', kcal: 60, p:2, c:12, f:0}
+      ]
+    },
+    {
+      title: 'Uploaded Meal — High-Protein Focus',
+      split: {p:45, c:30, f:25},
+      parts: [
+        {label:'Protein base (estimated)', prettyUnits:'e.g., lean meat / Greek yogurt / whey (1–2 servings)', kcal: 320, p:55, c:6, f:6},
+        {label:'Carb side (estimated)', prettyUnits:'e.g., rice / oats / fruit (1 serving)', kcal: 190, p:4, c:38, f:2},
+        {label:'Healthy fats (estimated)', prettyUnits:'e.g., avocado / nuts (small portion)', kcal: 150, p:2, c:6, f:13}
+      ]
+    },
+    {
+      title: 'Uploaded Meal — Carb-Heavy / Energy Meal',
+      split: {p:20, c:55, f:25},
+      parts: [
+        {label:'Carb base (estimated)', prettyUnits:'e.g., cereal / pasta / rice / bread (1–2 servings)', kcal: 330, p:8, c:70, f:4},
+        {label:'Protein add-on (estimated)', prettyUnits:'e.g., milk / yogurt / eggs (1 serving)', kcal: 150, p:14, c:10, f:6},
+        {label:'Fats / toppings (estimated)', prettyUnits:'e.g., peanut butter / nuts (small portion)', kcal: 160, p:4, c:6, f:14}
+      ]
+    }
   ];
   async function simulateScan(imageFile){
     const stop = startProgress($('#scanProgress'), $('#scanLabel'));
-    // Simulate delay
-    await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
-    const idx = Math.floor(Math.random() * MOCK_MEALS.length);
-    const meal = JSON.parse(JSON.stringify(MOCK_MEALS[idx]));
-    // Adjust for goal/diet roughly
-    if (state.goal === 'lose_weight') meal.parts.forEach(p => p.kcal = Math.round(p.kcal * 0.8));
+
+    // Simulate delay (AI call)
+    await new Promise(resolve => setTimeout(resolve, 2200 + Math.random() * 2600));
+
+    // Choose a generic profile (no dish guessing). Keep the label coherent with the breakdown.
+    const idx = Math.floor(Math.random() * MOCK_PROFILES.length);
+    const meal = JSON.parse(JSON.stringify(MOCK_PROFILES[idx]));
+
+    // Mild goal adjustment (portion-like). Do NOT change ingredients, only scale numbers a bit.
+    let scale = 1.0;
+    if (state.goal === 'lose_weight') scale = 0.85;
+    if (state.goal === 'build_muscle') scale = 1.10;
+    if (state.goal === 'performance') scale = 1.05;
+
+    meal.parts.forEach(p => {
+      p.kcal = Math.max(0, Math.round(p.kcal * scale));
+      p.p = Math.max(0, Math.round(p.p * scale));
+      p.c = Math.max(0, Math.round(p.c * scale));
+      p.f = Math.max(0, Math.round(p.f * scale));
+    });
+
     state.scannedMeal = meal;
     showScanned(meal);
     stop();
   }
   async function logMeal(meal){
-    if (!meal) return;
-    const { totals, health, notes } = buildScanPayload(meal);
-
-    // Optimistic UI: add to history immediately, then sync.
-    const localRow = {
-      id: 'local_' + Math.random().toString(36).slice(2),
-      scanned_at: totals.scanned_at,
-      meal_name: totals.meal_name,
-      image_url: totals.image_url || '',
-      calories: totals.calories,
-      protein_g: totals.protein_g,
-      carbs_g: totals.carbs_g,
-      fats_g: totals.fats_g,
-      health_score: health.health_score,
-      good_points: notes.good_points,
-      bad_points: notes.bad_points
-    };
-    addScanToLocalHistory(localRow);
-    renderScanHistory();
-
-    // If not logged in, keep locally only.
+    // Simulate logging to a meals_log table or append to daily
     if (!state.uid) return;
-
-    // Prepare DB row (try with user_id if your table has it, otherwise fallback)
-    const dbRowWithUser = {
+    const logEntry = {
+      // If you add a user_id column (recommended), keep this:
       user_id: state.uid,
-      scanned_at: totals.scanned_at,
-      meal_name: totals.meal_name,
-      image_url: totals.image_url || null,
-      calories: totals.calories,
-      protein_g: totals.protein_g,
-      carbs_g: totals.carbs_g,
-      fats_g: totals.fats_g,
-      health_score: health.health_score,
-      good_points: notes.good_points,
-      bad_points: notes.bad_points,
-      raw_ai_json: notes.raw_ai_json
+      scanned_at: new Date().toISOString(),
+      meal_name: meal.title,
+      image_url: '', // In real impl, upload to Supabase Storage and store the public URL here
+      calories: meal.parts.reduce((sum, p) => sum + p.kcal, 0),
+      protein_g: meal.parts.reduce((sum, p) => sum + p.p, 0),
+      carbs_g: meal.parts.reduce((sum, p) => sum + p.c, 0),
+      fats_g: meal.parts.reduce((sum, p) => sum + p.f, 0),
+      health_score: parseInt($('#healthScore').textContent, 10) || null,
+      good_points: null,
+      bad_points: null,
+      raw_ai_json: meal
     };
-
-    const dbRowNoUser = { ...dbRowWithUser };
-    delete dbRowNoUser.user_id;
-
-    let inserted = null;
-    let err = null;
-
-    // First attempt (recommended schema: has user_id)
-    ({ data: inserted, error: err } = await sb.from('x45_meal_scans').insert(dbRowWithUser).select().maybeSingle());
-
-    // Fallback if user_id column does not exist (or RLS rejects it)
-    if (err && String(err.message || err).toLowerCase().includes('user_id')) {
-      ({ data: inserted, error: err } = await sb.from('x45_meal_scans').insert(dbRowNoUser).select().maybeSingle());
-    }
-
-    if (err) {
-      console.warn('Meal scan save error', err);
-      // Keep local history; dashboard sync can be fixed once table/RLS is ready.
-      return;
-    }
-
-    // Replace the optimistic local row with the real DB row id if available
-    if (inserted && inserted.id) {
-      replaceLocalScanId(localRow.id, inserted.id);
-      renderScanHistory();
-    }
+    const { error } = await sb.from('x45_meal_scans').insert(logEntry); // Assume table exists
+    if (error) console.warn('Log error', error);
   }
-
-  function buildScanPayload(meal){
-    const scannedAt = new Date().toISOString();
-    const totals = {
-      scanned_at: scannedAt,
-      meal_name: meal.title || 'Scanned meal',
-      image_url: state.lastUploadedImageUrl || '',
-      calories: meal.parts.reduce((s,p)=>s + (p.kcal||0), 0),
-      protein_g: meal.parts.reduce((s,p)=>s + (p.p||0), 0),
-      carbs_g: meal.parts.reduce((s,p)=>s + (p.c||0), 0),
-      fats_g: meal.parts.reduce((s,p)=>s + (p.f||0), 0),
-    };
-    const health_score = clampInt(parseInt($('#healthScore').textContent || '7',10), 1, 10);
-    const notes = evaluateMealNotes(totals, meal.parts, health_score);
-    return { totals, health: { health_score }, notes };
-  }
-
-  function evaluateMealNotes(totals, parts, healthScore){
-    // Educational, simple heuristics (no medical advice).
-    const good = [];
-    const bad = [];
-
-    const kcal = totals.calories || 0;
-    const p = totals.protein_g || 0;
-    const c = totals.carbs_g || 0;
-    const f = totals.fats_g || 0;
-
-    if (p >= 25) good.push('Solid protein for satiety and muscle support.');
-    if (c >= 25 && c <= 80) good.push('Reasonable carbohydrate amount for energy.');
-    if (f > 0 && f <= 35) good.push('Fats present for hormones and nutrient absorption.');
-
-    if (kcal >= 900) bad.push('High calorie load for a single meal — watch portion size.');
-    if (p < 15) bad.push('Protein looks low — consider adding a lean protein source.');
-    if (c > 110) bad.push('Carbs are very high — consider swapping some carbs for vegetables/protein.');
-    if (f > 45) bad.push('Fats are high — consider reducing oils/fried items.');
-
-    // Ingredient-level hints
-    const titles = (parts||[]).map(x => (x.name||'').toLowerCase());
-    const hasVeg = titles.some(t => /salad|spinach|broccoli|vegetable|veggies|greens|berries|tomato|cucumber/.test(t));
-    if (hasVeg) good.push('Includes micronutrients/fiber from plant foods.');
-    else bad.push('Low fiber/micronutrients — add vegetables/berries for better health score.');
-
-    // Tie to healthScore
-    if (healthScore >= 8) good.push('Overall balance looks strong (health score 8–10).');
-    if (healthScore <= 4) bad.push('Overall balance looks weak (health score 1–4) — aim for protein + fiber + less ultra-processed foods.');
-
-    const good_points = good.slice(0,4).join(' ');
-    const bad_points  = bad.slice(0,4).join(' ');
-    const raw_ai_json = { meal, totals, good, bad, health_score: healthScore };
-
-    return { good_points, bad_points, raw_ai_json };
-  }
-
-  function clampInt(v,min,max){ v = Number.isFinite(v)?v:min; return Math.max(min, Math.min(max, Math.round(v))); }
-
-  const MEAL_SCAN_STORAGE_KEY = 'x45_meal_scans_cache_v1';
-  function loadLocalScanHistory(){
-    try {
-      const raw = localStorage.getItem(MEAL_SCAN_STORAGE_KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch(e){ return []; }
-  }
-  function saveLocalScanHistory(rows){
-    try { localStorage.setItem(MEAL_SCAN_STORAGE_KEY, JSON.stringify(rows)); } catch(e){}
-  }
-  function addScanToLocalHistory(row){
-    const rows = loadLocalScanHistory();
-    rows.unshift(row);
-    // keep it light
-    saveLocalScanHistory(rows.slice(0, 50));
-  }
-  function replaceLocalScanId(oldId, newId){
-    const rows = loadLocalScanHistory();
-    const idx = rows.findIndex(r => r.id === oldId);
-    if (idx >= 0) { rows[idx].id = newId; saveLocalScanHistory(rows); }
-  }
-
-  function renderScanHistory(){
-    const list = $('#scanHistoryList');
-    const empty = $('#scanHistoryEmpty');
-    if (!list || !empty) return;
-
-    const rows = loadLocalScanHistory();
-    if (!rows.length) {
-      empty.style.display = 'block';
-      list.innerHTML = '';
-      return;
-    }
-    empty.style.display = 'none';
-
-    const todayKey = new Date().toISOString().slice(0,10);
-    const todayRows = rows.filter(r => String(r.scanned_at||'').slice(0,10) === todayKey);
-
-    const renderRows = todayRows.length ? todayRows : rows.slice(0, 10);
-    list.innerHTML = renderRows.map(r => {
-      const t = new Date(r.scanned_at || Date.now());
-      const time = t.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-      const thumb = r.image_url ? `<img src="${escapeHtmlAttr(r.image_url)}" alt="">` : `<div style="opacity:.75;font-size:12px">No photo</div>`;
-      const score = clampInt(r.health_score||7,1,10);
-      return `
-        <div class="scanItem">
-          <div class="scanThumb">${thumb}</div>
-          <div class="scanMeta">
-            <div class="scanTitle">${escapeHtml(r.meal_name || 'Scanned meal')} <span style="opacity:.65;font-weight:700">• ${time}</span></div>
-            <div class="scanLine">${formatNumber(r.calories)} kcal • P ${formatNumber(r.protein_g)}g • C ${formatNumber(r.carbs_g)}g • F ${formatNumber(r.fats_g)}g</div>
-            <div class="scanScore">
-              <span class="scanChip"><strong>Health</strong>: ${score}/10</span>
-              ${r.good_points ? `<span class="scanChip"><strong>Good</strong>: ${escapeHtml(r.good_points)}</span>` : ''}
-              ${r.bad_points ? `<span class="scanChip"><strong>Fix</strong>: ${escapeHtml(r.bad_points)}</span>` : ''}
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  function escapeHtml(str){ return String(str||'').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
-  function escapeHtmlAttr(str){ return escapeHtml(str).replace(/`/g,''); }
-  function formatNumber(v){ const n = Number(v); return Number.isFinite(n) ? Math.round(n).toString() : '—'; }
-    const handleMealPhotoChange = (e) => {
+  $('#mealPhoto').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -2161,10 +1992,8 @@ diabetic2: {
       simulateScan(file);
     };
     reader.readAsDataURL(file);
-  };
-  $('#mealPhotoLibrary').addEventListener('change', handleMealPhotoChange);
-  $('#mealPhotoCamera').addEventListener('change', handleMealPhotoChange);
-// Drag & drop
+  });
+  // Drag & drop
   const uploadArea = $('#uploadArea');
   uploadArea.addEventListener('dragover', (e) => {
     e.preventDefault();
@@ -2208,7 +2037,6 @@ diabetic2: {
       setTopSliders();
       localRegenMeals();
       idle(()=>aiRegenMeals());
-      renderScanHistory();
       return;
     }
     const row = await loadUserRow(user);
@@ -2218,7 +2046,6 @@ diabetic2: {
       await persistUserPatch({ name: best });
     }
     state.uid = row?.id || user.id;
-    renderScanHistory();
     state.name = best || 'friend';
     state.coach = (row?.coach) || 'Zara';
     $('#coachImg').src = COACH_IMG[state.coach] || COACH_IMG.Zara;
