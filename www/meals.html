@@ -373,10 +373,18 @@ input[type="file"].input { padding: 6px; }
     <h2>Upload Your Meal Photo</h2>
     <div class="sub">Snap a clear photo of your plate and upload it. We'll scan and analyze the nutrition.</div>
     <div class="uploadArea" id="uploadArea">
-      <label for="mealPhoto" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
-        📸 Take Photo or Upload Image
-      </label>
-      <input type="file" id="mealPhoto" class="input" accept="image/*" capture="environment" style="display:none">
+      <div class="row" style="justify-content:center;gap:10px;flex-wrap:wrap">
+        <label for="mealPhotoLibrary" class="cta primary" style="font-size:16px;padding:12px 18px;cursor:pointer">
+          🖼️ Upload from Library
+        </label>
+        <label for="mealPhotoCamera" class="cta primary" style="font-size:16px;padding:12px 18px;cursor:pointer">
+          📸 Take Photo Now
+        </label>
+      </div>
+
+      <input type="file" id="mealPhotoLibrary" class="input" accept="image/*" style="display:none">
+      <input type="file" id="mealPhotoCamera" class="input" accept="image/*" capture="environment" style="display:none">
+
       <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
@@ -1902,6 +1910,7 @@ diabetic2: {
     if (mode === 'build_plan') {
       $('#buildMode').style.display = 'block';
       $('#uploadMode').style.display = 'none';
+      if ($('#btnOpenSettings')) $('#btnOpenSettings').style.display = 'inline-flex';
       $('#hello').textContent = `${greet()}, ${state.name} — let’s dial in your meals.`;
       $('#coachLine').textContent = BUILD_COACH_LINES[Math.floor(Math.random()*BUILD_COACH_LINES.length)];
       localRegenMeals();
@@ -1911,6 +1920,7 @@ diabetic2: {
       $('#uploadMode').style.display = 'block';
       $('#hello').textContent = `${greet()}, ${state.name} — let's scan your meal.`;
       $('#coachLine').textContent = UPLOAD_COACH_LINES[Math.floor(Math.random()*UPLOAD_COACH_LINES.length)];
+      if ($('#btnOpenSettings')) $('#btnOpenSettings').style.display = 'none';
     }
   }
   /* ---------- Mock scan data (simulate AI) ---------- */
@@ -2140,7 +2150,7 @@ diabetic2: {
   function escapeHtml(str){ return String(str||'').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
   function escapeHtmlAttr(str){ return escapeHtml(str).replace(/`/g,''); }
   function formatNumber(v){ const n = Number(v); return Number.isFinite(n) ? Math.round(n).toString() : '—'; }
-  $('#mealPhoto').addEventListener('change', (e) => {
+    const handleMealPhotoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -2151,8 +2161,10 @@ diabetic2: {
       simulateScan(file);
     };
     reader.readAsDataURL(file);
-  });
-  // Drag & drop
+  };
+  $('#mealPhotoLibrary').addEventListener('change', handleMealPhotoChange);
+  $('#mealPhotoCamera').addEventListener('change', handleMealPhotoChange);
+// Drag & drop
   const uploadArea = $('#uploadArea');
   uploadArea.addEventListener('dragover', (e) => {
     e.preventDefault();
