@@ -238,23 +238,18 @@ input[type="file"].input { padding: 6px; }
   }
 
 
-  .healthNotes{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
-  .healthCol{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px}
-  .miniHdr{font-weight:700;font-size:13px;letter-spacing:.2px;margin-bottom:6px;color:rgba(255,255,255,.9)}
-  .miniList{margin:0;padding-left:18px;color:rgba(255,255,255,.78);font-size:13px;line-height:1.35}
-  .miniList li{margin:4px 0}
-  .logRow{display:grid;grid-template-columns:56px 1fr;gap:12px;padding:12px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);margin-top:10px}
-  .miniImg{width:56px;height:56px;border-radius:14px;object-fit:cover;border:1px solid rgba(255,255,255,.12)}
-  .logTop{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
-  .logName{font-weight:800}
-  .logTime{font-size:12px;color:rgba(255,255,255,.55)}
-  .logMeta{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-  .logLists{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
-  .pill.hs{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)}
-  @media (max-width:520px){.healthNotes,.logLists{grid-template-columns:1fr}}
+  /* ---- Upload Meal: history list ---- */
+  .scanHistory{ display:flex; flex-direction:column; gap:12px; }
+  .scanItem{ display:flex; gap:12px; align-items:flex-start; padding:12px; border:1px solid rgba(255,255,255,.08); border-radius:14px; background:rgba(255,255,255,.03); }
+  .scanThumb{ width:66px; height:66px; border-radius:12px; overflow:hidden; flex:0 0 auto; background:rgba(255,255,255,.05); display:flex; align-items:center; justify-content:center; }
+  .scanThumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .scanMeta{ flex:1; min-width:0; }
+  .scanTitle{ font-weight:800; letter-spacing:.2px; font-size:15px; margin:0 0 6px; }
+  .scanLine{ opacity:.92; font-size:13px; line-height:1.35; }
+  .scanScore{ margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; }
+  .scanChip{ font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.04); }
+  .scanChip strong{ font-weight:900; }
 
-  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:88px;z-index:9999;background:rgba(0,0,0,.85);border:1px solid rgba(255,255,255,.14);color:white;padding:10px 14px;border-radius:14px;max-width:92vw;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-  .toast.err{border-color:rgba(255,80,80,.35)}
 </style>
 </head>
 <body>
@@ -421,17 +416,6 @@ input[type="file"].input { padding: 6px; }
           <ul class="portionList" id="scannedParts"></ul>
         </div>
       </div>
-          <div class="healthNotes">
-            <div class="healthCol">
-              <div class="miniHdr">Good</div>
-              <ul class="miniList" id="goodPointsList"><li>—</li></ul>
-            </div>
-            <div class="healthCol">
-              <div class="miniHdr">Needs work</div>
-              <ul class="miniList" id="badPointsList"><li>—</li></ul>
-            </div>
-          </div>
-
       <div class="row" style="margin-top:20px">
         <button id="btnLogMeal" class="cta primary">Log This Meal</button>
         <button id="btnNewScan" class="cta">New Scan</button>
@@ -439,12 +423,12 @@ input[type="file"].input { padding: 6px; }
       </div>
     </div>
   </section>
-  <section class="card" id="loggedMealsCard">
-    <h2>Today’s Logged Meals</h2>
-    <div class="sub" id="loggedMealsStatus">No meals logged today yet.</div>
-    <div id="loggedMealsList" style="margin-top:10px"></div>
+  <section class="card" id="scanHistoryCard" style="margin-top:16px">
+    <h2>Scanned Meals (Today)</h2>
+    <div class="sub">Your scanned meals stay on this page and are saved to your account for the dashboard.</div>
+    <div id="scanHistoryEmpty" class="sub" style="opacity:.9;margin-top:10px">No scanned meals logged yet.</div>
+    <div id="scanHistoryList" class="scanHistory" style="margin-top:12px"></div>
   </section>
-
   </div>
 </div>
 <!-- Settings Modal -->
@@ -549,15 +533,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const $ = s => document.querySelector(s);
   const $$ = s => document.querySelectorAll(s);
   const cssVar = k => getComputedStyle(document.documentElement).getPropertyValue(k).trim();
-const toast = (msg, isErr=false) => {
-    const el = $('#toast');
-    if (!el) { alert(msg); return; }
-    el.textContent = msg;
-    el.classList.toggle('err', !!isErr);
-    el.style.display = 'block';
-    clearTimeout(window.__toastT);
-    window.__toastT = setTimeout(()=>{ el.style.display='none'; }, 2200);
-  };
   const idle = (fn) => ('requestIdleCallback' in window) ? requestIdleCallback(fn) : setTimeout(fn, 250);
   /* ======= SUPABASE CLIENT (ENV first, then localStorage, then safe fallback) ======= */
   const SUPABASE_URL = (window.ENV && window.ENV.SUPABASE_URL) || localStorage.getItem('supabaseUrl') || 'https://ajoimwcrmszhmcjrpxjv.supabase.co';
@@ -762,7 +737,7 @@ diabetic2: {
   };
   window.state = state;
   // FIXED calories per your directive
-  const GOAL_KCAL = { lose_weight:1600, build_muscle:3100, performance:2700, health:2400 };
+  const GOAL_KCAL = { lose_weight:1600, build_muscle:3100, performance:3000, health:2700 };
   const MIN_KCAL = 1400, MAX_KCAL = 4000;
   const activityBump = () => Math.round(0.02*(state.activity.steps||0) + 2*(state.activity.active_mins||0));
   function adjustedCalories(){
@@ -884,70 +859,28 @@ diabetic2: {
     });
     updateTotals();
   }
-  function uniq(arr){ return [...new Set(arr)]; }
-
-  function totalsForMeal(meal){
-    let kcal=0,p=0,c=0,f=0;
-    (meal.parts||[]).forEach(x=>{ kcal+=(x.kcal||0); p+=(x.p||0); c+=(x.c||0); f+=(x.f||0); });
-    return { kcal:Math.round(kcal), p:Math.round(p), c:Math.round(c), f:Math.round(f) };
-  }
-
-  function analyzeScannedMeal(meal){
-    const totals = totalsForMeal(meal);
-    const sp = meal.split || { p:33, c:34, f:33 };
-    const balance = Math.min(10, 10 - Math.abs(sp.p - 30)/3 - Math.abs(sp.c - 40)/3 - Math.abs(sp.f - 30)/3);
-    const density = Math.min(5, (totals.p / Math.max(1, totals.kcal / 4)) * 10);
-    const score = Math.round(Math.max(1, Math.min(10, balance + density / 2)));
-
-    const labels = ((meal.parts||[]).map(x => (x.label||'').toLowerCase())).join(' ');
-    const good = [];
-    const bad = [];
-
-    if (totals.p >= 25 || sp.p >= 30) good.push('Solid protein for satiety and muscle support.');
-    else bad.push('Protein looks low — add a lean protein source.');
-
-    if (sp.c >= 55) bad.push('Carbs are high — watch sugars/processed carbs and add fiber.');
-    else if (sp.c <= 25) bad.push('Carbs are very low — add a quality carb if you train hard.');
-    else good.push('Carb balance looks reasonable.');
-
-    if (sp.f >= 45) bad.push('Fats are high — reduce oils/cheese/fried items if cutting.');
-    else good.push('Fat balance looks reasonable.');
-
-    if (labels.match(/salad|veg|vegetable|broccoli|spinach|greens|berries|oats|brown|lentil|bean|avocado/)) good.push('Includes whole-food / fiber-rich items.');
-    if (labels.match(/soda|candy|donut|cookie|fries|fried|bacon|sausage|chips/)) bad.push('Contains processed/fried items — limit these to improve health score.');
-
-    if (totals.kcal >= 950) bad.push('Very calorie-dense portion — consider reducing portion size.');
-    else good.push('Portion size looks manageable.');
-
-    return { score, good: uniq(good), bad: uniq(bad) };
-  }
-
   function updateScannedTotals(meal){
     if (!meal) return;
-    const totals = totalsForMeal(meal);
-    const analysis = analyzeScannedMeal(meal);
-
-    $('#sCal').textContent = `Calories: ${totals.kcal}`;
-    $('#sPro').textContent = `Protein: ${totals.p} g`;
-    $('#sCarb').textContent = `Carbs: ${totals.c} g`;
-    $('#sFat').textContent = `Fat: ${totals.f} g`;
-    $('#scannedCenter').textContent = totals.kcal;
-
-    requestAnimationFrame(()=>drawDonut($('#scannedDonut'), (meal.split||{}).p||33, (meal.split||{}).c||34, (meal.split||{}).f||33));
-    $('#scannedTotals').textContent = `Total: ${totals.kcal} kcal • P ${totals.p} g • C ${totals.c} g • F ${totals.f} g`;
-
-    const score = analysis.score;
+    let kcal=0,gp=0,gc=0,gf=0;
+    meal.parts.forEach(p=>{ kcal+=p.kcal; gp+=p.p; gc+=p.c; gf+=p.f; });
+    $('#sCal').textContent = `Calories: ${kcal}`;
+    $('#sPro').textContent = `Protein: ${gp} g`;
+    $('#sCarb').textContent = `Carbs: ${gc} g`;
+    $('#sFat').textContent = `Fat: ${gf} g`;
+    $('#scannedCenter').textContent = kcal;
+    requestAnimationFrame(()=>drawDonut($('#scannedDonut'), meal.split.p, meal.split.c, meal.split.f));
+    const badge = `Total: ${kcal} kcal • P ${gp} g • C ${gc} g • F ${gf} g`;
+    $('#scannedTotals').textContent = badge;
+    // Health score logic (simple: based on balance and density)
+    const balance = Math.min(10, 10 - Math.abs(meal.split.p - 30) / 3 - Math.abs(meal.split.c - 40) / 3 - Math.abs(meal.split.f - 30) / 3);
+    const density = Math.min(5, (gp / Math.max(1, kcal / 4)) * 10); // rough protein density
+    const score = Math.round(Math.max(1, balance + density / 2));
     const colors = {10:'--health-10',9:'--health-8-9',8:'--health-8-9',7:'--health-6-7',6:'--health-6-7',5:'--health-4-5',4:'--health-4-5',3:'--health-2-3',2:'--health-2-3',1:'--health-0-1'};
+    const color = cssVar(colors[score] || '--health-0-1');
     $('#healthScore').textContent = score;
-    $('#healthBar').style.width = `${score*10}%`;
-    $('#healthBar').style.background = cssVar(colors[score] || '--health-0-1');
-
-    const goodEl = $('#goodPointsList');
-    const badEl = $('#badPointsList');
-    goodEl.innerHTML = analysis.good.map(x=>`<li>${escapeHtml(x)}</li>`).join('') || '<li>—</li>';
-    badEl.innerHTML = analysis.bad.map(x=>`<li>${escapeHtml(x)}</li>`).join('') || '<li>—</li>';
+    $('#healthBar').style.background = color;
+    $('#healthBar').style.width = `${score * 10}%`;
   }
-
   function renderScannedParts(meal){
     const ul = $('#scannedParts'); ul.innerHTML='';
     meal.parts.forEach(p=>{
@@ -1969,7 +1902,6 @@ diabetic2: {
     if (mode === 'build_plan') {
       $('#buildMode').style.display = 'block';
       $('#uploadMode').style.display = 'none';
-      $('#btnOpenSettings').style.display = 'inline-flex';
       $('#hello').textContent = `${greet()}, ${state.name} — let’s dial in your meals.`;
       $('#coachLine').textContent = BUILD_COACH_LINES[Math.floor(Math.random()*BUILD_COACH_LINES.length)];
       localRegenMeals();
@@ -1977,10 +1909,8 @@ diabetic2: {
     } else {
       $('#buildMode').style.display = 'none';
       $('#uploadMode').style.display = 'block';
-      $('#btnOpenSettings').style.display = 'none';
       $('#hello').textContent = `${greet()}, ${state.name} — let's scan your meal.`;
       $('#coachLine').textContent = UPLOAD_COACH_LINES[Math.floor(Math.random()*UPLOAD_COACH_LINES.length)];
-      loadLoggedMealsToday().catch(()=>{});
     }
   }
   /* ---------- Mock scan data (simulate AI) ---------- */
@@ -2012,7 +1942,7 @@ diabetic2: {
       {label: 'Mayo', prettyUnits: '1 tbsp mayonnaise (15g)', kcal: 100, p:0, c:0, f:11}
     ]}
   ];
-  async async function simulateScan(imageFile){
+  async function simulateScan(imageFile){
     const stop = startProgress($('#scanProgress'), $('#scanLabel'));
     // Simulate delay
     await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 3000));
@@ -2025,185 +1955,197 @@ diabetic2: {
     stop();
   }
   async function logMeal(meal){
+    if (!meal) return;
+    const { totals, health, notes } = buildScanPayload(meal);
+
+    // Optimistic UI: add to history immediately, then sync.
+    const localRow = {
+      id: 'local_' + Math.random().toString(36).slice(2),
+      scanned_at: totals.scanned_at,
+      meal_name: totals.meal_name,
+      image_url: totals.image_url || '',
+      calories: totals.calories,
+      protein_g: totals.protein_g,
+      carbs_g: totals.carbs_g,
+      fats_g: totals.fats_g,
+      health_score: health.health_score,
+      good_points: notes.good_points,
+      bad_points: notes.bad_points
+    };
+    addScanToLocalHistory(localRow);
+    renderScanHistory();
+
+    // If not logged in, keep locally only.
     if (!state.uid) return;
-    const nowIso = new Date().toISOString();
-    const totals = totalsForMeal(meal);
-    const analysis = analyzeScannedMeal(meal);
 
-    const baseRow = {
-      scanned_at: nowIso,
-      meal_name: meal.title || 'Meal',
-      image_url: state.lastScanImageUrl || null,
-      calories: totals.kcal,
-      protein_g: totals.p,
-      carbs_g: totals.c,
-      fats_g: totals.f,
-      health_score: analysis.score,
-      good_points: analysis.good.join('\n'),
-      bad_points: analysis.bad.join('\n'),
-      raw_ai_json: {
-        uid: state.uid,
-        meal,
-        totals,
-        analysis,
-        version: 'v1'
-      }
+    // Prepare DB row (try with user_id if your table has it, otherwise fallback)
+    const dbRowWithUser = {
+      user_id: state.uid,
+      scanned_at: totals.scanned_at,
+      meal_name: totals.meal_name,
+      image_url: totals.image_url || null,
+      calories: totals.calories,
+      protein_g: totals.protein_g,
+      carbs_g: totals.carbs_g,
+      fats_g: totals.fats_g,
+      health_score: health.health_score,
+      good_points: notes.good_points,
+      bad_points: notes.bad_points,
+      raw_ai_json: notes.raw_ai_json
     };
 
-    // Prefer user_id if your table has it; if not, fallback (keeps the page working).
-    let insertError = null;
-    let rowToInsert = { user_id: state.uid, ...baseRow };
-    let res = await sb.from('x45_meal_scans').insert(rowToInsert).select().maybeSingle();
-    if (res.error) {
-      insertError = res.error;
-      // retry without user_id
-      res = await sb.from('x45_meal_scans').insert(baseRow).select().maybeSingle();
+    const dbRowNoUser = { ...dbRowWithUser };
+    delete dbRowNoUser.user_id;
+
+    let inserted = null;
+    let err = null;
+
+    // First attempt (recommended schema: has user_id)
+    ({ data: inserted, error: err } = await sb.from('x45_meal_scans').insert(dbRowWithUser).select().maybeSingle());
+
+    // Fallback if user_id column does not exist (or RLS rejects it)
+    if (err && String(err.message || err).toLowerCase().includes('user_id')) {
+      ({ data: inserted, error: err } = await sb.from('x45_meal_scans').insert(dbRowNoUser).select().maybeSingle());
     }
-    if (res.error) {
-      console.warn('Log meal failed:', insertError || res.error);
-      toast('Could not save this meal. Check table/RLS.', true);
+
+    if (err) {
+      console.warn('Meal scan save error', err);
+      // Keep local history; dashboard sync can be fixed once table/RLS is ready.
       return;
     }
 
-    // Update UI immediately
-    const saved = res.data ? normalizeMealScanRow(res.data) : {
-      scanned_at: nowIso,
-      meal_name: baseRow.meal_name,
-      image_url: baseRow.image_url,
-      calories: baseRow.calories,
-      protein_g: baseRow.protein_g,
-      carbs_g: baseRow.carbs_g,
-      fats_g: baseRow.fats_g,
-      health_score: baseRow.health_score,
-      good_points: baseRow.good_points,
-      bad_points: baseRow.bad_points
-    };
-
-    state.loggedMeals = state.loggedMeals || [];
-    state.loggedMeals.unshift(saved);
-    renderLoggedMeals();
-
-    toast('Meal logged.');
-  }
-
-  function normalizeMealScanRow(r){
-    return {
-      scanned_at: r.scanned_at || r.created_at,
-      meal_name: r.meal_name || r.meal_title || 'Meal',
-      image_url: r.image_url || null,
-      calories: r.calories || 0,
-      protein_g: r.protein_g || 0,
-      carbs_g: r.carbs_g || 0,
-      fats_g: r.fats_g || 0,
-      health_score: (r.health_score ?? null),
-      good_points: r.good_points || '',
-      bad_points: r.bad_points || ''
-    };
-  }
-
-  function dayRangeLocal(){
-    const start = new Date(); start.setHours(0,0,0,0);
-    const end = new Date(); end.setHours(23,59,59,999);
-    return { startIso: start.toISOString(), endIso: end.toISOString() };
-  }
-
-  async function loadLoggedMealsToday(){
-    if (!state.uid) return;
-    $('#loggedMealsStatus').textContent = 'Loading…';
-    $('#loggedMealsStatus').style.display = 'block';
-
-    const { startIso, endIso } = dayRangeLocal();
-
-    // Try user_id first
-    let q = sb.from('x45_meal_scans')
-      .select('id,created_at,scanned_at,meal_name,image_url,calories,protein_g,carbs_g,fats_g,health_score,good_points,bad_points,raw_ai_json')
-      .gte('scanned_at', startIso).lte('scanned_at', endIso)
-      .order('scanned_at', { ascending:false })
-      .limit(30);
-
-    let data = null;
-    let error = null;
-
-    let res = await q.eq('user_id', state.uid);
-    if (res.error) {
-      // Fallback: filter by raw_ai_json.uid client-side (requires RLS to prevent cross-user reads).
-      res = await q;
-      if (!res.error && Array.isArray(res.data)) {
-        res.data = res.data.filter(r => (r.raw_ai_json && r.raw_ai_json.uid === state.uid));
-      }
+    // Replace the optimistic local row with the real DB row id if available
+    if (inserted && inserted.id) {
+      replaceLocalScanId(localRow.id, inserted.id);
+      renderScanHistory();
     }
+  }
 
-    data = res.data; error = res.error;
+  function buildScanPayload(meal){
+    const scannedAt = new Date().toISOString();
+    const totals = {
+      scanned_at: scannedAt,
+      meal_name: meal.title || 'Scanned meal',
+      image_url: state.lastUploadedImageUrl || '',
+      calories: meal.parts.reduce((s,p)=>s + (p.kcal||0), 0),
+      protein_g: meal.parts.reduce((s,p)=>s + (p.p||0), 0),
+      carbs_g: meal.parts.reduce((s,p)=>s + (p.c||0), 0),
+      fats_g: meal.parts.reduce((s,p)=>s + (p.f||0), 0),
+    };
+    const health_score = clampInt(parseInt($('#healthScore').textContent || '7',10), 1, 10);
+    const notes = evaluateMealNotes(totals, meal.parts, health_score);
+    return { totals, health: { health_score }, notes };
+  }
 
-    if (error) {
-      console.warn('Load meal scans failed:', error);
-      $('#loggedMealsStatus').textContent = 'Could not load logged meals.';
+  function evaluateMealNotes(totals, parts, healthScore){
+    // Educational, simple heuristics (no medical advice).
+    const good = [];
+    const bad = [];
+
+    const kcal = totals.calories || 0;
+    const p = totals.protein_g || 0;
+    const c = totals.carbs_g || 0;
+    const f = totals.fats_g || 0;
+
+    if (p >= 25) good.push('Solid protein for satiety and muscle support.');
+    if (c >= 25 && c <= 80) good.push('Reasonable carbohydrate amount for energy.');
+    if (f > 0 && f <= 35) good.push('Fats present for hormones and nutrient absorption.');
+
+    if (kcal >= 900) bad.push('High calorie load for a single meal — watch portion size.');
+    if (p < 15) bad.push('Protein looks low — consider adding a lean protein source.');
+    if (c > 110) bad.push('Carbs are very high — consider swapping some carbs for vegetables/protein.');
+    if (f > 45) bad.push('Fats are high — consider reducing oils/fried items.');
+
+    // Ingredient-level hints
+    const titles = (parts||[]).map(x => (x.name||'').toLowerCase());
+    const hasVeg = titles.some(t => /salad|spinach|broccoli|vegetable|veggies|greens|berries|tomato|cucumber/.test(t));
+    if (hasVeg) good.push('Includes micronutrients/fiber from plant foods.');
+    else bad.push('Low fiber/micronutrients — add vegetables/berries for better health score.');
+
+    // Tie to healthScore
+    if (healthScore >= 8) good.push('Overall balance looks strong (health score 8–10).');
+    if (healthScore <= 4) bad.push('Overall balance looks weak (health score 1–4) — aim for protein + fiber + less ultra-processed foods.');
+
+    const good_points = good.slice(0,4).join(' ');
+    const bad_points  = bad.slice(0,4).join(' ');
+    const raw_ai_json = { meal, totals, good, bad, health_score: healthScore };
+
+    return { good_points, bad_points, raw_ai_json };
+  }
+
+  function clampInt(v,min,max){ v = Number.isFinite(v)?v:min; return Math.max(min, Math.min(max, Math.round(v))); }
+
+  const MEAL_SCAN_STORAGE_KEY = 'x45_meal_scans_cache_v1';
+  function loadLocalScanHistory(){
+    try {
+      const raw = localStorage.getItem(MEAL_SCAN_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch(e){ return []; }
+  }
+  function saveLocalScanHistory(rows){
+    try { localStorage.setItem(MEAL_SCAN_STORAGE_KEY, JSON.stringify(rows)); } catch(e){}
+  }
+  function addScanToLocalHistory(row){
+    const rows = loadLocalScanHistory();
+    rows.unshift(row);
+    // keep it light
+    saveLocalScanHistory(rows.slice(0, 50));
+  }
+  function replaceLocalScanId(oldId, newId){
+    const rows = loadLocalScanHistory();
+    const idx = rows.findIndex(r => r.id === oldId);
+    if (idx >= 0) { rows[idx].id = newId; saveLocalScanHistory(rows); }
+  }
+
+  function renderScanHistory(){
+    const list = $('#scanHistoryList');
+    const empty = $('#scanHistoryEmpty');
+    if (!list || !empty) return;
+
+    const rows = loadLocalScanHistory();
+    if (!rows.length) {
+      empty.style.display = 'block';
+      list.innerHTML = '';
       return;
     }
+    empty.style.display = 'none';
 
-    state.loggedMeals = (data || []).map(normalizeMealScanRow);
-    renderLoggedMeals();
+    const todayKey = new Date().toISOString().slice(0,10);
+    const todayRows = rows.filter(r => String(r.scanned_at||'').slice(0,10) === todayKey);
 
-    $('#loggedMealsStatus').style.display = (state.loggedMeals.length ? 'none' : 'block');
-    if (!state.loggedMeals.length) $('#loggedMealsStatus').textContent = 'No meals logged today yet.';
-  }
-
-  function renderLoggedMeals(){
-    const wrap = $('#loggedMealsList');
-    if (!wrap) return;
-    const meals = state.loggedMeals || [];
-    if (!meals.length) {
-      wrap.innerHTML = '';
-      $('#loggedMealsStatus').textContent = 'No meals logged today yet.';
-      $('#loggedMealsStatus').style.display = 'block';
-      return;
-    }
-    $('#loggedMealsStatus').style.display = 'none';
-
-    wrap.innerHTML = meals.map(r => {
-      const t = r.scanned_at ? new Date(r.scanned_at) : null;
-      const timeStr = t ? t.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '';
-      const good = (r.good_points||'').split('\n').filter(Boolean).slice(0,5).map(x=>`<li>${escapeHtml(x)}</li>`).join('');
-      const bad = (r.bad_points||'').split('\n').filter(Boolean).slice(0,5).map(x=>`<li>${escapeHtml(x)}</li>`).join('');
-      const img = r.image_url ? `<img class="miniImg" src="${escapeAttr(r.image_url)}" alt="meal"/>` : '';
-      const score = (r.health_score ?? '—');
+    const renderRows = todayRows.length ? todayRows : rows.slice(0, 10);
+    list.innerHTML = renderRows.map(r => {
+      const t = new Date(r.scanned_at || Date.now());
+      const time = t.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+      const thumb = r.image_url ? `<img src="${escapeHtmlAttr(r.image_url)}" alt="">` : `<div style="opacity:.75;font-size:12px">No photo</div>`;
+      const score = clampInt(r.health_score||7,1,10);
       return `
-        <div class="logRow">
-          ${img}
-          <div class="logMain">
-            <div class="logTop">
-              <div class="logName">${escapeHtml(r.meal_name||'Meal')}</div>
-              <div class="logTime">${timeStr}</div>
-            </div>
-            <div class="logMeta">
-              <span class="pill kcal">Calories: ${fmt(r.calories)}</span>
-              <span class="pill p">Protein: ${fmt(r.protein_g)}g</span>
-              <span class="pill c">Carbs: ${fmt(r.carbs_g)}g</span>
-              <span class="pill f">Fats: ${fmt(r.fats_g)}g</span>
-              <span class="pill hs">Health: ${score}/10</span>
-            </div>
-            <div class="logLists">
-              <div>
-                <div class="miniHdr">Good</div>
-                <ul class="miniList">${good || '<li>—</li>'}</ul>
-              </div>
-              <div>
-                <div class="miniHdr">Needs work</div>
-                <ul class="miniList">${bad || '<li>—</li>'}</ul>
-              </div>
+        <div class="scanItem">
+          <div class="scanThumb">${thumb}</div>
+          <div class="scanMeta">
+            <div class="scanTitle">${escapeHtml(r.meal_name || 'Scanned meal')} <span style="opacity:.65;font-weight:700">• ${time}</span></div>
+            <div class="scanLine">${formatNumber(r.calories)} kcal • P ${formatNumber(r.protein_g)}g • C ${formatNumber(r.carbs_g)}g • F ${formatNumber(r.fats_g)}g</div>
+            <div class="scanScore">
+              <span class="scanChip"><strong>Health</strong>: ${score}/10</span>
+              ${r.good_points ? `<span class="scanChip"><strong>Good</strong>: ${escapeHtml(r.good_points)}</span>` : ''}
+              ${r.bad_points ? `<span class="scanChip"><strong>Fix</strong>: ${escapeHtml(r.bad_points)}</span>` : ''}
             </div>
           </div>
-        </div>`;
+        </div>
+      `;
     }).join('');
   }
 
-  $('#mealPhoto').addEventListener('change', (e) => {.addEventListener('change', (e) => {
+  function escapeHtml(str){ return String(str||'').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s])); }
+  function escapeHtmlAttr(str){ return escapeHtml(str).replace(/`/g,''); }
+  function formatNumber(v){ const n = Number(v); return Number.isFinite(n) ? Math.round(n).toString() : '—'; }
+  $('#mealPhoto').addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
       $('#uploadImg').src = ev.target.result;
-      state.lastScanImageUrl = ev.target.result;
       $('#uploadImgWrap').style.display = 'block';
       $('#scannedMealImg').src = ev.target.result;
       simulateScan(file);
@@ -2230,7 +2172,7 @@ diabetic2: {
   $('#btnLogMeal').onclick = async () => {
     if (state.scannedMeal) {
       await logMeal(state.scannedMeal);
-      toast('Meal logged.');
+      alert('Meal logged! Check your dashboard for daily totals.');
     }
   };
   $('#btnBuildPlan').onclick = () => {
@@ -2254,6 +2196,7 @@ diabetic2: {
       setTopSliders();
       localRegenMeals();
       idle(()=>aiRegenMeals());
+      renderScanHistory();
       return;
     }
     const row = await loadUserRow(user);
@@ -2263,6 +2206,7 @@ diabetic2: {
       await persistUserPatch({ name: best });
     }
     state.uid = row?.id || user.id;
+    renderScanHistory();
     state.name = best || 'friend';
     state.coach = (row?.coach) || 'Zara';
     $('#coachImg').src = COACH_IMG[state.coach] || COACH_IMG.Zara;
