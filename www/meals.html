@@ -285,16 +285,6 @@ input[type="file"].input { padding: 6px; }
     }
   }
 
-
-/* Upload action-sheet modal (mobile friendly) */
-.modal{position:fixed;inset:0;display:none;z-index:9999}
-.modal.show{display:block}
-.modalBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.55)}
-.modalCard{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;width:min(520px,calc(100% - 24px));
-  background:rgba(15,18,24,.95);border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:14px 14px 10px;
-  box-shadow:0 18px 40px rgba(0,0,0,.45);backdrop-filter: blur(8px)}
-.modalTitle{font-weight:800;font-size:16px;margin:2px 2px 10px;color:#e8eef7}
-.modalActions{display:flex;flex-direction:column;gap:10px}
 </style>
 </head>
 <body>
@@ -418,26 +408,10 @@ input[type="file"].input { padding: 6px; }
     <h2>Upload Your Meal Photo</h2>
     <div class="sub">Snap a clear photo of your plate and upload it. We'll scan and analyze the nutrition.</div>
     <div class="uploadArea" id="uploadArea">
-      <button type="button" id="uploadMealBtn" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
-        📸 Upload Meal
-      </button>
-
-      <!-- Hidden file inputs: one forces camera, one opens library -->
-      <input type="file" id="mealPhotoCamera" class="input" accept="image/*" capture="environment" style="display:none">
-      <input type="file" id="mealPhotoLibrary" class="input" accept="image/*" style="display:none">
-
-      <!-- Simple iOS-friendly action sheet -->
-      <div id="uploadChoiceModal" class="modal" aria-hidden="true">
-        <div class="modalBackdrop" data-close="1"></div>
-        <div class="modalCard" role="dialog" aria-modal="true" aria-label="Upload meal">
-          <div class="modalTitle">Upload Meal</div>
-          <div class="modalActions">
-            <button type="button" id="chooseCamera" class="cta primary" style="width:100%">Take Photo</button>
-            <button type="button" id="chooseLibrary" class="cta" style="width:100%">Choose from Library</button>
-            <button type="button" id="chooseCancel" class="cta" style="width:100%;opacity:.85">Cancel</button>
-          </div>
-        </div>
-      </div>
+      <label for="mealPhoto" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
+        📸 Take Photo or Upload Image
+      </label>
+      <input type="file" id="mealPhoto" class="input" accept="image/*" style="display:none">
       <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
@@ -2013,9 +1987,11 @@ diabetic2: {
     // Simulate delay (AI call)
     await new Promise(resolve => setTimeout(resolve, 2200 + Math.random() * 2600));
 
-    // Choose a generic profile (no dish guessing). Keep the label coherent with the breakdown.
+    // Choose a generic macro profile (no dish guessing from the image).
+    // IMPORTANT: We deliberately do NOT name the dish (to avoid mismatches like cereal showing as chicken).
     const idx = Math.floor(Math.random() * MOCK_PROFILES.length);
     const meal = JSON.parse(JSON.stringify(MOCK_PROFILES[idx]));
+    meal.title = 'Uploaded Meal (Estimated)';
 
     // Mild goal adjustment (portion-like). Do NOT change ingredients, only scale numbers a bit.
     let scale = 1.0;
@@ -2055,67 +2031,28 @@ diabetic2: {
     const { error } = await sb.from('x45_meal_scans').insert(logEntry); // Assume table exists
     if (error) console.warn('Log error', error);
   }
-  $('#mealPhotoCamera').addEventListener('change', (e) => {
+  $('#mealPhoto').addEventListener('change', (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    handleMealPhotoFile(file);
-    e.target.value = ''; // allow re-taking same photo
+    if (!file.type || !file.type.startsWith('image/')) return;
+
+    // On mobile (especially iOS), large camera photos can crash the WebView if we convert to base64.
+    // Use an object URL for preview instead of FileReader.
+    const url = URL.createObjectURL(file);
+
+    const uploadImg = $('#uploadImg');
+    const scannedImg = $('#scannedMealImg');
+
+    uploadImg.onload = () => URL.revokeObjectURL(url);
+    uploadImg.src = url;
+    $('#uploadImgWrap').style.display = 'block';
+
+    scannedImg.src = url;
+    scannedImg.style.display = 'block';
+
+    simulateScan(file);
   });
-  $('#mealPhotoLibrary').addEventListener('change', (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    handleMealPhotoFile(file);
-    e.target.value = '';
-  });
-
-  function handleMealPhotoFile(file){
-    try{
-      // Preview via object URL (avoids large base64 memory spikes on iOS)
-      const url = URL.createObjectURL(file);
-      $('#uploadImg').src = url;
-      $('#uploadImgWrap').style.display = 'block';
-      $('#scannedMealImg').src = url;
-
-      // Revoke URL after image is loaded to free memory
-      const img = $('#uploadImg');
-      img.onload = () => { try{ URL.revokeObjectURL(url); }catch(_){} };
-
-      simulateScan(file);
-    }catch(err){
-      console.error('Meal photo handling failed:', err);
-      alert('Unable to open the camera/photo picker on this device. Please try again, or choose from Library.');
-    }
-  }
-    reader.onload = (ev) => {
-      $('#uploadImg').src = ev.target.result;
-      $('#uploadImgWrap').style.display = 'block';
-      $('#scannedMealImg').src = ev.target.result;
-      simulateScan(file);
-    };
-    reader.readAsDataURL(file);
-  });
-  
-  // Upload button action sheet (camera vs library)
-  const uploadMealBtn = $('#uploadMealBtn');
-  const uploadChoiceModal = $('#uploadChoiceModal');
-  const openUploadChoice = () => { uploadChoiceModal.classList.add('show'); uploadChoiceModal.setAttribute('aria-hidden','false'); };
-  const closeUploadChoice = () => { uploadChoiceModal.classList.remove('show'); uploadChoiceModal.setAttribute('aria-hidden','true'); };
-
-  uploadMealBtn && uploadMealBtn.addEventListener('click', (e) => {
-    // Must be direct user gesture for iOS camera picker
-    e.preventDefault();
-    openUploadChoice();
-  });
-
-  uploadChoiceModal && uploadChoiceModal.addEventListener('click', (e) => {
-    const t = e.target;
-    if (t && t.dataset && t.dataset.close) closeUploadChoice();
-  });
-
-  $('#chooseCancel') && $('#chooseCancel').addEventListener('click', () => closeUploadChoice());
-  $('#chooseCamera') && $('#chooseCamera').addEventListener('click', () => { closeUploadChoice(); $('#mealPhotoCamera').click(); });
-  $('#chooseLibrary') && $('#chooseLibrary').addEventListener('click', () => { closeUploadChoice(); $('#mealPhotoLibrary').click(); });
-// Drag & drop
+  // Drag & drop
   const uploadArea = $('#uploadArea');
   uploadArea.addEventListener('dragover', (e) => {
     e.preventDefault();
@@ -2127,8 +2064,8 @@ diabetic2: {
     uploadArea.classList.remove('dragover');
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
-      $('#mealPhotoLibrary').files = e.dataTransfer.files;
-      $('#mealPhotoLibrary').dispatchEvent(new Event('change'));
+      $('#mealPhoto').files = e.dataTransfer.files;
+      $('#mealPhoto').dispatchEvent(new Event('change'));
     }
   });
   $('#btnNewScan').onclick = hideScanned;
