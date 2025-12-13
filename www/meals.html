@@ -286,29 +286,15 @@ input[type="file"].input { padding: 6px; }
   }
 
 
-/* Upload chooser sheet (single Upload Meal button with camera/library options) */
-.sheetBackdrop{
-  position:fixed; inset:0; background:rgba(0,0,0,.55);
-  backdrop-filter: blur(2px);
-  z-index:9998;
-}
-.sheet{
-  position:fixed; left:12px; right:12px; bottom:12px;
-  background:linear-gradient(180deg, rgba(18,22,30,.98), rgba(12,14,18,.98));
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:18px;
-  padding:14px;
-  z-index:9999;
-  box-shadow:0 20px 60px rgba(0,0,0,.5);
-}
-.sheetHandle{
-  width:46px; height:5px; border-radius:99px;
-  background:rgba(255,255,255,.14);
-  margin:2px auto 10px;
-}
-.sheetTitle{font-weight:800;font-size:18px;margin:0 0 4px}
-.sheetSub{font-size:13px;color:var(--muted);margin-bottom:12px}
-.sheetBtns{display:flex;flex-direction:column;gap:10px}
+/* Upload action-sheet modal (mobile friendly) */
+.modal{position:fixed;inset:0;display:none;z-index:9999}
+.modal.show{display:block}
+.modalBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.modalCard{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;width:min(520px,calc(100% - 24px));
+  background:rgba(15,18,24,.95);border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:14px 14px 10px;
+  box-shadow:0 18px 40px rgba(0,0,0,.45);backdrop-filter: blur(8px)}
+.modalTitle{font-weight:800;font-size:16px;margin:2px 2px 10px;color:#e8eef7}
+.modalActions{display:flex;flex-direction:column;gap:10px}
 </style>
 </head>
 <body>
@@ -432,26 +418,26 @@ input[type="file"].input { padding: 6px; }
     <h2>Upload Your Meal Photo</h2>
     <div class="sub">Snap a clear photo of your plate and upload it. We'll scan and analyze the nutrition.</div>
     <div class="uploadArea" id="uploadArea">
-      <button type="button" class="cta primary" id="uploadMealBtn" style="font-size:16px;padding:12px 20px;cursor:pointer">
+      <button type="button" id="uploadMealBtn" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
         📸 Upload Meal
       </button>
 
-      <!-- One-button chooser (camera or library) -->
-      <div class="sheetBackdrop" id="uploadSheetBackdrop" style="display:none;"></div>
-      <div class="sheet" id="uploadSheet" style="display:none;" role="dialog" aria-modal="true" aria-label="Upload meal">
-        <div class="sheetHandle"></div>
-        <div class="sheetTitle">Upload your meal</div>
-        <div class="sheetSub">Choose how you want to add a photo.</div>
-        <div class="sheetBtns">
-          <button type="button" class="cta primary" id="pickCameraBtn">Take Photo</button>
-          <button type="button" class="cta ghost" id="pickLibraryBtn">Choose from Library</button>
-          <button type="button" class="cta soft" id="pickCancelBtn">Cancel</button>
+      <!-- Hidden file inputs: one forces camera, one opens library -->
+      <input type="file" id="mealPhotoCamera" class="input" accept="image/*" capture="environment" style="display:none">
+      <input type="file" id="mealPhotoLibrary" class="input" accept="image/*" style="display:none">
+
+      <!-- Simple iOS-friendly action sheet -->
+      <div id="uploadChoiceModal" class="modal" aria-hidden="true">
+        <div class="modalBackdrop" data-close="1"></div>
+        <div class="modalCard" role="dialog" aria-modal="true" aria-label="Upload meal">
+          <div class="modalTitle">Upload Meal</div>
+          <div class="modalActions">
+            <button type="button" id="chooseCamera" class="cta primary" style="width:100%">Take Photo</button>
+            <button type="button" id="chooseLibrary" class="cta" style="width:100%">Choose from Library</button>
+            <button type="button" id="chooseCancel" class="cta" style="width:100%;opacity:.85">Cancel</button>
+          </div>
         </div>
       </div>
-
-      <input type="file" id="mealPhotoLibrary" class="input" accept="image/*" style="display:none">
-      <input type="file" id="mealPhotoCamera" class="input" accept="image/*" capture="environment" style="display:none">
-
       <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
@@ -2069,44 +2055,67 @@ diabetic2: {
     const { error } = await sb.from('x45_meal_scans').insert(logEntry); // Assume table exists
     if (error) console.warn('Log error', error);
   }
-  
-  // Upload Meal (one button -> sheet with camera/library options)
-  const uploadMealBtn = $('#uploadMealBtn');
-  const sheet = $('#uploadSheet');
-  const sheetBg = $('#uploadSheetBackdrop');
-  const pickCameraBtn = $('#pickCameraBtn');
-  const pickLibraryBtn = $('#pickLibraryBtn');
-  const pickCancelBtn = $('#pickCancelBtn');
-  const camInput = $('#mealPhotoCamera');
-  const libInput = $('#mealPhotoLibrary');
-
-  const openSheet = () => { sheet.style.display = 'block'; sheetBg.style.display = 'block'; };
-  const closeSheet = () => { sheet.style.display = 'none'; sheetBg.style.display = 'none'; };
-
-  if (uploadMealBtn) uploadMealBtn.addEventListener('click', openSheet);
-  if (sheetBg) sheetBg.addEventListener('click', closeSheet);
-  if (pickCancelBtn) pickCancelBtn.addEventListener('click', closeSheet);
-
-  if (pickCameraBtn) pickCameraBtn.addEventListener('click', () => { closeSheet(); camInput && camInput.click(); });
-  if (pickLibraryBtn) pickLibraryBtn.addEventListener('click', () => { closeSheet(); libInput && libInput.click(); });
-
-  const handleMealPhotoFile = (file) => {
+  $('#mealPhotoCamera').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
     if (!file) return;
-    if (!file.type || !file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target.result;
-      $('#uploadImg').src = dataUrl;
+    handleMealPhotoFile(file);
+    e.target.value = ''; // allow re-taking same photo
+  });
+  $('#mealPhotoLibrary').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    handleMealPhotoFile(file);
+    e.target.value = '';
+  });
+
+  function handleMealPhotoFile(file){
+    try{
+      // Preview via object URL (avoids large base64 memory spikes on iOS)
+      const url = URL.createObjectURL(file);
+      $('#uploadImg').src = url;
       $('#uploadImgWrap').style.display = 'block';
-      $('#scannedMealImg').src = dataUrl;
+      $('#scannedMealImg').src = url;
+
+      // Revoke URL after image is loaded to free memory
+      const img = $('#uploadImg');
+      img.onload = () => { try{ URL.revokeObjectURL(url); }catch(_){} };
+
+      simulateScan(file);
+    }catch(err){
+      console.error('Meal photo handling failed:', err);
+      alert('Unable to open the camera/photo picker on this device. Please try again, or choose from Library.');
+    }
+  }
+    reader.onload = (ev) => {
+      $('#uploadImg').src = ev.target.result;
+      $('#uploadImgWrap').style.display = 'block';
+      $('#scannedMealImg').src = ev.target.result;
       simulateScan(file);
     };
     reader.readAsDataURL(file);
-  };
+  });
+  
+  // Upload button action sheet (camera vs library)
+  const uploadMealBtn = $('#uploadMealBtn');
+  const uploadChoiceModal = $('#uploadChoiceModal');
+  const openUploadChoice = () => { uploadChoiceModal.classList.add('show'); uploadChoiceModal.setAttribute('aria-hidden','false'); };
+  const closeUploadChoice = () => { uploadChoiceModal.classList.remove('show'); uploadChoiceModal.setAttribute('aria-hidden','true'); };
 
-  if (camInput) camInput.addEventListener('change', (e) => { handleMealPhotoFile(e.target.files[0]); e.target.value=''; });
-  if (libInput) libInput.addEventListener('change', (e) => { handleMealPhotoFile(e.target.files[0]); e.target.value=''; });
-  // Drag & drop
+  uploadMealBtn && uploadMealBtn.addEventListener('click', (e) => {
+    // Must be direct user gesture for iOS camera picker
+    e.preventDefault();
+    openUploadChoice();
+  });
+
+  uploadChoiceModal && uploadChoiceModal.addEventListener('click', (e) => {
+    const t = e.target;
+    if (t && t.dataset && t.dataset.close) closeUploadChoice();
+  });
+
+  $('#chooseCancel') && $('#chooseCancel').addEventListener('click', () => closeUploadChoice());
+  $('#chooseCamera') && $('#chooseCamera').addEventListener('click', () => { closeUploadChoice(); $('#mealPhotoCamera').click(); });
+  $('#chooseLibrary') && $('#chooseLibrary').addEventListener('click', () => { closeUploadChoice(); $('#mealPhotoLibrary').click(); });
+// Drag & drop
   const uploadArea = $('#uploadArea');
   uploadArea.addEventListener('dragover', (e) => {
     e.preventDefault();
@@ -2118,7 +2127,8 @@ diabetic2: {
     uploadArea.classList.remove('dragover');
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
-      handleMealPhotoFile(file);
+      $('#mealPhotoLibrary').files = e.dataTransfer.files;
+      $('#mealPhotoLibrary').dispatchEvent(new Event('change'));
     }
   });
   $('#btnNewScan').onclick = hideScanned;
