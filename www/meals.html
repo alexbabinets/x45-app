@@ -285,6 +285,30 @@ input[type="file"].input { padding: 6px; }
     }
   }
 
+
+/* Upload chooser sheet (single Upload Meal button with camera/library options) */
+.sheetBackdrop{
+  position:fixed; inset:0; background:rgba(0,0,0,.55);
+  backdrop-filter: blur(2px);
+  z-index:9998;
+}
+.sheet{
+  position:fixed; left:12px; right:12px; bottom:12px;
+  background:linear-gradient(180deg, rgba(18,22,30,.98), rgba(12,14,18,.98));
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:18px;
+  padding:14px;
+  z-index:9999;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.sheetHandle{
+  width:46px; height:5px; border-radius:99px;
+  background:rgba(255,255,255,.14);
+  margin:2px auto 10px;
+}
+.sheetTitle{font-weight:800;font-size:18px;margin:0 0 4px}
+.sheetSub{font-size:13px;color:var(--muted);margin-bottom:12px}
+.sheetBtns{display:flex;flex-direction:column;gap:10px}
 </style>
 </head>
 <body>
@@ -408,10 +432,26 @@ input[type="file"].input { padding: 6px; }
     <h2>Upload Your Meal Photo</h2>
     <div class="sub">Snap a clear photo of your plate and upload it. We'll scan and analyze the nutrition.</div>
     <div class="uploadArea" id="uploadArea">
-      <label for="mealPhoto" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
-        📸 Take Photo or Upload Image
-      </label>
-      <input type="file" id="mealPhoto" class="input" accept="image/*" style="display:none">
+      <button type="button" class="cta primary" id="uploadMealBtn" style="font-size:16px;padding:12px 20px;cursor:pointer">
+        📸 Upload Meal
+      </button>
+
+      <!-- One-button chooser (camera or library) -->
+      <div class="sheetBackdrop" id="uploadSheetBackdrop" style="display:none;"></div>
+      <div class="sheet" id="uploadSheet" style="display:none;" role="dialog" aria-modal="true" aria-label="Upload meal">
+        <div class="sheetHandle"></div>
+        <div class="sheetTitle">Upload your meal</div>
+        <div class="sheetSub">Choose how you want to add a photo.</div>
+        <div class="sheetBtns">
+          <button type="button" class="cta primary" id="pickCameraBtn">Take Photo</button>
+          <button type="button" class="cta ghost" id="pickLibraryBtn">Choose from Library</button>
+          <button type="button" class="cta soft" id="pickCancelBtn">Cancel</button>
+        </div>
+      </div>
+
+      <input type="file" id="mealPhotoLibrary" class="input" accept="image/*" style="display:none">
+      <input type="file" id="mealPhotoCamera" class="input" accept="image/*" capture="environment" style="display:none">
+
       <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
@@ -2029,18 +2069,43 @@ diabetic2: {
     const { error } = await sb.from('x45_meal_scans').insert(logEntry); // Assume table exists
     if (error) console.warn('Log error', error);
   }
-  $('#mealPhoto').addEventListener('change', (e) => {
-    const file = e.target.files[0];
+  
+  // Upload Meal (one button -> sheet with camera/library options)
+  const uploadMealBtn = $('#uploadMealBtn');
+  const sheet = $('#uploadSheet');
+  const sheetBg = $('#uploadSheetBackdrop');
+  const pickCameraBtn = $('#pickCameraBtn');
+  const pickLibraryBtn = $('#pickLibraryBtn');
+  const pickCancelBtn = $('#pickCancelBtn');
+  const camInput = $('#mealPhotoCamera');
+  const libInput = $('#mealPhotoLibrary');
+
+  const openSheet = () => { sheet.style.display = 'block'; sheetBg.style.display = 'block'; };
+  const closeSheet = () => { sheet.style.display = 'none'; sheetBg.style.display = 'none'; };
+
+  if (uploadMealBtn) uploadMealBtn.addEventListener('click', openSheet);
+  if (sheetBg) sheetBg.addEventListener('click', closeSheet);
+  if (pickCancelBtn) pickCancelBtn.addEventListener('click', closeSheet);
+
+  if (pickCameraBtn) pickCameraBtn.addEventListener('click', () => { closeSheet(); camInput && camInput.click(); });
+  if (pickLibraryBtn) pickLibraryBtn.addEventListener('click', () => { closeSheet(); libInput && libInput.click(); });
+
+  const handleMealPhotoFile = (file) => {
     if (!file) return;
+    if (!file.type || !file.type.startsWith('image/')) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      $('#uploadImg').src = ev.target.result;
+      const dataUrl = ev.target.result;
+      $('#uploadImg').src = dataUrl;
       $('#uploadImgWrap').style.display = 'block';
-      $('#scannedMealImg').src = ev.target.result;
+      $('#scannedMealImg').src = dataUrl;
       simulateScan(file);
     };
     reader.readAsDataURL(file);
-  });
+  };
+
+  if (camInput) camInput.addEventListener('change', (e) => { handleMealPhotoFile(e.target.files[0]); e.target.value=''; });
+  if (libInput) libInput.addEventListener('change', (e) => { handleMealPhotoFile(e.target.files[0]); e.target.value=''; });
   // Drag & drop
   const uploadArea = $('#uploadArea');
   uploadArea.addEventListener('dragover', (e) => {
@@ -2053,8 +2118,7 @@ diabetic2: {
     uploadArea.classList.remove('dragover');
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
-      $('#mealPhoto').files = e.dataTransfer.files;
-      $('#mealPhoto').dispatchEvent(new Event('change'));
+      handleMealPhotoFile(file);
     }
   });
   $('#btnNewScan').onclick = hideScanned;
