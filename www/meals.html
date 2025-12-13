@@ -237,6 +237,54 @@ input[type="file"].input { padding: 6px; }
     }
   }
 
+
+  /* ===== Upload Meal: mobile portrait layout fixes ===== */
+  @media (max-width:600px){
+    /* Keep scanned content readable on portrait */
+    #uploadSection .mealHead{flex-direction:column;align-items:flex-start;gap:8px}
+    #uploadSection .mealName{font-size:16px}
+    #uploadSection .mealBadge{font-size:12px}
+
+    /* Force scanned grid to single column */
+    #uploadSection .mealScanned > div[style*="grid-template-columns:120px 1fr"]{
+      grid-template-columns:1fr !important;
+      justify-items:center;
+    }
+    #uploadSection .mealDonut{margin:0 auto 10px auto}
+
+    /* Pills wrap + smaller so they don't overflow */
+    #uploadSection .pills{gap:6px;flex-wrap:wrap}
+    #uploadSection .pill{font-size:11px;padding:6px 8px}
+
+    /* Health score: stack and prevent giant typography */
+    #uploadSection .healthScore{
+      flex-direction:column;
+      align-items:flex-start;
+      gap:6px;
+      font-size:28px;
+      margin:14px 0 10px;
+    }
+    #uploadSection .healthScore .score{
+      font-size:52px;
+      line-height:1;
+    }
+    #uploadSection .healthScore .bar{
+      width:100%;
+      max-width:360px;
+      height:18px;
+    }
+
+    /* Scanned photo: fit screen width and avoid excessive height */
+    #uploadSection .uploadImg{
+      width:100%;
+      max-width:100%;
+      height:auto;
+    }
+    #uploadSection #scannedMealImg{
+      max-width:100% !important;
+    }
+  }
+
 </style>
 </head>
 <body>
