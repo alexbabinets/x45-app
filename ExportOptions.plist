@@ -17,7 +17,7 @@
   <string>Y4A2M3B9T7</string>
   <key>provisioningProfiles</key>
   <dict>
-    <key>com.expressfitness.x45</key>
+    <key>ca.expressfitness.x45</key>
     <string>X45 iOS App Profile</string>
   </dict>
 </dict>
