@@ -411,7 +411,7 @@ input[type="file"].input { padding: 6px; }
       <label for="mealPhoto" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
         📸 Take Photo or Upload Image
       </label>
-      <input type="file" id="mealPhoto" class="input" accept="image/*" style="display:none">
+      <input type="file" id="mealPhoto" class="input" accept="image/*" capture="environment" style="display:none">
       <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
@@ -2031,13 +2031,11 @@ diabetic2: {
     const { error } = await sb.from('x45_meal_scans').insert(logEntry); // Assume table exists
     if (error) console.warn('Log error', error);
   }
-  $('#mealPhoto').addEventListener('change', (e) => {
-    const file = e.target.files && e.target.files[0];
+  function handleMealImageFile(file){
     if (!file) return;
     if (!file.type || !file.type.startsWith('image/')) return;
 
-    // On mobile (especially iOS), large camera photos can crash the WebView if we convert to base64.
-    // Use an object URL for preview instead of FileReader.
+    // Use an object URL for preview instead of FileReader (safer for large iOS camera images).
     const url = URL.createObjectURL(file);
 
     const uploadImg = $('#uploadImg');
@@ -2051,6 +2049,13 @@ diabetic2: {
     scannedImg.style.display = 'block';
 
     simulateScan(file);
+  }
+
+  $('#mealPhoto').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    handleMealImageFile(file);
+    // Allow taking another photo of the same meal name by resetting the input.
+    e.target.value = '';
   });
   // Drag & drop
   const uploadArea = $('#uploadArea');
@@ -2062,11 +2067,8 @@ diabetic2: {
   uploadArea.addEventListener('drop', (e) => {
     e.preventDefault();
     uploadArea.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      $('#mealPhoto').files = e.dataTransfer.files;
-      $('#mealPhoto').dispatchEvent(new Event('change'));
-    }
+    const file = (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) ? e.dataTransfer.files[0] : null;
+    handleMealImageFile(file);
   });
   $('#btnNewScan').onclick = hideScanned;
   $('#btnLogMeal').onclick = async () => {
