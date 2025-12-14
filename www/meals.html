@@ -408,11 +408,17 @@ input[type="file"].input { padding: 6px; }
     <h2>Upload Your Meal Photo</h2>
     <div class="sub">Snap a clear photo of your plate and upload it. We'll scan and analyze the nutrition.</div>
     <div class="uploadArea" id="uploadArea">
-      <label for="mealPhoto" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
-        📸 Take Photo or Upload Image
-      </label>
-      <input type="file" id="mealPhoto" class="input" accept="image/*" style="display:none" />
-      <div id="uploadImgWrap" style="display:none;margin-top:20px">
+      
+    <div class="uploadControls">
+      <button id="btnTakePhoto" class="btn primary" type="button">Take Photo</button>
+      <button id="btnChoosePhoto" class="btn" type="button">Choose Photo</button>
+
+      <!-- iOS camera -->
+      <input id="mealPhotoCamera" type="file" accept="image/*" capture="environment" style="display:none" />
+      <!-- iOS photo library -->
+      <input id="mealPhotoLibrary" type="file" accept="image/*" style="display:none" />
+    </div>
+<div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
     </div>
@@ -2051,12 +2057,28 @@ diabetic2: {
     simulateScan(file);
   }
 
-  $('#mealPhoto').addEventListener('change', (e) => {
+  
+  // Photo capture / selection (iOS-safe)
+  const openCamera = () => $('#mealPhotoCamera').click();
+  const openLibrary = () => $('#mealPhotoLibrary').click();
+
+  $('#btnTakePhoto').addEventListener('click', openCamera);
+  $('#btnChoosePhoto').addEventListener('click', openLibrary);
+
+  // Tapping the upload area opens the library (safest default)
+  uploadArea.addEventListener('click', openLibrary);
+
+  const onMealPhotoChosen = (e) => {
     const file = e.target.files && e.target.files[0];
     handleMealImageFile(file);
-    // Allow taking another photo of the same meal name by resetting the input.
+    // Allow choosing/taking the same photo again
     e.target.value = '';
-  });
+  };
+
+  $('#mealPhotoCamera').addEventListener('change', onMealPhotoChosen);
+  $('#mealPhotoLibrary').addEventListener('change', onMealPhotoChosen);
+
+  // Drag & drop
   // Drag & drop
   const uploadArea = $('#uploadArea');
   uploadArea.addEventListener('dragover', (e) => {
