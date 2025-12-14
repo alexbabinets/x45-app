@@ -2,19 +2,39 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+
+  <!-- App identity -->
   <key>CFBundleDisplayName</key>
   <string>X45</string>
+
   <key>CFBundleIdentifier</key>
   <string>ca.expressfitness.x45</string>
+
   <key>CFBundleShortVersionString</key>
   <string>1.0.0</string>
+
   <key>CFBundleVersion</key>
   <string>1</string>
+
+  <!-- Launch / UI -->
   <key>UILaunchStoryboardName</key>
   <string>LaunchScreen</string>
+
   <key>UIRequiresFullScreen</key>
   <true/>
+
   <key>UIViewControllerBasedStatusBarAppearance</key>
   <false/>
+
+  <!-- Camera & Photo permissions (REQUIRED for TestFlight) -->
+  <key>NSCameraUsageDescription</key>
+  <string>X45 needs camera access to take meal photos for nutrition analysis.</string>
+
+  <key>NSPhotoLibraryUsageDescription</key>
+  <string>X45 needs photo library access to upload meal photos.</string>
+
+  <key>NSPhotoLibraryAddUsageDescription</key>
+  <string>X45 may save meal images to your history.</string>
+
 </dict>
 </plist>
