@@ -407,15 +407,11 @@ input[type="file"].input { padding: 6px; }
   <section class="card" id="uploadSection">
     <h2>Upload Your Meal Photo</h2>
     <div class="sub">Snap a clear photo of your plate and upload it. We'll scan and analyze the nutrition.</div>
-        <div class="uploadArea" id="uploadArea">
-      <button id="btnUploadMeal" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer;width:100%;max-width:320px;">
-        📸 Upload Meal
-      </button>
-
-      <!-- Hidden input for web fallback (Safari/Chrome will show Camera/Photo Library options automatically) -->
-      <input type="file" id="mealPhoto" class="input" accept="image/*"
-             style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;">
-
+    <div class="uploadArea" id="uploadArea">
+      <label for="mealPhoto" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
+        📸 Take Photo or Upload Image
+      </label>
+      <input type="file" id="mealPhoto" class="input" accept="image/*" style="display:none">
       <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
@@ -1985,130 +1981,90 @@ diabetic2: {
       ]
     }
   ];
-  async function simulateScan(imageFile){
-    const stop = startProgress($('#scanProgress'), $('#scanLabel'));
-
-    // Simulate delay (AI call)
-    await new Promise(resolve => setTimeout(resolve, 2200 + Math.random() * 2600));
-
-    // Choose a generic macro profile (no dish guessing from the image).
-    // IMPORTANT: We deliberately do NOT name the dish (to avoid mismatches like cereal showing as chicken).
-    const idx = Math.floor(Math.random() * MOCK_PROFILES.length);
-    const meal = JSON.parse(JSON.stringify(MOCK_PROFILES[idx]));
-    meal.title = 'Uploaded Meal (Estimated)';
-
-    // Mild goal adjustment (portion-like). Do NOT change ingredients, only scale numbers a bit.
-    let scale = 1.0;
-    if (state.goal === 'lose_weight') scale = 0.85;
-    if (state.goal === 'build_muscle') scale = 1.10;
-    if (state.goal === 'performance') scale = 1.05;
-
-    meal.parts.forEach(p => {
-      p.kcal = Math.max(0, Math.round(p.kcal * scale));
-      p.p = Math.max(0, Math.round(p.p * scale));
-      p.c = Math.max(0, Math.round(p.c * scale));
-      p.f = Math.max(0, Math.round(p.f * scale));
-    });
-
-    state.scannedMeal = meal;
-    showScanned(meal);
-    stop();
+  async async function fileToDownscaledJpegBase64(file, maxSide=1280, quality=0.82){
+    // Returns base64 (no data: prefix) of a downscaled JPEG to keep payload small/stable.
+    const imgUrl = URL.createObjectURL(file);
+    try{
+      const img = await new Promise((resolve, reject)=>{
+        const im = new Image();
+        im.onload = ()=>resolve(im);
+        im.onerror = reject;
+        im.src = imgUrl;
+      });
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      const scale = Math.min(1, maxSide / Math.max(w, h));
+      const cw = Math.max(1, Math.round(w * scale));
+      const ch = Math.max(1, Math.round(h * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = cw; canvas.height = ch;
+      const ctx = canvas.getContext('2d', { alpha:false });
+      ctx.drawImage(img, 0, 0, cw, ch);
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      return dataUrl.split(',')[1];
+    }finally{
+      URL.revokeObjectURL(imgUrl);
+    }
   }
-  async function logMeal(meal){
-    // Simulate logging to a meals_log table or append to daily
-    if (!state.uid) return;
-    const logEntry = {
-      // If you add a user_id column (recommended), keep this:
-      user_id: state.uid,
-      scanned_at: new Date().toISOString(),
-      meal_name: meal.title,
-      image_url: '', // In real impl, upload to Supabase Storage and store the public URL here
-      calories: meal.parts.reduce((sum, p) => sum + p.kcal, 0),
-      protein_g: meal.parts.reduce((sum, p) => sum + p.p, 0),
-      carbs_g: meal.parts.reduce((sum, p) => sum + p.c, 0),
-      fats_g: meal.parts.reduce((sum, p) => sum + p.f, 0),
-      health_score: parseInt($('#healthScore').textContent, 10) || null,
-      good_points: null,
-      bad_points: null,
-      raw_ai_json: meal
+
+  async function callMealScanAI(imageFile){
+    try{
+      const { data: { session } } = await sb.auth.getSession();
+      const headers = {};
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const b64 = await fileToDownscaledJpegBase64(imageFile, 1280, 0.82);
+      const payload = { mode:'scan_meal', image_base64: b64 };
+
+      const { data, error } = await sb.functions.invoke('x45_meals', { body: payload, headers });
+      if (error) throw error;
+
+      // Expected shapes (support multiple possible payload formats):
+      // 1) { meal: {...} }
+      // 2) { scanned_meal: {...} }
+      // 3) { result: {...} }
+      const meal = data?.meal || data?.scanned_meal || data?.result || null;
+      if (!meal) throw new Error('No meal returned');
+      if (!meal.parts || !Array.isArray(meal.parts)) throw new Error('Invalid meal parts');
+
+      return meal;
+    }catch(err){
+      console.warn('Meal scan AI error:', err);
+      return null;
+    }
+  }
+
+  function fallbackMealFromPhoto(){
+    return {
+      title: 'Meal photo uploaded (scan unavailable)',
+      kcal: 0, p: 0, c: 0, f: 0,
+      parts: [{ label:'Meal photo', prettyUnits:'1 photo', kcal:0, p:0, c:0, f:0 }],
+      health_score: null,
+      pros: ['Photo uploaded and saved to history.'],
+      cons: ['AI scan did not return a result.']
     };
-    const { error } = await sb.from('x45_meal_scans').insert(logEntry); // Assume table exists
-    if (error) console.warn('Log error', error);
   }
-    function processMealFile(file){
-    try {
-      if (!file) return;
-      if (!file.type || !String(file.type).startsWith('image/')) return;
 
-      // On mobile (especially iOS), large camera photos can crash the WebView if we convert to base64.
-      // Use an object URL for preview instead of FileReader.
-      const url = URL.createObjectURL(file);
+  async function scanMealPhoto(imageFile){
+    const stop = startProgress($('#scanProgress'), $('#scanLabel'));
+    $('#mealScanned').style.display = 'none';
+    try{
+      const meal = await callMealScanAI(imageFile);
+      const finalMeal = meal || fallbackMealFromPhoto();
+      state.scannedMeal = finalMeal;
 
-      const uploadImg = $('#uploadImg');
+      // Ensure photo is shown
       const scannedImg = $('#scannedMealImg');
-
-      uploadImg.onload = () => { try { URL.revokeObjectURL(url); } catch(_){} };
-      uploadImg.src = url;
-      $('#uploadImgWrap').style.display = 'block';
-
-      scannedImg.src = url;
-      scannedImg.style.display = 'block';
-
-      simulateScan(file);
-    } catch (err) {
-      console.warn('processMealFile error', err);
-      // Fail silently (avoid hard crashes in WebView)
-    }
-  }
-
-  async function pickMealPhoto(){
-    // If running inside the native Capacitor iOS app, use the Capacitor Camera plugin (most stable).
-    try {
-      const Cap = window.Capacitor;
-      const isNative = !!(Cap && (Cap.isNativePlatform?.() || (typeof Cap.getPlatform === 'function' && Cap.getPlatform() !== 'web')));
-      const Camera = Cap?.Plugins?.Camera;
-
-      if (isNative && Camera && typeof Camera.getPhoto === 'function') {
-        const source = (Cap.CameraSource && (Cap.CameraSource.Prompt ?? Cap.CameraSource.PROMPT)) || 'PROMPT';
-        const resultType = (Cap.CameraResultType && (Cap.CameraResultType.Uri ?? Cap.CameraResultType.URI)) || 'uri';
-
-        const photo = await Camera.getPhoto({
-          quality: 80,
-          allowEditing: false,
-          resultType,
-          source
-        });
-
-        const webPath = photo?.webPath || photo?.path || photo?.webPath;
-        if (!webPath) return;
-
-        const resp = await fetch(webPath);
-        const blob = await resp.blob();
-        const file = new File([blob], `meal_${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
-        processMealFile(file);
-        return;
+      if (scannedImg && scannedImg.src) {
+        // already set by preview logic
       }
-    } catch (err) {
-      console.warn('Capacitor camera fallback to file input', err);
-      // fall through to web input
-    }
 
-    // Web fallback: open the system chooser (camera or library).
-    const input = $('#mealPhoto');
-    if (input) input.click();
+      showScanned(finalMeal);
+    }finally{
+      stop();
+    }
   }
 
-  // Single Upload button (shows Camera/Library options in native app and web)
-  const btnUploadMeal = $('#btnUploadMeal');
-  if (btnUploadMeal) btnUploadMeal.addEventListener('click', () => { pickMealPhoto(); });
-
-  // Web chooser fallback handler
-  $('#mealPhoto').addEventListener('change', (e) => {
-    const file = e.target.files && e.target.files[0];
-    processMealFile(file);
-    // allow selecting the same file again
-    try { e.target.value = ''; } catch(_){}
-  });
   // Drag & drop
   const uploadArea = $('#uploadArea');
   uploadArea.addEventListener('dragover', (e) => {
@@ -2121,8 +2077,17 @@ diabetic2: {
     uploadArea.classList.remove('dragover');
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
-      $('#mealPhoto').files = e.dataTransfer.files;
-      $('#mealPhoto').dispatchEvent(new Event('change'));
+      // Use the same safe path as the normal picker
+      const url = URL.createObjectURL(file);
+      const uploadImg = $('#uploadImg');
+      uploadImg.onload = () => URL.revokeObjectURL(url);
+      uploadImg.src = url;
+      $('#uploadImgWrap').style.display = 'block';
+      const scannedImg = $('#scannedMealImg');
+      scannedImg.src = url;
+      scannedImg.style.display = 'block';
+      $('#scanLabel').textContent = 'Scanning photo…';
+      scanMealPhoto(file);
     }
   });
   $('#btnNewScan').onclick = hideScanned;
