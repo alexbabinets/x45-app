@@ -407,18 +407,16 @@ input[type="file"].input { padding: 6px; }
   <section class="card" id="uploadSection">
     <h2>Upload Your Meal Photo</h2>
     <div class="sub">Snap a clear photo of your plate and upload it. We'll scan and analyze the nutrition.</div>
-    <div class="uploadArea" id="uploadArea">
-      
-    <div class="uploadControls">
-      <button id="btnTakePhoto" class="btn primary" type="button">Take Photo</button>
-      <button id="btnChoosePhoto" class="btn" type="button">Choose Photo</button>
+        <div class="uploadArea" id="uploadArea">
+      <button id="btnUploadMeal" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer;width:100%;max-width:320px;">
+        📸 Upload Meal
+      </button>
 
-      <!-- iOS camera -->
-      <input id="mealPhotoCamera" type="file" accept="image/*" capture="environment" style="display:none" />
-      <!-- iOS photo library -->
-      <input id="mealPhotoLibrary" type="file" accept="image/*" style="display:none" />
-    </div>
-<div id="uploadImgWrap" style="display:none;margin-top:20px">
+      <!-- Hidden input for web fallback (Safari/Chrome will show Camera/Photo Library options automatically) -->
+      <input type="file" id="mealPhoto" class="input" accept="image/*"
+             style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;">
+
+      <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
     </div>
@@ -2037,48 +2035,80 @@ diabetic2: {
     const { error } = await sb.from('x45_meal_scans').insert(logEntry); // Assume table exists
     if (error) console.warn('Log error', error);
   }
-  function handleMealImageFile(file){
-    if (!file) return;
-    if (!file.type || !file.type.startsWith('image/')) return;
+    function processMealFile(file){
+    try {
+      if (!file) return;
+      if (!file.type || !String(file.type).startsWith('image/')) return;
 
-    // Use an object URL for preview instead of FileReader (safer for large iOS camera images).
-    const url = URL.createObjectURL(file);
+      // On mobile (especially iOS), large camera photos can crash the WebView if we convert to base64.
+      // Use an object URL for preview instead of FileReader.
+      const url = URL.createObjectURL(file);
 
-    const uploadImg = $('#uploadImg');
-    const scannedImg = $('#scannedMealImg');
+      const uploadImg = $('#uploadImg');
+      const scannedImg = $('#scannedMealImg');
 
-    uploadImg.onload = () => URL.revokeObjectURL(url);
-    uploadImg.src = url;
-    $('#uploadImgWrap').style.display = 'block';
+      uploadImg.onload = () => { try { URL.revokeObjectURL(url); } catch(_){} };
+      uploadImg.src = url;
+      $('#uploadImgWrap').style.display = 'block';
 
-    scannedImg.src = url;
-    scannedImg.style.display = 'block';
+      scannedImg.src = url;
+      scannedImg.style.display = 'block';
 
-    simulateScan(file);
+      simulateScan(file);
+    } catch (err) {
+      console.warn('processMealFile error', err);
+      // Fail silently (avoid hard crashes in WebView)
+    }
   }
 
-  
-  // Photo capture / selection (iOS-safe)
-  const openCamera = () => $('#mealPhotoCamera').click();
-  const openLibrary = () => $('#mealPhotoLibrary').click();
+  async function pickMealPhoto(){
+    // If running inside the native Capacitor iOS app, use the Capacitor Camera plugin (most stable).
+    try {
+      const Cap = window.Capacitor;
+      const isNative = !!(Cap && (Cap.isNativePlatform?.() || (typeof Cap.getPlatform === 'function' && Cap.getPlatform() !== 'web')));
+      const Camera = Cap?.Plugins?.Camera;
 
-  $('#btnTakePhoto').addEventListener('click', openCamera);
-  $('#btnChoosePhoto').addEventListener('click', openLibrary);
+      if (isNative && Camera && typeof Camera.getPhoto === 'function') {
+        const source = (Cap.CameraSource && (Cap.CameraSource.Prompt ?? Cap.CameraSource.PROMPT)) || 'PROMPT';
+        const resultType = (Cap.CameraResultType && (Cap.CameraResultType.Uri ?? Cap.CameraResultType.URI)) || 'uri';
 
-  // Tapping the upload area opens the library (safest default)
-  uploadArea.addEventListener('click', openLibrary);
+        const photo = await Camera.getPhoto({
+          quality: 80,
+          allowEditing: false,
+          resultType,
+          source
+        });
 
-  const onMealPhotoChosen = (e) => {
+        const webPath = photo?.webPath || photo?.path || photo?.webPath;
+        if (!webPath) return;
+
+        const resp = await fetch(webPath);
+        const blob = await resp.blob();
+        const file = new File([blob], `meal_${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
+        processMealFile(file);
+        return;
+      }
+    } catch (err) {
+      console.warn('Capacitor camera fallback to file input', err);
+      // fall through to web input
+    }
+
+    // Web fallback: open the system chooser (camera or library).
+    const input = $('#mealPhoto');
+    if (input) input.click();
+  }
+
+  // Single Upload button (shows Camera/Library options in native app and web)
+  const btnUploadMeal = $('#btnUploadMeal');
+  if (btnUploadMeal) btnUploadMeal.addEventListener('click', () => { pickMealPhoto(); });
+
+  // Web chooser fallback handler
+  $('#mealPhoto').addEventListener('change', (e) => {
     const file = e.target.files && e.target.files[0];
-    handleMealImageFile(file);
-    // Allow choosing/taking the same photo again
-    e.target.value = '';
-  };
-
-  $('#mealPhotoCamera').addEventListener('change', onMealPhotoChosen);
-  $('#mealPhotoLibrary').addEventListener('change', onMealPhotoChosen);
-
-  // Drag & drop
+    processMealFile(file);
+    // allow selecting the same file again
+    try { e.target.value = ''; } catch(_){}
+  });
   // Drag & drop
   const uploadArea = $('#uploadArea');
   uploadArea.addEventListener('dragover', (e) => {
@@ -2089,8 +2119,11 @@ diabetic2: {
   uploadArea.addEventListener('drop', (e) => {
     e.preventDefault();
     uploadArea.classList.remove('dragover');
-    const file = (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) ? e.dataTransfer.files[0] : null;
-    handleMealImageFile(file);
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      $('#mealPhoto').files = e.dataTransfer.files;
+      $('#mealPhoto').dispatchEvent(new Event('change'));
+    }
   });
   $('#btnNewScan').onclick = hideScanned;
   $('#btnLogMeal').onclick = async () => {
