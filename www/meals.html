@@ -404,38 +404,35 @@ input[type="file"].input { padding: 6px; }
   </div>
   <div id="uploadMode" style="display:none;">
   <!-- ===== UPLOAD SECTION ===== -->
-    <section class="card" id="uploadSection">
+  <section class="card" id="uploadSection">
     <h2>Upload Your Meal Photo</h2>
-    <div class="sub">Tap <b>Upload Meal</b> to choose a photo from your library or take a new one. We'll scan and analyze the nutrition.</div>
-
+    <div class="sub">Snap a clear photo of your plate and upload it. We'll scan and analyze the nutrition.</div>
     <div class="uploadArea" id="uploadArea">
-      <button id="btnUploadMeal" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
+      <button type="button" id="uploadMealBtn" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer;border:none">
         📸 Upload Meal
       </button>
 
-      <!-- Web fallback (Safari/Chrome). On iOS this single input shows both: Camera + Photo Library -->
-      <input type="file" id="mealPhoto" class="input" accept="image/*" style="display:none">
+      <!-- One visible button; we trigger the correct picker under the hood -->
+      <input type="file" id="mealPhotoLibrary" class="input" accept="image/*" style="display:none">
+      <input type="file" id="mealPhotoCamera" class="input" accept="image/*" capture="environment" style="display:none">
 
       <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
     </div>
-
+    </div>
     <div id="scanProgress" class="scanProgress">
       <div class="progress-container"><div class="progress-bar" id="scanBar"></div></div>
       <div class="progress-label" id="scanLabel">Scanning your meal with AI…</div>
     </div>
-
     <div id="mealScanned" class="mealScanned">
       <div class="mealHead">
         <div class="mealName" id="scannedMealName">Scanned Meal — Quick Analysis</div>
         <span class="mealBadge" id="scannedTotals">Total: — kcal • P — g • C — g • F — g</span>
       </div>
-
       <div style="margin-bottom:16px; text-align:center;">
         <img id="scannedMealImg" class="uploadImg" alt="Scanned meal photo" style="max-width:300px;height:auto;display:none;">
       </div>
-
       <div style="display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:center">
         <div class="mealDonut">
           <canvas id="scannedDonut"></canvas>
@@ -456,25 +453,13 @@ input[type="file"].input { padding: 6px; }
             </div>
           </div>
           <div class="sub" style="margin-top:8px">Based on balance, nutrient density, and your goals.</div>
+          <ul class="portionList" id="scannedParts"></ul>
         </div>
       </div>
-
-      <div class="divider"></div>
-
-      <div class="grid2">
-        <div class="kpi">
-          <div class="label">What’s good</div>
-          <ul id="goodPoints" class="bullets"></ul>
-        </div>
-        <div class="kpi">
-          <div class="label">What to improve</div>
-          <ul id="badPoints" class="bullets"></ul>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:14px;justify-content:center;gap:10px;flex-wrap:wrap">
-        <button id="btnNewScan" class="cta">Scan Another Meal</button>
-        <button id="btnLogMeal" class="cta primary">Save To My Day</button>
+      <div class="row" style="margin-top:20px">
+        <button id="btnLogMeal" class="cta primary">Log This Meal</button>
+        <button id="btnNewScan" class="cta">New Scan</button>
+        <button id="btnBuildPlan" class="cta">Switch to Build Plan</button>
       </div>
     </div>
   </section>
@@ -2004,31 +1989,54 @@ diabetic2: {
   async function simulateScan(imageFile){
     const stop = startProgress($('#scanProgress'), $('#scanLabel'));
 
-    // Simulate delay (AI call)
-    await new Promise(resolve => setTimeout(resolve, 2200 + Math.random() * 2600));
+    // Deterministic choice so the same photo yields the same estimate
+    const key = `${imageFile.name || 'meal'}|${imageFile.size || 0}|${imageFile.lastModified || 0}`;
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) hash = ((hash << 5) - hash) + key.charCodeAt(i);
+    hash = Math.abs(hash);
 
-    // Choose a generic macro profile (no dish guessing from the image).
-    // IMPORTANT: We deliberately do NOT name the dish (to avoid mismatches like cereal showing as chicken).
-    const idx = Math.floor(Math.random() * MOCK_PROFILES.length);
+    // Optional: light image analysis to refine portion estimate (never required)
+    let px = 0;
+    try {
+      if (window.createImageBitmap) {
+        const bmp = await createImageBitmap(imageFile);
+        px = (bmp.width || 0) * (bmp.height || 0);
+        try { bmp.close && bmp.close(); } catch (_) {}
+      }
+    } catch (_) {}
+
+    // Simulate delay (AI call placeholder). Keep this short and stable.
+    await new Promise(resolve => setTimeout(resolve, 900));
+
+    const idx = hash % MOCK_PROFILES.length;
     const meal = JSON.parse(JSON.stringify(MOCK_PROFILES[idx]));
     meal.title = 'Uploaded Meal (Estimated)';
 
-    // Mild goal adjustment (portion-like). Do NOT change ingredients, only scale numbers a bit.
-    let scale = 1.0;
-    if (state.goal === 'lose_weight') scale = 0.85;
-    if (state.goal === 'build_muscle') scale = 1.10;
-    if (state.goal === 'performance') scale = 1.05;
+    // Portion heuristic: larger images often mean closer shot -> slightly higher estimate
+    const portionBoost = px ? Math.min(1.35, Math.max(0.85, Math.sqrt(px) / 1200)) : 1.0;
 
-    meal.parts.forEach(p => {
-      p.kcal = Math.max(0, Math.round(p.kcal * scale));
-      p.p = Math.max(0, Math.round(p.p * scale));
-      p.c = Math.max(0, Math.round(p.c * scale));
-      p.f = Math.max(0, Math.round(p.f * scale));
-    });
+    // Apply boost to macros + calories
+    meal.calories = Math.round(meal.calories * portionBoost);
+    meal.macros.protein_g = Math.round(meal.macros.protein_g * portionBoost);
+    meal.macros.carbs_g = Math.round(meal.macros.carbs_g * portionBoost);
+    meal.macros.fats_g = Math.round(meal.macros.fats_g * portionBoost);
+
+    // Apply boost to item quantities (keeps ingredients; feels like "portion")
+    if (Array.isArray(meal.items)) {
+      meal.items = meal.items.map(it => {
+        const c = JSON.parse(JSON.stringify(it));
+        if (typeof c.qty === 'number') c.qty = Math.round(c.qty * portionBoost * 10) / 10;
+        return c;
+      });
+    }
+
+    // Health score: clamp 1..10
+    meal.health_score = clampInt(Math.round(meal.health_score), 1, 10);
 
     state.scannedMeal = meal;
-    showScanned(meal);
-    stop();
+    renderScannedMeal(meal);
+
+    stop(true);
   }
   async function logMeal(meal){
     // Simulate logging to a meals_log table or append to daily
@@ -2051,98 +2059,99 @@ diabetic2: {
     const { error } = await sb.from('x45_meal_scans').insert(logEntry); // Assume table exists
     if (error) console.warn('Log error', error);
   }
-    // Upload Meal: one button → Capacitor Camera prompt (native) OR file picker (web)
-  const isCapacitor = !!(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera);
-  const btnUploadMeal = $('#btnUploadMeal');
-  const mealPhotoInput = $('#mealPhoto');
+  
+  // Upload Meal (single button with Camera/Library options)
+  const uploadMealBtn = $('#uploadMealBtn');
+  const mealPhotoLibrary = $('#mealPhotoLibrary');
+  const mealPhotoCamera = $('#mealPhotoCamera');
 
-  async function handleSelectedMealFile(file, previewUrl){
-    if (!file) return;
-    if (!file.type || !file.type.startsWith('image/')) return;
-
-    // Preview (never base64 on iOS WebView — can crash on large images)
-    const url = previewUrl || URL.createObjectURL(file);
-
-    const uploadImg = $('#uploadImg');
-    const scannedImg = $('#scannedMealImg');
-
-    uploadImg.onload = () => { try { URL.revokeObjectURL(url); } catch(e){} };
-    uploadImg.src = url;
-    $('#uploadImgWrap').style.display = 'block';
-
-    scannedImg.src = url;
-    scannedImg.style.display = 'block';
-
-    // Kick off scan
-    simulateScan(file);
+  async function choosePhotoSource() {
+    // Prefer Capacitor ActionSheet if available; otherwise fall back to a simple confirm().
+    try {
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.ActionSheet) {
+        const { ActionSheet } = window.Capacitor.Plugins;
+        const res = await ActionSheet.showActions({
+          title: 'Upload Meal',
+          message: 'Choose a source',
+          options: [
+            { title: 'Take Photo' },
+            { title: 'Choose from Library' },
+            { title: 'Cancel', style: 'cancel' }
+          ]
+        });
+        if (res && typeof res.index === 'number') {
+          if (res.index === 0) return 'camera';
+          if (res.index === 1) return 'library';
+        }
+        return null;
+      }
+    } catch (_) {}
+    // Fallback: OK = Camera, Cancel = Library
+    const take = window.confirm('Take a new photo?\n\nOK = Camera\nCancel = Photo Library');
+    return take ? 'camera' : 'library';
   }
 
-  if (btnUploadMeal){
-    btnUploadMeal.addEventListener('click', async () => {
-      try{
-        if (isCapacitor){
-          const { Camera, CameraSource, CameraResultType } = window.Capacitor.Plugins;
+  async function handleMealFile(file) {
+    if (!file || !file.type || !file.type.startsWith('image/')) return;
 
-          // Prompt gives the user BOTH options: Camera or Photo Library
-          const photo = await Camera.getPhoto({
-            quality: 70,
-            allowEditing: false,
-            resultType: (CameraResultType && CameraResultType.Uri) ? CameraResultType.Uri : 'uri',
-            source: (CameraSource && CameraSource.Prompt) ? CameraSource.Prompt : 'PROMPT',
-            correctOrientation: true
-          });
+    // Show preview
+    try {
+      const url = URL.createObjectURL(file);
+      $('#uploadImg').src = url;
+      $('#uploadImgWrap').style.display = 'block';
+    } catch (_) {}
 
-          const webPath = photo && (photo.webPath || photo.path);
-          if (!webPath) return;
+    // Start scan (safe; never crash UI if scan errors)
+    try {
+      await simulateScan(file);
+    } catch (err) {
+      console.error('Scan error:', err);
+      hideProgress();
+      alert('Could not scan this photo. Please try another image.');
+    }
+  }
 
-          const resp = await fetch(webPath);
-          const blob = await resp.blob();
-          const ext = (blob.type && blob.type.includes('png')) ? 'png' : 'jpg';
-          const file = new File([blob], `meal_${Date.now()}.${ext}`, { type: blob.type || 'image/jpeg' });
+  function wireFileInput(inputEl) {
+    if (!inputEl) return;
+    inputEl.addEventListener('change', async (e) => {
+      const file = e.target && e.target.files ? e.target.files[0] : null;
+      // Reset so selecting the same image twice still triggers change
+      try { e.target.value = ''; } catch (_) {}
+      await handleMealFile(file);
+    });
+  }
 
-          await handleSelectedMealFile(file, webPath);
-          return;
-        }
+  wireFileInput(mealPhotoLibrary);
+  wireFileInput(mealPhotoCamera);
 
-        // Web fallback: opens iOS picker that includes Camera + Photo Library
-        if (mealPhotoInput){
-          mealPhotoInput.value = ''; // allow re-selecting the same image
-          mealPhotoInput.click();
-        }
-      } catch(err){
-        console.warn('Upload meal failed:', err);
-        // graceful fallback to file picker if native camera fails
-        try{
-          if (mealPhotoInput){
-            mealPhotoInput.value = '';
-            mealPhotoInput.click();
-          }
-        } catch(e){}
+  if (uploadMealBtn) {
+    uploadMealBtn.addEventListener('click', async () => {
+      const choice = await choosePhotoSource();
+      if (!choice) return;
+      if (choice === 'camera') {
+        mealPhotoCamera && mealPhotoCamera.click();
+      } else {
+        mealPhotoLibrary && mealPhotoLibrary.click();
       }
     });
   }
 
-  mealPhotoInput.addEventListener('change', async (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    await handleSelectedMealFile(file);
-  });
-  // Drag & drop
+  // Drag & drop (desktop convenience)
   const uploadArea = $('#uploadArea');
-  uploadArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadArea.classList.add('dragover');
-  });
-  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
-  uploadArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    uploadArea.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      $('#mealPhoto').files = e.dataTransfer.files;
-      $('#mealPhoto').dispatchEvent(new Event('change'));
-    }
-  });
+  if (uploadArea) {
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+    uploadArea.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      const file = e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files[0] : null;
+      await handleMealFile(file);
+    });
+  }
+
   $('#btnNewScan').onclick = hideScanned;
   $('#btnLogMeal').onclick = async () => {
     if (state.scannedMeal) {
