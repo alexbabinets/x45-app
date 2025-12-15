@@ -408,7 +408,9 @@ input[type="file"].input { padding: 6px; }
     <h2>Upload Your Meal Photo</h2>
     <div class="sub">Snap a clear photo of your plate and upload it. We'll scan and analyze the nutrition.</div>
     <div class="uploadArea" id="uploadArea">
-      <button id="btnUploadMeal" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer" type="button">📸 Upload Meal</button>
+      <label for="mealPhoto" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
+        📸 Take Photo or Upload Image
+      </label>
       <input type="file" id="mealPhoto" class="input" accept="image/*" style="display:none">
       <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
@@ -2029,72 +2031,27 @@ diabetic2: {
     const { error } = await sb.from('x45_meal_scans').insert(logEntry); // Assume table exists
     if (error) console.warn('Log error', error);
   }
-  // ===== Upload Meal (Camera / Library) =====
-  async function takeOrPickPhoto(){
-    // Capacitor native (iOS/Android) — single prompt includes Camera + Library
-    try{
-      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera){
-        const { Camera } = window.Capacitor.Plugins;
-        const photo = await Camera.getPhoto({
-          quality: 80,
-          allowEditing: false,
-          resultType: 'uri',
-          source: 'prompt'
-        });
-        if (!photo) return;
-        const webPath = photo.webPath || photo.path;
-        if (!webPath) return;
-        const res = await fetch(webPath);
-        const blob = await res.blob();
-        const file = new File([blob], `meal-${Date.now()}.jpg`, { type: blob.type || 'image/jpeg' });
-        handleMealImageFile(file, webPath);
-        return;
-      }
-    }catch(e){
-      // fall back to file picker
-    }
-    // Web fallback
-    $('#mealPhoto').value = '';
-    $('#mealPhoto').click();
-  }
-
-  function handleMealImageFile(file, objectUrlOrWebPath){
-    if (!file) return;
-    if (!file.type || !file.type.startsWith('image/')) return;
-
-    // Preview only (no scan/AI here — this is the stable camera capture layer)
-    const uploadImg = $('#uploadImg');
-    const scannedImg = $('#scannedMealImg');
-
-    const url = objectUrlOrWebPath || URL.createObjectURL(file);
-
-    uploadImg.onload = () => {
-      try{ if (url.startsWith('blob:')) URL.revokeObjectURL(url); }catch(e){}
-    };
-    uploadImg.src = url;
-    $('#uploadImgWrap').style.display = 'block';
-
-    // Keep scanned image area in sync (if user later scans/logs)
-    scannedImg.src = url;
-    scannedImg.style.display = 'block';
-
-    // Store for later actions (scan/log)
-    state.lastMealPhoto = { file, url };
-  }
-
-  // Single Upload button (Camera + Library)
-  $('#btnUploadMeal').addEventListener('click', (e) => {
-    e.preventDefault();
-    takeOrPickPhoto();
-  });
-
-  // Web file picker fallback
   $('#mealPhoto').addEventListener('change', (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    handleMealImageFile(file);
-  });
+    if (!file.type || !file.type.startsWith('image/')) return;
 
+    // On mobile (especially iOS), large camera photos can crash the WebView if we convert to base64.
+    // Use an object URL for preview instead of FileReader.
+    const url = URL.createObjectURL(file);
+
+    const uploadImg = $('#uploadImg');
+    const scannedImg = $('#scannedMealImg');
+
+    uploadImg.onload = () => URL.revokeObjectURL(url);
+    uploadImg.src = url;
+    $('#uploadImgWrap').style.display = 'block';
+
+    scannedImg.src = url;
+    scannedImg.style.display = 'block';
+
+    simulateScan(file);
+  });
   // Drag & drop
   const uploadArea = $('#uploadArea');
   uploadArea.addEventListener('dragover', (e) => {
