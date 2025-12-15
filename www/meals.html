@@ -1981,91 +1981,34 @@ diabetic2: {
       ]
     }
   ];
-  async async function simulateScan(imageFile){
+  async function simulateScan(imageFile){
     const stop = startProgress($('#scanProgress'), $('#scanLabel'));
-    try{
-      // 1) Preview safely (object URL)
-      const url = URL.createObjectURL(imageFile);
-      const uploadImg = $('#uploadImg');
-      uploadImg.onload = () => URL.revokeObjectURL(url);
-      uploadImg.src = url;
-      $('#uploadImgWrap').style.display = 'block';
 
-      // 2) Downscale to prevent iOS WebView crashes (keep memory low)
-      const bitmap = await createImageBitmap(imageFile);
-      const maxSide = 1024;
-      const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-      const w = Math.max(1, Math.round(bitmap.width * scale));
-      const h = Math.max(1, Math.round(bitmap.height * scale));
+    // Simulate delay (AI call)
+    await new Promise(resolve => setTimeout(resolve, 2200 + Math.random() * 2600));
 
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d', { alpha:false, willReadFrequently:false });
-      ctx.drawImage(bitmap, 0, 0, w, h);
+    // Choose a generic macro profile (no dish guessing from the image).
+    // IMPORTANT: We deliberately do NOT name the dish (to avoid mismatches like cereal showing as chicken).
+    const idx = Math.floor(Math.random() * MOCK_PROFILES.length);
+    const meal = JSON.parse(JSON.stringify(MOCK_PROFILES[idx]));
+    meal.title = 'Uploaded Meal (Estimated)';
 
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.82));
-      if (!blob) throw new Error('Could not compress image');
+    // Mild goal adjustment (portion-like). Do NOT change ingredients, only scale numbers a bit.
+    let scale = 1.0;
+    if (state.goal === 'lose_weight') scale = 0.85;
+    if (state.goal === 'build_muscle') scale = 1.10;
+    if (state.goal === 'performance') scale = 1.05;
 
-      const b64 = await new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onerror = () => reject(new Error('FileReader failed'));
-        r.onload = () => {
-          const s = String(r.result || '');
-          // strip "data:image/jpeg;base64,"
-          const comma = s.indexOf(',');
-          resolve(comma >= 0 ? s.slice(comma+1) : s);
-        };
-        r.readAsDataURL(blob);
-      });
+    meal.parts.forEach(p => {
+      p.kcal = Math.max(0, Math.round(p.kcal * scale));
+      p.p = Math.max(0, Math.round(p.p * scale));
+      p.c = Math.max(0, Math.round(p.c * scale));
+      p.f = Math.max(0, Math.round(p.f * scale));
+    });
 
-      // 3) Call your existing Edge Function (same one used for plan generation)
-      //    Your Edge Function must support mode: "scan_meal"
-      const payload = {
-        mode: 'scan_meal',
-        image_base64: b64,
-        image_mime: 'image/jpeg'
-      };
-
-      const { data: { session } } = await sb.auth.getSession();
-      const headers = {};
-      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
-      const { data, error } = await sb.functions.invoke('x45_meals', { body: payload, headers });
-      if (error) throw error;
-
-      // 4) Normalize response into the UI's expected shape
-      let meal = null;
-
-      if (data && data.meal) meal = data.meal;
-      else if (data && data.result) meal = data.result;
-      else if (data && data.meals && Array.isArray(data.meals)) {
-        // If function returns meals array, take first
-        meal = data.meals[0];
-      }
-
-      if (!meal) {
-        // If your function hasn't implemented scan mode yet, show a clear message
-        throw new Error('Scan mode not available in Edge Function response');
-      }
-
-      // Ensure minimum fields
-      if (!meal.title) meal.title = 'Uploaded Meal';
-      if (!meal.parts || !Array.isArray(meal.parts)) {
-        // Build parts from macros if provided
-        const kcal = Number(meal.kcal ?? meal.calories ?? 0) || 0;
-        const p = Number(meal.p ?? meal.protein ?? 0) || 0;
-        const c = Number(meal.c ?? meal.carbs ?? 0) || 0;
-        const f = Number(meal.f ?? meal.fat ?? 0) || 0;
-        meal.parts = [{ name:'Total', kcal:Math.round(kcal), p:Math.round(p), c:Math.round(c), f:Math.round(f) }];
-      }
-
-      state.scannedMeal = meal;
-      showScanned(meal);
-    }catch(err){
-      console.warn('Scan failed:', err);
-      alert('Could not scan this photo yet. Please try another photo.');
-    }finally{
-      stop();
-    }
+    state.scannedMeal = meal;
+    showScanned(meal);
+    stop();
   }
   async function logMeal(meal){
     // Simulate logging to a meals_log table or append to daily
@@ -2121,7 +2064,8 @@ diabetic2: {
     uploadArea.classList.remove('dragover');
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith('image/')) {
-      simulateScan(file);
+      $('#mealPhoto').files = e.dataTransfer.files;
+      $('#mealPhoto').dispatchEvent(new Event('change'));
     }
   });
   $('#btnNewScan').onclick = hideScanned;
@@ -2187,6 +2131,217 @@ diabetic2: {
   init();
 })();
 });
+
+/* === UPLOAD MEAL CAMERA+LIBRARY (v27) === */
+(function(){
+  const input = document.getElementById('mealPhoto');
+  const uploadWrap = document.getElementById('uploadImgWrap');
+  const uploadImg = document.getElementById('uploadImg');
+  const scanProgress = document.getElementById('scanProgress');
+  const scanBar = document.getElementById('scanBar');
+  const scanResult = document.getElementById('scanResult');
+  const btnNewScan = document.getElementById('btnNewScan');
+  const btnLogMeal = document.getElementById('btnLogMeal');
+
+  if (!input) return;
+
+  function show(el, on){ if(!el) return; el.style.display = on ? '' : 'none'; }
+  function setTxt(id, val){
+    const el = document.getElementById(id);
+    if (el) el.textContent = (val===undefined || val===null) ? '' : String(val);
+  }
+  function pct(n){ return Math.max(0, Math.min(100, n)); }
+
+  let barTimer = null;
+  function startBar(){
+    if (!scanBar) return;
+    stopBar();
+    scanBar.style.width = '0%';
+    let p = 0;
+    barTimer = setInterval(()=>{
+      // ease towards 92% until finished
+      p = p + Math.max(0.6, (92 - p) * 0.08);
+      scanBar.style.width = pct(p).toFixed(1) + '%';
+    }, 120);
+  }
+  function finishBar(){
+    if (!scanBar) return;
+    stopBar();
+    scanBar.style.width = '100%';
+    setTimeout(()=>{ /* keep full bar visible */ }, 300);
+  }
+  function stopBar(){
+    if (barTimer){ clearInterval(barTimer); barTimer = null; }
+  }
+
+  async function fileToDownscaledDataURL(file, maxSide=1280, jpegQuality=0.86){
+    // Read as image
+    const dataURL = await new Promise((resolve, reject)=>{
+      const r = new FileReader();
+      r.onerror = ()=>reject(new Error('File read failed'));
+      r.onload = ()=>resolve(r.result);
+      r.readAsDataURL(file);
+    });
+
+    const img = await new Promise((resolve, reject)=>{
+      const im = new Image();
+      im.onload = ()=>resolve(im);
+      im.onerror = ()=>reject(new Error('Image decode failed'));
+      im.src = dataURL;
+    });
+
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    const confirmW = w || 1, confirmH = h || 1;
+
+    const scale = Math.min(1, maxSide / Math.max(confirmW, confirmH));
+    const tw = Math.max(1, Math.round(confirmW * scale));
+    const th = Math.max(1, Math.round(confirmH * scale));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = tw; canvas.height = th;
+    const ctx = canvas.getContext('2d', { alpha: false });
+    ctx.drawImage(img, 0, 0, tw, th);
+
+    // Prefer jpeg for smaller payload
+    return canvas.toDataURL('image/jpeg', jpegQuality);
+  }
+
+  function renderScanResult(data){
+    // Expected shapes:
+    // A) { meal: { name, calories, macros:{protein_g,carbs_g,fat_g}, health_score, good:[], bad:[], items:[] } }
+    // B) { scanned: { ...same... } }
+    // C) { name, calories, protein_g, carbs_g, fat_g, health_score, good, bad, items }
+    const meal = data?.meal || data?.scanned || data;
+
+    const name = meal?.name || meal?.title || 'Scanned Meal';
+    const cal = meal?.calories ?? meal?.kcal ?? 0;
+    const pg = meal?.macros?.protein_g ?? meal?.protein_g ?? meal?.protein ?? 0;
+    const cg = meal?.macros?.carbs_g ?? meal?.carbs_g ?? meal?.carbs ?? 0;
+    const fg = meal?.macros?.fat_g ?? meal?.fat_g ?? meal?.fat ?? 0;
+    const hs = meal?.health_score ?? meal?.healthScore ?? 0;
+
+    setTxt('scannedName', name);
+    setTxt('sCal', Math.round(cal) + ' kcal');
+    setTxt('sPro', Math.round(pg) + 'g');
+    setTxt('sCarb', Math.round(cg) + 'g');
+    setTxt('sFat', Math.round(fg) + 'g');
+    setTxt('healthScore', hs ? hs : 0);
+
+    // Good / bad bullets
+    const good = meal?.good || meal?.pros || [];
+    const bad  = meal?.bad  || meal?.cons || [];
+    const goodTxt = Array.isArray(good) ? good.join(' • ') : String(good || '');
+    const badTxt  = Array.isArray(bad)  ? bad.join(' • ')  : String(bad  || '');
+    setTxt('scannedGood', goodTxt);
+    setTxt('scannedBad', badTxt);
+
+    // Items/parts list
+    const ul = document.getElementById('scannedParts');
+    if (ul){
+      ul.innerHTML = '';
+      const items = meal?.items || meal?.parts || meal?.ingredients || [];
+      if (Array.isArray(items) && items.length){
+        items.slice(0, 12).forEach(it=>{
+          const li = document.createElement('li');
+          if (typeof it === 'string'){
+            li.textContent = it;
+          } else {
+            const n = it?.name || it?.item || it?.food || 'Item';
+            const q = it?.qty || it?.quantity || it?.portion || '';
+            const c = it?.kcal ?? it?.calories ?? '';
+            li.textContent = `${n}${q ? ' — ' + q : ''}${c ? ' — ' + Math.round(c) + ' kcal' : ''}`;
+          }
+          ul.appendChild(li);
+        });
+      }
+    }
+  }
+
+  async function scanWithEdgeFunction(dataURL){
+    // uses existing Supabase client if present
+    if (typeof sb === 'undefined' || !sb?.functions?.invoke){
+      throw new Error('Supabase client not available');
+    }
+    const session = await sb.auth.getSession();
+    const token = session?.data?.session?.access_token;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    // payload: send base64 without prefix too
+    const base64 = String(dataURL).split(',')[1] || '';
+    const payload = {
+      mode: 'scan_meal',
+      image_base64: base64,
+      image_mime: 'image/jpeg',
+      goal: (typeof state !== 'undefined' ? state.goal : undefined),
+      diet: (typeof state !== 'undefined' ? state.diet : undefined)
+    };
+    const { data, error } = await sb.functions.invoke('x45_meals', { body: payload, headers });
+    if (error) throw error;
+    return data;
+  }
+
+  async function handleFile(file){
+    try{
+      show(scanResult, false);
+      show(scanProgress, true);
+      startBar();
+
+      // Preview immediately
+      const previewURL = URL.createObjectURL(file);
+      if (uploadImg){
+        uploadImg.src = previewURL;
+        show(uploadWrap, true);
+      }
+
+      const dataURL = await fileToDownscaledDataURL(file);
+
+      // Try edge function scan
+      const data = await scanWithEdgeFunction(dataURL);
+
+      finishBar();
+      show(scanProgress, false);
+      renderScanResult(data);
+      show(scanResult, true);
+    }catch(err){
+      console.error('Scan failed:', err);
+      stopBar();
+      show(scanProgress, false);
+      alert('Scan failed. Please try a clearer photo or check that your Edge Function "x45_meals" supports scan_meal.');
+    }finally{
+      input.value = '';
+    }
+  }
+
+  input.addEventListener('change', (e)=>{
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!file.type || !file.type.startsWith('image/')){
+      alert('Please select an image file.');
+      input.value = '';
+      return;
+    }
+    handleFile(file);
+  });
+
+  if (btnNewScan){
+    btnNewScan.addEventListener('click', ()=>{
+      show(scanResult, false);
+      show(scanProgress, false);
+      stopBar();
+      // clear preview
+      if (uploadImg){ uploadImg.src = ''; }
+      show(uploadWrap, false);
+    });
+  }
+
+  if (btnLogMeal){
+    btnLogMeal.addEventListener('click', ()=>{
+      alert('Log This Meal is ready after scan returns. (Wiring to Supabase table can be done next.)');
+    });
+  }
+})();
+
 </script>
 </body>
 </html>
