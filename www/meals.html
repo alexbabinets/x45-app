@@ -408,18 +408,11 @@ input[type="file"].input { padding: 6px; }
     <h2>Upload Your Meal Photo</h2>
     <div class="sub">Snap a clear photo of your plate and upload it. We'll scan and analyze the nutrition.</div>
     <div class="uploadArea" id="uploadArea">
-      <button type="button" id="uploadMealBtn" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer;border:none">
-        📸 Upload Meal
-      </button>
-
-      <!-- One visible button; we trigger the correct picker under the hood -->
-      <input type="file" id="mealPhotoLibrary" class="input" accept="image/*" style="display:none">
-      <input type="file" id="mealPhotoCamera" class="input" accept="image/*" capture="environment" style="display:none">
-
+      <button type="button" id="btnUploadMeal" class="cta primary" style="font-size:16px;padding:12px 20px;">📸 Upload Meal</button>
+      <input type="file" id="mealPhoto" class="input" accept="image/*" style="display:none">
       <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
-    </div>
     </div>
     <div id="scanProgress" class="scanProgress">
       <div class="progress-container"><div class="progress-bar" id="scanBar"></div></div>
@@ -1986,57 +1979,156 @@ diabetic2: {
       ]
     }
   ];
-  async function simulateScan(imageFile){
+const isNativeCapacitor = () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  async function pickMealPhotoFromNativePrompt(){
+    // Uses Capacitor Camera prompt (single button -> user chooses Camera or Photos)
+    const CameraPlugin =
+      (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera) ? window.Capacitor.Plugins.Camera : null;
+    if (!CameraPlugin) throw new Error('Camera plugin not available');
+
+    const { CameraSource, CameraResultType } =
+      (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera) ? window.Capacitor.Plugins.Camera : {};
+
+    const photo = await CameraPlugin.getPhoto({
+      quality: 85,
+      allowEditing: false,
+      resultType: (CameraResultType && CameraResultType.Uri) ? CameraResultType.Uri : 'uri',
+      source: (CameraSource && CameraSource.Prompt) ? CameraSource.Prompt : 'PROMPT'
+    });
+
+    const webPath = photo.webPath || photo.path;
+    if (!webPath) throw new Error('No photo path returned');
+    const res = await fetch(webPath);
+    if (!res.ok) throw new Error('Failed to read captured image');
+    const blob = await res.blob();
+    return { blob, previewUrl: webPath };
+  }
+
+  async function resizeImageBlob(blob, maxDim=1024){
+    // Downscale to avoid iOS WebView crashes and to keep payload small for AI.
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    try{
+      await new Promise((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Image load failed'));
+        img.src = url;
+      });
+
+      const w = img.naturalWidth || img.width;
+      const h = img.naturalHeight || img.height;
+      if (!w || !h) return blob;
+
+      const scale = Math.min(1, maxDim / Math.max(w, h));
+      const tw = Math.max(1, Math.round(w * scale));
+      const th = Math.max(1, Math.round(h * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = tw;
+      canvas.height = th;
+      const ctx = canvas.getContext('2d', { alpha: false });
+      ctx.drawImage(img, 0, 0, tw, th);
+
+      const out = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+      return out || blob;
+    }finally{
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  async function blobToBase64(blob){
+    return await new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(fr.result);
+      fr.onerror = () => reject(new Error('FileReader failed'));
+      fr.readAsDataURL(blob);
+    });
+  }
+
+  async function scanMealWithAIFromBlob(blob){
+    // Progress UI
     const stop = startProgress($('#scanProgress'), $('#scanLabel'));
 
-    // Deterministic choice so the same photo yields the same estimate
-    const key = `${imageFile.name || 'meal'}|${imageFile.size || 0}|${imageFile.lastModified || 0}`;
-    let hash = 0;
-    for (let i = 0; i < key.length; i++) hash = ((hash << 5) - hash) + key.charCodeAt(i);
-    hash = Math.abs(hash);
+    try{
+      const resized = await resizeImageBlob(blob, 1024);
+      const dataUrl = await blobToBase64(resized);
+      const base64 = String(dataUrl).split(',')[1] || '';
+      if (!base64) throw new Error('Could not encode image');
 
-    // Optional: light image analysis to refine portion estimate (never required)
-    let px = 0;
-    try {
-      if (window.createImageBitmap) {
-        const bmp = await createImageBitmap(imageFile);
-        px = (bmp.width || 0) * (bmp.height || 0);
-        try { bmp.close && bmp.close(); } catch (_) {}
-      }
-    } catch (_) {}
+      // Call the existing x45_meals Edge Function in "scan" mode.
+      // IMPORTANT: We do not touch meal-plan-building logic; this is isolated to Upload-My-Meal.
+      const payload = {
+        mode: 'scan_meal',
+        goal: state.goal,
+        diet: state.diet,
+        image_base64: base64,
+        image_mime: 'image/jpeg'
+      };
 
-    // Simulate delay (AI call placeholder). Keep this short and stable.
-    await new Promise(resolve => setTimeout(resolve, 900));
+      const { data: { session } } = await sb.auth.getSession();
+      const headers = {};
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-    const idx = hash % MOCK_PROFILES.length;
+      const { data, error } = await sb.functions.invoke('x45_meals', { body: payload, headers });
+      if (error) throw error;
+
+      // Flexible parsing (so backend can evolve without breaking the UI)
+      const meal = (data && (data.meal || data.scanned_meal || data.result?.meal)) ? (data.meal || data.scanned_meal || data.result.meal) : null;
+      if (!meal || !Array.isArray(meal.parts)) throw new Error('AI scan response did not contain a meal breakdown');
+
+      // Normalize expected fields
+      const normalized = {
+        title: meal.title || 'Uploaded Meal (AI Scan)',
+        parts: meal.parts.map(p => ({
+          label: p.label || p.name || 'Item',
+          prettyUnits: p.prettyUnits || p.units || '',
+          kcal: Number(p.kcal ?? p.calories ?? 0),
+          p: Number(p.p ?? p.protein ?? 0),
+          c: Number(p.c ?? p.carbs ?? 0),
+          f: Number(p.f ?? p.fats ?? 0),
+        }))
+      };
+
+      state.scannedMeal = normalized;
+      showScanned(normalized);
+      stop();
+      return;
+    }catch(err){
+      console.warn('AI scan failed; falling back to estimate.', err);
+      $('#scanLabel').textContent = 'AI scan failed — showing estimated breakdown.';
+      // Fallback to a safe estimate so the page never “does nothing”
+      stop();
+      await simulateScan(blob);
+      return;
+    }
+  }
+
+  async function simulateScan(imageFile){
+    // Fallback mock scan (used only if the real AI scan call fails)
+    const stop = startProgress($('#scanProgress'), $('#scanLabel'));
+    await new Promise(resolve => setTimeout(resolve, 1400));
+
+    // Choose a generic macro profile (no dish guessing from the image).
+    const idx = Math.floor(Math.random() * MOCK_PROFILES.length);
     const meal = JSON.parse(JSON.stringify(MOCK_PROFILES[idx]));
     meal.title = 'Uploaded Meal (Estimated)';
 
-    // Portion heuristic: larger images often mean closer shot -> slightly higher estimate
-    const portionBoost = px ? Math.min(1.35, Math.max(0.85, Math.sqrt(px) / 1200)) : 1.0;
+    // Mild goal adjustment (portion-like). Do NOT change ingredients, only scale numbers a bit.
+    let scale = 1.0;
+    if (state.goal === 'lose_weight') scale = 0.85;
+    if (state.goal === 'build_muscle') scale = 1.10;
+    if (state.goal === 'performance') scale = 1.05;
 
-    // Apply boost to macros + calories
-    meal.calories = Math.round(meal.calories * portionBoost);
-    meal.macros.protein_g = Math.round(meal.macros.protein_g * portionBoost);
-    meal.macros.carbs_g = Math.round(meal.macros.carbs_g * portionBoost);
-    meal.macros.fats_g = Math.round(meal.macros.fats_g * portionBoost);
-
-    // Apply boost to item quantities (keeps ingredients; feels like "portion")
-    if (Array.isArray(meal.items)) {
-      meal.items = meal.items.map(it => {
-        const c = JSON.parse(JSON.stringify(it));
-        if (typeof c.qty === 'number') c.qty = Math.round(c.qty * portionBoost * 10) / 10;
-        return c;
-      });
-    }
-
-    // Health score: clamp 1..10
-    meal.health_score = clampInt(Math.round(meal.health_score), 1, 10);
+    meal.parts.forEach(p => {
+      p.kcal = Math.max(0, Math.round(p.kcal * scale));
+      p.p = Math.max(0, Math.round(p.p * scale));
+      p.c = Math.max(0, Math.round(p.c * scale));
+      p.f = Math.max(0, Math.round(p.f * scale));
+    });
 
     state.scannedMeal = meal;
-    renderScannedMeal(meal);
-
-    stop(true);
+    showScanned(meal);
+    stop();
   }
   async function logMeal(meal){
     // Simulate logging to a meals_log table or append to daily
@@ -2059,99 +2151,68 @@ diabetic2: {
     const { error } = await sb.from('x45_meal_scans').insert(logEntry); // Assume table exists
     if (error) console.warn('Log error', error);
   }
-  
-  // Upload Meal (single button with Camera/Library options)
-  const uploadMealBtn = $('#uploadMealBtn');
-  const mealPhotoLibrary = $('#mealPhotoLibrary');
-  const mealPhotoCamera = $('#mealPhotoCamera');
+  $('#btnUploadMeal').onclick = async () => {
+    // Single button. On native iOS/Android (Capacitor) this opens a prompt: Camera or Photo Library.
+    // On web it opens the file picker.
+    try{
+      if (isNativeCapacitor()){
+        const { blob, previewUrl } = await pickMealPhotoFromNativePrompt();
 
-  async function choosePhotoSource() {
-    // Prefer Capacitor ActionSheet if available; otherwise fall back to a simple confirm().
-    try {
-      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.ActionSheet) {
-        const { ActionSheet } = window.Capacitor.Plugins;
-        const res = await ActionSheet.showActions({
-          title: 'Upload Meal',
-          message: 'Choose a source',
-          options: [
-            { title: 'Take Photo' },
-            { title: 'Choose from Library' },
-            { title: 'Cancel', style: 'cancel' }
-          ]
-        });
-        if (res && typeof res.index === 'number') {
-          if (res.index === 0) return 'camera';
-          if (res.index === 1) return 'library';
-        }
-        return null;
+        // Preview
+        const uploadImg = $('#uploadImg');
+        uploadImg.src = previewUrl;
+        $('#uploadImgWrap').style.display = 'block';
+
+        const scannedImg = $('#scannedMealImg');
+        scannedImg.src = previewUrl;
+        scannedImg.style.display = 'block';
+
+        await scanMealWithAIFromBlob(blob);
+        return;
       }
-    } catch (_) {}
-    // Fallback: OK = Camera, Cancel = Library
-    const take = window.confirm('Take a new photo?\n\nOK = Camera\nCancel = Photo Library');
-    return take ? 'camera' : 'library';
-  }
-
-  async function handleMealFile(file) {
-    if (!file || !file.type || !file.type.startsWith('image/')) return;
-
-    // Show preview
-    try {
-      const url = URL.createObjectURL(file);
-      $('#uploadImg').src = url;
-      $('#uploadImgWrap').style.display = 'block';
-    } catch (_) {}
-
-    // Start scan (safe; never crash UI if scan errors)
-    try {
-      await simulateScan(file);
-    } catch (err) {
-      console.error('Scan error:', err);
-      hideProgress();
-      alert('Could not scan this photo. Please try another image.');
+    }catch(err){
+      console.warn('Native photo pick failed; falling back to file picker.', err);
     }
-  }
+    // Web / fallback
+    $('#mealPhoto').value = '';
+    $('#mealPhoto').click();
+  };
 
-  function wireFileInput(inputEl) {
-    if (!inputEl) return;
-    inputEl.addEventListener('change', async (e) => {
-      const file = e.target && e.target.files ? e.target.files[0] : null;
-      // Reset so selecting the same image twice still triggers change
-      try { e.target.value = ''; } catch (_) {}
-      await handleMealFile(file);
-    });
-  }
+  $('#mealPhoto').addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!file.type || !file.type.startsWith('image/')) return;
 
-  wireFileInput(mealPhotoLibrary);
-  wireFileInput(mealPhotoCamera);
+    // Preview using object URL (safe on iOS WebView)
+    const url = URL.createObjectURL(file);
+    const uploadImg = $('#uploadImg');
+    const scannedImg = $('#scannedMealImg');
 
-  if (uploadMealBtn) {
-    uploadMealBtn.addEventListener('click', async () => {
-      const choice = await choosePhotoSource();
-      if (!choice) return;
-      if (choice === 'camera') {
-        mealPhotoCamera && mealPhotoCamera.click();
-      } else {
-        mealPhotoLibrary && mealPhotoLibrary.click();
-      }
-    });
-  }
+    uploadImg.onload = () => URL.revokeObjectURL(url);
+    uploadImg.src = url;
+    $('#uploadImgWrap').style.display = 'block';
 
-  // Drag & drop (desktop convenience)
+    scannedImg.src = url;
+    scannedImg.style.display = 'block';
+
+    await scanMealWithAIFromBlob(file);
+  });
+  // Drag & drop
   const uploadArea = $('#uploadArea');
-  if (uploadArea) {
-    uploadArea.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      uploadArea.classList.add('dragover');
-    });
-    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
-    uploadArea.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      uploadArea.classList.remove('dragover');
-      const file = e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files[0] : null;
-      await handleMealFile(file);
-    });
-  }
-
+  uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+  });
+  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+  uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      $('#mealPhoto').files = e.dataTransfer.files;
+      $('#mealPhoto').dispatchEvent(new Event('change'));
+    }
+  });
   $('#btnNewScan').onclick = hideScanned;
   $('#btnLogMeal').onclick = async () => {
     if (state.scannedMeal) {
