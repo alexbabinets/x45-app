@@ -404,30 +404,38 @@ input[type="file"].input { padding: 6px; }
   </div>
   <div id="uploadMode" style="display:none;">
   <!-- ===== UPLOAD SECTION ===== -->
-  <section class="card" id="uploadSection">
+    <section class="card" id="uploadSection">
     <h2>Upload Your Meal Photo</h2>
-    <div class="sub">Snap a clear photo of your plate and upload it. We'll scan and analyze the nutrition.</div>
+    <div class="sub">Tap <b>Upload Meal</b> to choose a photo from your library or take a new one. We'll scan and analyze the nutrition.</div>
+
     <div class="uploadArea" id="uploadArea">
-      <label for="mealPhoto" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
-        📸 Take Photo or Upload Image
-      </label>
+      <button id="btnUploadMeal" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
+        📸 Upload Meal
+      </button>
+
+      <!-- Web fallback (Safari/Chrome). On iOS this single input shows both: Camera + Photo Library -->
       <input type="file" id="mealPhoto" class="input" accept="image/*" style="display:none">
+
       <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
     </div>
+
     <div id="scanProgress" class="scanProgress">
       <div class="progress-container"><div class="progress-bar" id="scanBar"></div></div>
       <div class="progress-label" id="scanLabel">Scanning your meal with AI…</div>
     </div>
+
     <div id="mealScanned" class="mealScanned">
       <div class="mealHead">
         <div class="mealName" id="scannedMealName">Scanned Meal — Quick Analysis</div>
         <span class="mealBadge" id="scannedTotals">Total: — kcal • P — g • C — g • F — g</span>
       </div>
+
       <div style="margin-bottom:16px; text-align:center;">
         <img id="scannedMealImg" class="uploadImg" alt="Scanned meal photo" style="max-width:300px;height:auto;display:none;">
       </div>
+
       <div style="display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:center">
         <div class="mealDonut">
           <canvas id="scannedDonut"></canvas>
@@ -448,13 +456,25 @@ input[type="file"].input { padding: 6px; }
             </div>
           </div>
           <div class="sub" style="margin-top:8px">Based on balance, nutrient density, and your goals.</div>
-          <ul class="portionList" id="scannedParts"></ul>
         </div>
       </div>
-      <div class="row" style="margin-top:20px">
-        <button id="btnLogMeal" class="cta primary">Log This Meal</button>
-        <button id="btnNewScan" class="cta">New Scan</button>
-        <button id="btnBuildPlan" class="cta">Switch to Build Plan</button>
+
+      <div class="divider"></div>
+
+      <div class="grid2">
+        <div class="kpi">
+          <div class="label">What’s good</div>
+          <ul id="goodPoints" class="bullets"></ul>
+        </div>
+        <div class="kpi">
+          <div class="label">What to improve</div>
+          <ul id="badPoints" class="bullets"></ul>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:14px;justify-content:center;gap:10px;flex-wrap:wrap">
+        <button id="btnNewScan" class="cta">Scan Another Meal</button>
+        <button id="btnLogMeal" class="cta primary">Save To My Day</button>
       </div>
     </div>
   </section>
@@ -2031,26 +2051,81 @@ diabetic2: {
     const { error } = await sb.from('x45_meal_scans').insert(logEntry); // Assume table exists
     if (error) console.warn('Log error', error);
   }
-  $('#mealPhoto').addEventListener('change', (e) => {
-    const file = e.target.files && e.target.files[0];
+    // Upload Meal: one button → Capacitor Camera prompt (native) OR file picker (web)
+  const isCapacitor = !!(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera);
+  const btnUploadMeal = $('#btnUploadMeal');
+  const mealPhotoInput = $('#mealPhoto');
+
+  async function handleSelectedMealFile(file, previewUrl){
     if (!file) return;
     if (!file.type || !file.type.startsWith('image/')) return;
 
-    // On mobile (especially iOS), large camera photos can crash the WebView if we convert to base64.
-    // Use an object URL for preview instead of FileReader.
-    const url = URL.createObjectURL(file);
+    // Preview (never base64 on iOS WebView — can crash on large images)
+    const url = previewUrl || URL.createObjectURL(file);
 
     const uploadImg = $('#uploadImg');
     const scannedImg = $('#scannedMealImg');
 
-    uploadImg.onload = () => URL.revokeObjectURL(url);
+    uploadImg.onload = () => { try { URL.revokeObjectURL(url); } catch(e){} };
     uploadImg.src = url;
     $('#uploadImgWrap').style.display = 'block';
 
     scannedImg.src = url;
     scannedImg.style.display = 'block';
 
+    // Kick off scan
     simulateScan(file);
+  }
+
+  if (btnUploadMeal){
+    btnUploadMeal.addEventListener('click', async () => {
+      try{
+        if (isCapacitor){
+          const { Camera, CameraSource, CameraResultType } = window.Capacitor.Plugins;
+
+          // Prompt gives the user BOTH options: Camera or Photo Library
+          const photo = await Camera.getPhoto({
+            quality: 70,
+            allowEditing: false,
+            resultType: (CameraResultType && CameraResultType.Uri) ? CameraResultType.Uri : 'uri',
+            source: (CameraSource && CameraSource.Prompt) ? CameraSource.Prompt : 'PROMPT',
+            correctOrientation: true
+          });
+
+          const webPath = photo && (photo.webPath || photo.path);
+          if (!webPath) return;
+
+          const resp = await fetch(webPath);
+          const blob = await resp.blob();
+          const ext = (blob.type && blob.type.includes('png')) ? 'png' : 'jpg';
+          const file = new File([blob], `meal_${Date.now()}.${ext}`, { type: blob.type || 'image/jpeg' });
+
+          await handleSelectedMealFile(file, webPath);
+          return;
+        }
+
+        // Web fallback: opens iOS picker that includes Camera + Photo Library
+        if (mealPhotoInput){
+          mealPhotoInput.value = ''; // allow re-selecting the same image
+          mealPhotoInput.click();
+        }
+      } catch(err){
+        console.warn('Upload meal failed:', err);
+        // graceful fallback to file picker if native camera fails
+        try{
+          if (mealPhotoInput){
+            mealPhotoInput.value = '';
+            mealPhotoInput.click();
+          }
+        } catch(e){}
+      }
+    });
+  }
+
+  mealPhotoInput.addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    await handleSelectedMealFile(file);
   });
   // Drag & drop
   const uploadArea = $('#uploadArea');
