@@ -411,7 +411,14 @@ input[type="file"].input { padding: 6px; }
       <label for="mealPhoto" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
         📸 Take Photo or Upload Image
       </label>
-      <input type="file" id="mealPhoto" class="input" accept="image/*" style="display:none">
+      <input
+        type="file"
+        id="mealPhoto"
+        class="input"
+        accept="image/*"
+        capture="environment"
+        style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;"
+      >
       <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
@@ -1919,44 +1926,69 @@ diabetic2: {
       await aiRegenMeals();
     }
   };
+  // Safe helpers (WKWebView can hard-crash on uncaught exceptions)
+  function safeGet(sel){ try { return document.querySelector(sel); } catch { return null; } }
+  function safeText(sel, txt){ const el = safeGet(sel); if (el) el.textContent = txt; }
+  function safeDisplay(sel, value){ const el = safeGet(sel); if (el) el.style.display = value; }
+
   $('#btnSaveSupport').onclick = async () => {
     try {
-      const sel = $('#supportSelect');
-      const newSupport = sel ? sel.value : 'build_plan';
+      const supportEl = safeGet('#supportSelect');
+      const newSupport = (supportEl && supportEl.value) ? supportEl.value : 'build_plan';
       state.support = newSupport;
-      // Persist preference, but never crash UI if network/auth fails
-      try { await persistUserPatch({ meal_support: state.support }); } catch (e) { console.error(e); }
-      try { switchMode(newSupport); } catch (e) { console.error(e); }
+
+      // Persist may fail (auth/session/network). Do not block UI transition.
+      try {
+        await persistUserPatch({ meal_support: state.support });
+      } catch (e) {
+        console.warn('persistUserPatch failed (continuing):', e);
+      }
+
+      // Defer the DOM switch to next frame to avoid WKWebView timing edge-cases
+      requestAnimationFrame(() => switchMode(newSupport));
     } catch (e) {
-      console.error(e);
+      console.error('btnSaveSupport handler failed:', e);
     }
   };
+
   $('#btnRegenLocal').onclick = () => localRegenMeals();
   $('#btnRegenAI').onclick = () => aiRegenMeals();
+
   function switchMode(mode) {
-    const buildMode = $('#buildMode');
-    const uploadMode = $('#uploadMode');
-    const btnOpenSettings = $('#btnOpenSettings');
-    const hello = $('#hello');
-    const coachLine = $('#coachLine');
+    try {
+      const m = (mode === 'build_plan') ? 'build_plan' : 'upload_plan';
 
-    // Default to build plan if mode is missing/unknown
-    const m = (mode === 'build_plan' || mode === 'upload_plan') ? mode : 'build_plan';
+      if (m === 'build_plan') {
+        safeDisplay('#buildMode', 'block');
+        safeDisplay('#uploadMode', 'none');
+        // Meal Settings applies to Build Plan only
+        safeDisplay('#btnOpenSettings', 'inline-flex');
 
-    if (m === 'build_plan') {
-      if (buildMode) buildMode.style.display = 'block';
-      if (uploadMode) uploadMode.style.display = 'none';
-      if (btnOpenSettings) btnOpenSettings.style.display = 'inline-flex';
-      if (hello) hello.textContent = `${greet()}, ${state.name} — let’s dial in your meals.`;
-      if (coachLine) coachLine.textContent = BUILD_COACH_LINES[Math.floor(Math.random()*BUILD_COACH_LINES.length)];
-      try { localRegenMeals(); } catch (e) { console.error(e); }
-      try { idle(()=>aiRegenMeals()); } catch (e) { console.error(e); }
-    } else {
-      if (buildMode) buildMode.style.display = 'none';
-      if (uploadMode) uploadMode.style.display = 'block';
-      if (btnOpenSettings) btnOpenSettings.style.display = 'none';
-      if (hello) hello.textContent = `${greet()}, ${state.name} — let's scan your meal.`;
-      if (coachLine) coachLine.textContent = UPLOAD_COACH_LINES[Math.floor(Math.random()*UPLOAD_COACH_LINES.length)];
+        safeText('#hello', `${greet()}, ${state.name} — let’s dial in your meals.`);
+        safeText('#coachLine', BUILD_COACH_LINES[Math.floor(Math.random()*BUILD_COACH_LINES.length)]);
+
+        try { localRegenMeals(); } catch (e) { console.warn('localRegenMeals failed:', e); }
+        try { idle(()=>aiRegenMeals()); } catch (e) { console.warn('idle/aiRegenMeals failed:', e); }
+      } else {
+        safeDisplay('#buildMode', 'none');
+        safeDisplay('#uploadMode', 'block');
+        // Hide Meal Settings in Upload Meal mode
+        safeDisplay('#btnOpenSettings', 'none');
+
+        safeText('#hello', `${greet()}, ${state.name} — let's scan your meal.`);
+        safeText('#coachLine', UPLOAD_COACH_LINES[Math.floor(Math.random()*UPLOAD_COACH_LINES.length)]);
+      }
+    } catch (e) {
+      console.error('switchMode failed:', e);
+    }
+  }
+else {
+      $('#buildMode').style.display = 'none';
+      $('#uploadMode').style.display = 'block';
+      // Hide Meal Settings in Upload Meal mode
+      $('#btnOpenSettings').style.display = 'none';
+      $('#hello').textContent = `${greet()}, ${state.name} — let's scan your meal.`;
+      $('#coachLine').textContent = UPLOAD_COACH_LINES[Math.floor(Math.random()*UPLOAD_COACH_LINES.length)];
     }
   }
   /* ---------- Mock scan data (simulate AI) ----------
