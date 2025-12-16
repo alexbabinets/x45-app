@@ -411,14 +411,7 @@ input[type="file"].input { padding: 6px; }
       <label for="mealPhoto" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
         📸 Take Photo or Upload Image
       </label>
-      <input
-        type="file"
-        id="mealPhoto"
-        class="input"
-        accept="image/*"
-        capture="environment"
-        style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;"
-      >
+      <input type="file" id="mealPhoto" class="input" accept="image/*" capture="environment" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;">
       <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
@@ -1926,63 +1919,40 @@ diabetic2: {
       await aiRegenMeals();
     }
   };
-  // Safe helpers (WKWebView can hard-crash on uncaught exceptions)
-  function safeGet(sel){ try { return document.querySelector(sel); } catch { return null; } }
-  function safeText(sel, txt){ const el = safeGet(sel); if (el) el.textContent = txt; }
-  function safeDisplay(sel, value){ const el = safeGet(sel); if (el) el.style.display = value; }
-
   $('#btnSaveSupport').onclick = async () => {
     try {
-      const supportEl = safeGet('#supportSelect');
-      const newSupport = (supportEl && supportEl.value) ? supportEl.value : 'build_plan';
+      const sel = $('#supportSelect');
+      const newSupport = (sel && sel.value) ? sel.value : 'build_plan';
       state.support = newSupport;
 
-      // Persist may fail (auth/session/network). Do not block UI transition.
+      // Persist may fail (auth/session/network). Do not let it crash the page or block mode switch.
       try {
         await persistUserPatch({ meal_support: state.support });
       } catch (e) {
         console.warn('persistUserPatch failed (continuing):', e);
       }
 
-      // Defer the DOM switch to next frame to avoid WKWebView timing edge-cases
+      // WKWebView timing safety: switch mode on next frame.
       requestAnimationFrame(() => switchMode(newSupport));
     } catch (e) {
-      console.error('btnSaveSupport handler failed:', e);
+      console.error('btnSaveSupport failed:', e);
+      // last resort: still try to switch
+      try { switchMode(state.support || 'build_plan'); } catch (_) {}
     }
   };
-
   $('#btnRegenLocal').onclick = () => localRegenMeals();
   $('#btnRegenAI').onclick = () => aiRegenMeals();
-
   function switchMode(mode) {
-    try {
-      const m = (mode === 'build_plan') ? 'build_plan' : 'upload_plan';
-
-      if (m === 'build_plan') {
-        safeDisplay('#buildMode', 'block');
-        safeDisplay('#uploadMode', 'none');
-        // Meal Settings applies to Build Plan only
-        safeDisplay('#btnOpenSettings', 'inline-flex');
-
-        safeText('#hello', `${greet()}, ${state.name} — let’s dial in your meals.`);
-        safeText('#coachLine', BUILD_COACH_LINES[Math.floor(Math.random()*BUILD_COACH_LINES.length)]);
-
-        try { localRegenMeals(); } catch (e) { console.warn('localRegenMeals failed:', e); }
-        try { idle(()=>aiRegenMeals()); } catch (e) { console.warn('idle/aiRegenMeals failed:', e); }
-      } else {
-        safeDisplay('#buildMode', 'none');
-        safeDisplay('#uploadMode', 'block');
-        // Hide Meal Settings in Upload Meal mode
-        safeDisplay('#btnOpenSettings', 'none');
-
-        safeText('#hello', `${greet()}, ${state.name} — let's scan your meal.`);
-        safeText('#coachLine', UPLOAD_COACH_LINES[Math.floor(Math.random()*UPLOAD_COACH_LINES.length)]);
-      }
-    } catch (e) {
-      console.error('switchMode failed:', e);
-    }
-  }
-else {
+    if (mode === 'build_plan') {
+      $('#buildMode').style.display = 'block';
+      $('#uploadMode').style.display = 'none';
+      // Meal Settings applies to Build Plan only
+      $('#btnOpenSettings').style.display = 'inline-flex';
+      $('#hello').textContent = `${greet()}, ${state.name} — let’s dial in your meals.`;
+      $('#coachLine').textContent = BUILD_COACH_LINES[Math.floor(Math.random()*BUILD_COACH_LINES.length)];
+      localRegenMeals();
+      idle(()=>aiRegenMeals());
+    } else {
       $('#buildMode').style.display = 'none';
       $('#uploadMode').style.display = 'block';
       // Hide Meal Settings in Upload Meal mode
