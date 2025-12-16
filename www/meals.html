@@ -55,17 +55,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,syste
 .sub{font-size:12px;color:var(--muted)}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .inline{display:flex;gap:8px;align-items:center}
-select.input, input[type="text"].fileInput{
-    position:absolute;
-    left:-9999px;
-    width:1px;
-    height:1px;
-    opacity:0.01;
-    /* IMPORTANT: do NOT use display:none on iOS or the picker can crash/never open */
-    display:block;
-  }
-
-.input{
+select.input, input[type="text"].input{
   appearance:none;background:#0f1319;color:#e7ecf3;border:1px solid #29313b;border-radius:10px;padding:10px 12px;font-size:14px;min-width:220px
 }
 .pills{display:flex;gap:8px;flex-wrap:wrap}
@@ -171,6 +161,8 @@ input[type="file"].input { padding: 6px; }
 .healthScore .bar{width:200px;height:20px;background:var(--panel2);border-radius:10px;overflow:hidden;border:1px solid var(--divider)}
 .healthScore .bar-fill{height:100%;transition:width .3s ease;border-radius:9px}
 .scanProgress{display:none;margin:20px 0}
+    /* iOS stability: file input must NOT be display:none */
+    .fileInput{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none}
 .mealScanned{display:none}
 .mealScanned .mealHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
 .mealName{font-weight:900;font-size:18px}
@@ -418,10 +410,11 @@ input[type="file"].input { padding: 6px; }
     <h2>Upload Your Meal Photo</h2>
     <div class="sub">Snap a clear photo of your plate and upload it. We'll scan and analyze the nutrition.</div>
     <div class="uploadArea" id="uploadArea">
-      <label for="mealPhoto" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
+      <button type="button" id="btnPickMealPhoto" class="cta primary" style="font-size:16px;padding:12px 20px">
         📸 Take Photo or Upload Image
-      </label>
-      <input type="file" id="mealPhoto" class="input fileInput" accept="image/*">
+      </button>
+      <!-- iOS WKWebView can crash when <input type="file"> is display:none and triggered via <label>. Keep it off-screen instead. -->
+      <input type="file" id="mealPhoto" class="fileInput" accept="image/*" capture="environment">
       <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
@@ -2064,6 +2057,9 @@ diabetic2: {
   });
   // Drag & drop
   const uploadArea = $('#uploadArea');
+  // iOS stability: trigger file picker via direct button click
+  const btnPick = $('#btnPickMealPhoto');
+  if (btnPick) btnPick.addEventListener('click', ()=>{ try{ $('#mealPhoto').click(); }catch(e){ console.error(e); alert('Unable to open photo picker. Please verify Camera/Photos permissions for X45 in iOS Settings.'); } });
   uploadArea.addEventListener('dragover', (e) => {
     e.preventDefault();
     uploadArea.classList.add('dragover');
