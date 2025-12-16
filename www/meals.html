@@ -55,7 +55,17 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,syste
 .sub{font-size:12px;color:var(--muted)}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .inline{display:flex;gap:8px;align-items:center}
-select.input, input[type="text"].input{
+select.input, input[type="text"].fileInput{
+    position:absolute;
+    left:-9999px;
+    width:1px;
+    height:1px;
+    opacity:0.01;
+    /* IMPORTANT: do NOT use display:none on iOS or the picker can crash/never open */
+    display:block;
+  }
+
+.input{
   appearance:none;background:#0f1319;color:#e7ecf3;border:1px solid #29313b;border-radius:10px;padding:10px 12px;font-size:14px;min-width:220px
 }
 .pills{display:flex;gap:8px;flex-wrap:wrap}
@@ -411,7 +421,7 @@ input[type="file"].input { padding: 6px; }
       <label for="mealPhoto" class="cta primary" style="font-size:16px;padding:12px 20px;cursor:pointer">
         📸 Take Photo or Upload Image
       </label>
-      <input type="file" id="mealPhoto" class="input" accept="image/*" capture="environment" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;">
+      <input type="file" id="mealPhoto" class="input fileInput" accept="image/*">
       <div id="uploadImgWrap" style="display:none;margin-top:20px">
         <img id="uploadImg" class="uploadImg" alt="Uploaded meal photo">
       </div>
@@ -1920,25 +1930,10 @@ diabetic2: {
     }
   };
   $('#btnSaveSupport').onclick = async () => {
-    try {
-      const sel = $('#supportSelect');
-      const newSupport = (sel && sel.value) ? sel.value : 'build_plan';
-      state.support = newSupport;
-
-      // Persist may fail (auth/session/network). Do not let it crash the page or block mode switch.
-      try {
-        await persistUserPatch({ meal_support: state.support });
-      } catch (e) {
-        console.warn('persistUserPatch failed (continuing):', e);
-      }
-
-      // WKWebView timing safety: switch mode on next frame.
-      requestAnimationFrame(() => switchMode(newSupport));
-    } catch (e) {
-      console.error('btnSaveSupport failed:', e);
-      // last resort: still try to switch
-      try { switchMode(state.support || 'build_plan'); } catch (_) {}
-    }
+    const newSupport = $('#supportSelect').value;
+    state.support = newSupport;
+    await persistUserPatch({ meal_support: state.support });
+    switchMode(newSupport);
   };
   $('#btnRegenLocal').onclick = () => localRegenMeals();
   $('#btnRegenAI').onclick = () => aiRegenMeals();
